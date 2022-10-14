@@ -130,6 +130,7 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
     test_dich=np.array([[[1,3],[0,2]],[[2,3],[0,1]]])
     
     perf=nan*np.zeros((len(dichotomies),len(train_dich[0])))
+    inter=nan*np.zeros((len(dichotomies),len(train_dich[0])))
     for k in range(len(dichotomies)): #Loop on "dichotomies"
       for kk in range(len(train_dich[0])): #Loop on ways to train this particular "dichotomy"
          ind_train=np.where((feat_binary_exp==train_dich[k][kk][0])|(feat_binary_exp==train_dich[k][kk][1]))[0]
@@ -143,29 +144,30 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
          supp=LogisticRegression(C=1/reg,class_weight='balanced')
          #supp=LinearSVC(C=1/reg,class_weight='balanced')
          mod=supp.fit(feat_decod[ind_train],task[ind_train])
+         inter[k,kk]=mod.intercept_[0]
          pred=(np.dot(feat_decod[ind_test],supp.coef_[0])+supp.intercept_+bias)>0
          perf[k,kk]=np.mean(pred==task[ind_test])
          #perf[k,kk,0]=supp.score(feat_decod[ind_train],task[ind_train])
          #perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
-    return perf
+    return perf,inter
 
 ##############################################
 
-monkeys=['Niels']#'Galileo']#]#]
+monkeys=['Galileo']#'Niels']#]#]#]
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
-talig='dots_on'
-dic_time=np.array([0,600,200,200])# time pre, time post, bin size, step size (time pre always positive)
+talig='response_edf'
+dic_time=np.array([250,-50,200,200])# time pre, time post, bin size, step size (time pre always positive)
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=10
-n_shuff=10
-n_dim=100
+n_shuff=0
+#n_dim=100
 perc_tr=0.8
 thres=0
-reg=1e0 
+reg=1e0
 n_coh=15
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -184,6 +186,9 @@ group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]
 tpre_sacc=50
 
 #bias_vec=np.linspace(-3,3,31)
+#bias_vec=np.linspace(-5,5,31)
+#bias_vec=np.linspace(-7,7,31)
+#bias_vec=np.linspace(-10,10,31)
 #bias_vec=np.linspace(-20,20,31) #Niels
 bias_vec=np.linspace(-15,15,31) #Galileo
 #bias_vec=np.linspace(-1,1,31)
@@ -196,6 +201,7 @@ for k in range(len(monkeys)):
     print (files)
     perf_all=nan*np.zeros((n_rand,3))
     ccgp_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
+    inter_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
     perf_all_sh=nan*np.zeros((n_shuff,n_rand,3))
     ccgp_all_sh=nan*np.zeros((n_shuff,n_rand,len(bias_vec),2,2))
 
@@ -244,7 +250,9 @@ for k in range(len(monkeys)):
         perf_all[ii,2]=cl.score(pseudo_te[ii][ind_nonan],xor[ind_nonan])
         # CCGP
         for f in range(len(bias_vec)):
-            ccgp_all[ii,f]=abstraction_2D(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+            ccgp=abstraction_2D(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+            ccgp_all[ii,f]=ccgp[0]
+            inter_all[ii,f]=ccgp[1]
 
     # Shuffled Data
     for nn in range(n_shuff):
@@ -276,49 +284,52 @@ for k in range(len(monkeys)):
             perf_all_sh[nn,ii,2]=cl.score(pseudo_te_sh[ii][ind_nonan],xor[ind_nonan])
             # CCGP
             for f in range(len(bias_vec)):
-                ccgp_all_sh[nn,ii,f]=abstraction_2D(pseudo_all_sh[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+                ccgp=abstraction_2D(pseudo_all_sh[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+                ccgp_all_sh[nn,ii,f]=ccgp[0]
 
     perf_all_m=np.nanmean(perf_all,axis=0)
     perf_all_std=np.nanstd(perf_all,axis=0)
     ccgp_all_m=np.nanmean(ccgp_all,axis=0)
+    inter_all_m=np.nanmean(inter_all,axis=(0,1))
     ccgp_all_std=np.nanstd(ccgp_all,axis=0)
     # Sh
     perf_all_sh_m=np.nanmean(perf_all_sh,axis=1)
     ccgp_all_sh_m=np.nanmean(ccgp_all_sh,axis=1)
-    # print (ccgp_all_m[15])
-    # print (np.max(ccgp_all_m,axis=0))
-    # print (perf_all_m)
+    print (ccgp_all_m[15])
+    print (np.max(ccgp_all_m,axis=0))
+    print (inter_all_m)
+    print (perf_all_m)
 
     
-    # # Plot performance Tasks and XOR
-    # fig=plt.figure(figsize=(2.3,2))
-    # ax=fig.add_subplot(111)
-    # miscellaneous.adjust_spines(ax,['left','bottom'])
-    # ax.scatter(np.arange(3),perf_all_m)
-    # ax.plot(np.arange(3),0.5*np.ones(3),color='black',linestyle='--')
-    # ax.set_ylim([0.4,1])
-    # #ax.set_ylabel('Probability Right Response')
-    # #ax.set_xlabel('Evidence Right Choice (%)')
-    # #plt.xticks(xx[indnan0],coh_plot[k][indnan0])
-    # #plt.xticks(xx,coh_plot[1])
-    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_perf_tasks_xor_%s.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
-
-    
-    # # Plot Shifted CCGP
-    # fig=plt.figure(figsize=(2.3,2))
-    # ax=fig.add_subplot(111)
-    # miscellaneous.adjust_spines(ax,['left','bottom'])
-    # ax.plot(bias_vec,ccgp_all_m[:,0,0],color='blue')
-    # ax.plot(bias_vec,ccgp_all_m[:,0,1],color='royalblue')
-    # ax.plot(bias_vec,ccgp_all_m[:,1,0],color='brown')
-    # ax.plot(bias_vec,ccgp_all_m[:,1,1],color='orange')
-    # ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
-    # ax.set_ylim([0.4,1])
-    # ax.set_ylabel('Shifted-CCGP')
-    # ax.set_xlabel('Shift')
-    # #plt.xticks(xx[indnan0],coh_plot[k][indnan0])
-    # #plt.xticks(xx,coh_plot[1])
-    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_shifted_ccgp_%s.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    # Plot performance Tasks and XOR
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(np.arange(3),perf_all_m)
+    ax.plot(np.arange(3),0.5*np.ones(3),color='black',linestyle='--')
+    ax.set_ylim([0.4,1])
+    #ax.set_ylabel('Probability Right Response')
+    #ax.set_xlabel('Evidence Right Choice (%)')
+    #plt.xticks(xx[indnan0],coh_plot[k][indnan0])
+    #plt.xticks(xx,coh_plot[1])
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_perf_tasks_xor_%s_reg1em3.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+ 
+    # Plot Shifted CCGP
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.plot(bias_vec,ccgp_all_m[:,0,0],color='blue')
+    ax.plot(bias_vec,ccgp_all_m[:,0,1],color='royalblue')
+    ax.plot(bias_vec,ccgp_all_m[:,1,0],color='brown')
+    ax.plot(bias_vec,ccgp_all_m[:,1,1],color='orange')
+    ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
+    ax.axvline(0,color='black')
+    ax.set_ylim([0.4,1])
+    ax.set_ylabel('Shifted-CCGP')
+    ax.set_xlabel('Shift')
+    #plt.xticks(xx[indnan0],coh_plot[k][indnan0])
+    #plt.xticks(xx,coh_plot[1])
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_shifted_ccgp_%s_reg1em3.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
  
        
     # for i in range(steps):
