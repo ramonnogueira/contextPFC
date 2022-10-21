@@ -153,21 +153,20 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 
 ##############################################
 
-monkeys=['Galileo']#'Niels']#]#]#]
+monkeys=['Niels']#'Niels']#]#]#]
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 talig='response_edf'
-dic_time=np.array([250,-50,200,200])# time pre, time post, bin size, step size (time pre always positive)
+dic_time=np.array([450,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=10
 n_shuff=0
-#n_dim=100
 perc_tr=0.8
 thres=0
-reg=1e0
+reg=1e1
 n_coh=15
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -178,8 +177,8 @@ group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 #group_coh=np.array([-2,-2,-2,-1,-1,-1,-1,0,1,1,1,1,2,2,2])
 #group_coh=np.array([nan,-2 ,-2 ,-2 ,-1 ,-1 ,-1 ,nan,1  ,1  ,1  ,2  ,2  ,2  ,nan])
 #group_coh=np.array([nan,nan,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,nan,nan])
-group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
-#group_coh=np.array([nan,0 ,0 ,0 ,1 ,1 ,1 ,nan,1  ,1  ,1  ,0  ,0  ,0  ,nan])
+#group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+group_coh=np.array([nan,0 ,0 ,0 ,1 ,1 ,1 ,nan,1  ,1  ,1  ,0  ,0  ,0  ,nan])
 #group_coh=np.array([nan,nan,nan,nan,nan,nan,nan,nan,0  ,0  ,0  ,1  ,1  ,1  ,nan])
 #group_coh=np.array([nan,nan,nan,1  ,1  ,0  ,0  ,nan,nan,nan,nan,nan,nan,nan,nan])
 
@@ -188,9 +187,9 @@ tpre_sacc=50
 #bias_vec=np.linspace(-3,3,31)
 #bias_vec=np.linspace(-5,5,31)
 #bias_vec=np.linspace(-7,7,31)
-#bias_vec=np.linspace(-10,10,31)
+bias_vec=np.linspace(-10,10,31)
 #bias_vec=np.linspace(-20,20,31) #Niels
-bias_vec=np.linspace(-15,15,31) #Galileo
+#bias_vec=np.linspace(-15,15,31) #Galileo
 #bias_vec=np.linspace(-1,1,31)
 
 
