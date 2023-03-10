@@ -153,11 +153,11 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 
 ##############################################
 
-monkeys=['Niels']#'Niels']#]#]#]
+monkeys=['Niels']#'Niels']
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 talig='response_edf'
-dic_time=np.array([850,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -166,7 +166,7 @@ n_rand=10
 n_shuff=0
 perc_tr=0.8
 thres=0
-reg=1e1
+reg=1e0
 n_coh=15
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -180,8 +180,13 @@ group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 #group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
 #group_coh=np.array([nan,0 ,0 ,0 ,1 ,1 ,1 ,nan,1  ,1  ,1  ,0  ,0  ,0  ,nan])
 #group_coh=np.array([nan,nan,nan,nan,nan,nan,nan,nan,0  ,0  ,0  ,1  ,1  ,1  ,nan])
-#group_coh=np.array([nan,nan,nan,1  ,1  ,0  ,0  ,nan,nan,nan,nan,nan,nan,nan,nan])
-group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+group_coh_vec=np.array([[nan,1  ,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,0  ,nan],  #Easy
+                        [nan,nan,1  ,nan,nan,nan,nan,nan,nan,nan,nan,nan,0  ,nan,nan],  #Easy
+                        [nan,nan,nan,1  ,nan,nan,nan,nan,nan,nan,nan,0  ,nan,nan,nan],  #Easy
+                        [nan,nan,nan,nan,1  ,nan,nan,nan,nan,nan,0  ,nan,nan,nan,nan],  #Diff
+                        [nan,nan,nan,nan,nan,1  ,nan,nan,nan,0  ,nan,nan,nan,nan,nan],  #Diff
+                        [nan,nan,nan,nan,nan,nan,1  ,nan,0  ,nan,nan,nan,nan,nan,nan]]) #Diff
+#group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
 
 tpre_sacc=50
 
@@ -199,7 +204,7 @@ for k in range(len(monkeys)):
     abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k])
     files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
     print (files)
-    perf_all=nan*np.zeros((steps,n_rand,3))
+    perf_all=nan*np.zeros((6,steps,n_rand,3))
     #ccgp_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
     #inter_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
     pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False)
@@ -212,8 +217,10 @@ for k in range(len(monkeys)):
         context=pseudo['clase_ctx']
         clase_all=pseudo['clase_all']
         coherence=pseudo['clase_coh']
-        clase_coh=clase_resolution(group_coh,coherence)
-        indnan=~np.isnan(clase_coh) # Indices for the coherences we are going to use (True means to use, False to discard)
+
+        for j in range(6):
+            clase_coh=clase_resolution(group_coh_vec[j],coherence)
+            indnan=~np.isnan(clase_coh) # Indices for the coherences we are going to use (True means to use, False to discard)
 
         feat_binary=nan*np.zeros((len(coherence),2))
         ind00=np.where((clase_coh==0)&(context==0))[0]
@@ -224,9 +231,11 @@ for k in range(len(monkeys)):
         feat_binary[ind01]=np.array([0,1])
         feat_binary[ind10]=np.array([1,0])
         feat_binary[ind11]=np.array([1,1])
+
+        
     
         for ii in range(n_rand):
-            print (' ',ii)
+            #print (' ',ii)
             sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
             indnan_flat=(sum_nan==0) # True will be used, False discarded
             ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
