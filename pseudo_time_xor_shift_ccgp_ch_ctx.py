@@ -153,13 +153,13 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 
 ##############################################
 
-monkeys=['Galileo']
+monkeys=['Niels']
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 #talig='response_edf'
-#dic_time=np.array([850,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+#dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 talig='dots_on'
-dic_time=np.array([0,800,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,600,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -182,15 +182,15 @@ group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 #group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
 #group_coh=np.array([nan,0 ,0 ,0 ,1 ,1 ,1 ,nan,1  ,1  ,1  ,0  ,0  ,0  ,nan])
 #group_coh=np.array([nan,nan,nan,nan,nan,nan,nan,nan,0  ,0  ,0  ,1  ,1  ,1  ,nan])
-group_coh_vec=np.array([[nan,nan,nan,nan,nan,nan,1  ,nan,0  ,nan,nan,nan,nan,nan,nan], #Diff
-                       [nan,nan,nan,nan,nan,1  ,nan,nan,nan,0  ,nan,nan,nan,nan,nan], #Diff
-                       [nan,nan,nan,nan,1  ,nan,nan,nan,nan,nan,0  ,nan,nan,nan,nan], #Diff
-                       [nan,nan,nan,1  ,nan,nan,nan,nan,nan,nan,nan,0  ,nan,nan,nan], #Easy
-                       [nan,nan,1  ,nan,nan,nan,nan,nan,nan,nan,nan,nan,0  ,nan,nan], #Easy
-                       [nan,1  ,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,0  ,nan]])  #Easy
+# group_coh_vec=np.array([[nan,nan,nan,nan,nan,nan,1  ,nan,0  ,nan,nan,nan,nan,nan,nan], #Diff
+#                        [nan,nan,nan,nan,nan,1  ,nan,nan,nan,0  ,nan,nan,nan,nan,nan], #Diff
+#                        [nan,nan,nan,nan,1  ,nan,nan,nan,nan,nan,0  ,nan,nan,nan,nan], #Diff
+#                        [nan,nan,nan,1  ,nan,nan,nan,nan,nan,nan,nan,0  ,nan,nan,nan], #Easy
+#                        [nan,nan,1  ,nan,nan,nan,nan,nan,nan,nan,nan,nan,0  ,nan,nan], #Easy
+#                        [nan,1  ,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,0  ,nan]])  #Easy
 #group_coh_vec=np.array([[nan,nan,nan,nan,1  ,1  ,1  ,nan,0  ,0  ,0  ,nan,nan,nan,nan], #Diff
 #                        [nan,1  ,1  ,1  ,nan,nan,nan,nan,nan,nan,nan,0  ,0  ,0  ,nan]]) #Easy
-#group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+group_coh_vec=np.array([[nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]])
 
 tpre_sacc=50
 
@@ -209,7 +209,7 @@ for k in range(len(monkeys)):
     files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
     print (files)
     perf_all=nan*np.zeros((steps,len(group_coh_vec),n_rand,3))
-    #ccgp_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
+    ccgp_all=nan*np.zeros((steps,len(group_coh_vec),n_rand,len(bias_vec),2,2))
     #inter_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
     pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False)
     
@@ -259,54 +259,39 @@ for k in range(len(monkeys)):
                 cl.fit(pseudo_tr[ii][ind_nonan],xor[ind_nonan])
                 perf_all[kk,j,ii,2]=cl.score(pseudo_te[ii][ind_nonan],xor[ind_nonan])
                 # CCGP
-                # for f in range(len(bias_vec)):
-                #     ccgp=abstraction_2D(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
-                #     ccgp_all[ii,f]=ccgp[0]
-                #     inter_all[ii,f]=ccgp[1]
+                for f in range(len(bias_vec)):
+                    print (f)
+                    ccgp=abstraction_2D(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+                    ccgp_all[kk,j,ii,f]=ccgp[0]
+                    #inter_all[ii,f]=ccgp[1]
 
 
     perf_all_m=np.nanmean(perf_all,axis=2)
     perf_all_std=np.std(perf_all,axis=2)
-    # perf_all_std=np.nanstd(perf_all,axis=0)
-    # ccgp_all_m=np.nanmean(ccgp_all,axis=0)
+    ccgp_all_m=np.nanmean(ccgp_all,axis=2)
     # inter_all_m=np.nanmean(inter_all,axis=(0,1))
     # ccgp_all_std=np.nanstd(ccgp_all,axis=0)
     #print (ccgp_all_m[15])
     #print (np.max(ccgp_all_m,axis=0))
     #print (inter_all_m)
     print (perf_all_m)
-
-    for i in range(len(group_coh_vec)):
-        #plt.plot(xx,perf_all_m[:,i,0],color='blue',alpha=(i+1)/len(group_coh_vec))
-        plt.errorbar(xx,perf_all_m[:,i,0],perf_all_std[:,i,0],color='blue',alpha=(i+1)/len(group_coh_vec))
-    plt.ylim([0.3,1])
-    plt.show()
-
-    for i in range(len(group_coh_vec)):
-        #plt.plot(xx,perf_all_m[:,i,1],color='brown',alpha=(i+1)/len(group_coh_vec))
-        plt.errorbar(xx,perf_all_m[:,i,1],perf_all_std[:,i,1],color='brown',alpha=(i+1)/len(group_coh_vec))
-    plt.ylim([0.3,1])
-    plt.show()
-
-    for i in range(len(group_coh_vec)):
-        #plt.plot(xx,perf_all_m[:,i,2],color='black',alpha=(i+1)/len(group_coh_vec))
-        plt.errorbar(xx,perf_all_m[:,i,2],perf_all_std[:,i,2],color='black',alpha=(i+1)/len(group_coh_vec))
-    plt.ylim([0.3,1])
-    plt.show()
-
     
-    # # Plot performance Tasks and XOR
-    # fig=plt.figure(figsize=(2.3,2))
-    # ax=fig.add_subplot(111)
-    # miscellaneous.adjust_spines(ax,['left','bottom'])
-    # ax.scatter(np.arange(3),perf_all_m)
-    # ax.plot(np.arange(3),0.5*np.ones(3),color='black',linestyle='--')
-    # ax.set_ylim([0.4,1])
-    # #ax.set_ylabel('Probability Right Response')
-    # #ax.set_xlabel('Evidence Right Choice (%)')
-    # #plt.xticks(xx[indnan0],coh_plot[k][indnan0])
-    # #plt.xticks(xx,coh_plot[1])
-    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_perf_tasks_xor_%s_reg1em3.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    # Plot performance Tasks and XOR vs time
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.plot(xx,perf_all_m[:,0,0],color='blue',label='Choice')
+    ax.fill_between(xx,perf_all_m[:,0,0]-perf_all_std[:,0,0],perf_all_m[:,0,0]+perf_all_std[:,0,0],color='blue',alpha=0.5)
+    ax.plot(xx,perf_all_m[:,0,1],color='brown',label='Context')
+    ax.fill_between(xx,perf_all_m[:,0,1]-perf_all_std[:,0,1],perf_all_m[:,0,1]+perf_all_std[:,0,1],color='brown',alpha=0.5)
+    ax.plot(xx,perf_all_m[:,0,2],color='black',label='XOR')
+    ax.fill_between(xx,perf_all_m[:,0,2]-perf_all_std[:,0,2],perf_all_m[:,0,2]+perf_all_std[:,0,2],color='black',alpha=0.5)
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.set_ylim([0.4,1])
+    ax.set_xlabel('Time (sec)')
+    ax.set_ylabel('Decoding Performance')
+    plt.legend(loc='best')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
  
     # # Plot Shifted CCGP
     # fig=plt.figure(figsize=(2.3,2))
