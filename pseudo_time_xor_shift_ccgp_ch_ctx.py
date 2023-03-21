@@ -153,13 +153,13 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 
 ##############################################
 
-monkeys=['Niels']
+monkeys=['Galileo']
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 #talig='response_edf'
 #dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 talig='dots_on'
-dic_time=np.array([0,600,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,800,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -237,7 +237,7 @@ for k in range(len(monkeys)):
             feat_binary[ind11]=np.array([1,1])
     
             for ii in range(n_rand):
-                #print (' ',ii)
+                print (' ',ii)
                 sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
                 indnan_flat=(sum_nan==0) # True will be used, False discarded
                 ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
@@ -260,7 +260,7 @@ for k in range(len(monkeys)):
                 perf_all[kk,j,ii,2]=cl.score(pseudo_te[ii][ind_nonan],xor[ind_nonan])
                 # CCGP
                 for f in range(len(bias_vec)):
-                    print (f)
+                    #print (f)
                     ccgp=abstraction_2D(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
                     ccgp_all[kk,j,ii,f]=ccgp[0]
                     #inter_all[ii,f]=ccgp[1]
@@ -293,21 +293,25 @@ for k in range(len(monkeys)):
     plt.legend(loc='best')
     #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
  
-    # # Plot Shifted CCGP
-    # fig=plt.figure(figsize=(2.3,2))
-    # ax=fig.add_subplot(111)
-    # miscellaneous.adjust_spines(ax,['left','bottom'])
-    # ax.plot(bias_vec,ccgp_all_m[:,0,0],color='blue')
-    # ax.plot(bias_vec,ccgp_all_m[:,0,1],color='royalblue')
-    # ax.plot(bias_vec,ccgp_all_m[:,1,0],color='brown')
-    # ax.plot(bias_vec,ccgp_all_m[:,1,1],color='orange')
-    # ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
-    # ax.axvline(0,color='black')
-    # ax.set_ylim([0.4,1])
-    # ax.set_ylabel('Shifted-CCGP')
-    # ax.set_xlabel('Shift')
-    # #plt.xticks(xx[indnan0],coh_plot[k][indnan0])
-    # #plt.xticks(xx,coh_plot[1])
-    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_shifted_ccgp_%s_reg1em3.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    # Plot Shifted CCGP
+    cc_m=np.mean(ccgp_all_m[:,0,15],axis=2)
+    cc_max=np.mean(np.max(ccgp_all_m[:,0],axis=1),axis=2)
+    
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.plot(xx,perf_all_m[:,0,0],color='blue',label='Choice',linestyle='--')
+    ax.plot(xx,perf_all_m[:,0,1],color='brown',label='Context',linestyle='--')
+    ax.plot(xx,cc_m[:,0],color='blue',label='CCGP Choice')
+    ax.plot(xx,cc_m[:,1],color='brown',label='CCGP Context')
+    ax.plot(xx,cc_max[:,0],color='blue',alpha=0.5,label='Sh-CCGP Choice')
+    ax.plot(xx,cc_max[:,1],color='brown',alpha=0.5,label='Sh-CCGP Context')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.set_ylim([0.4,1])
+    ax.set_xlabel('Time (sec)')
+    ax.set_ylabel('Decoding Performance')
+    #plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
+    
  
        
