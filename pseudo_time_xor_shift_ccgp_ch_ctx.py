@@ -154,6 +154,8 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 ##############################################
 
 monkeys=['Galileo']
+#bias_vec=np.linspace(-20,20,31) #Niels
+bias_vec=np.linspace(-15,15,31) #Galileo
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 #talig='response_edf'
@@ -197,7 +199,7 @@ tpre_sacc=50
 #bias_vec=np.linspace(-3,3,31)
 #bias_vec=np.linspace(-5,5,31)
 #bias_vec=np.linspace(-7,7,31)
-bias_vec=np.linspace(-10,10,31)
+#bias_vec=np.linspace(-10,10,31)
 #bias_vec=np.linspace(-20,20,31) #Niels
 #bias_vec=np.linspace(-15,15,31) #Galileo
 #bias_vec=np.linspace(-1,1,31)
@@ -214,6 +216,7 @@ for k in range(len(monkeys)):
     pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False)
     
     for kk in range(steps):
+        print (kk)
         # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
         pseudo_all=pseudo['pseudo_all'][kk]
         pseudo_tr=pseudo['pseudo_tr'][kk]
@@ -237,7 +240,7 @@ for k in range(len(monkeys)):
             feat_binary[ind11]=np.array([1,1])
     
             for ii in range(n_rand):
-                print (' ',ii)
+                #print (' ',ii)
                 sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
                 indnan_flat=(sum_nan==0) # True will be used, False discarded
                 ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
@@ -268,12 +271,6 @@ for k in range(len(monkeys)):
 
     perf_all_m=np.nanmean(perf_all,axis=2)
     perf_all_std=np.std(perf_all,axis=2)
-    ccgp_all_m=np.nanmean(ccgp_all,axis=2)
-    # inter_all_m=np.nanmean(inter_all,axis=(0,1))
-    # ccgp_all_std=np.nanstd(ccgp_all,axis=0)
-    #print (ccgp_all_m[15])
-    #print (np.max(ccgp_all_m,axis=0))
-    #print (inter_all_m)
     print (perf_all_m)
     
     # Plot performance Tasks and XOR vs time
@@ -294,24 +291,37 @@ for k in range(len(monkeys)):
     #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
  
     # Plot Shifted CCGP
-    cc_m=np.mean(ccgp_all_m[:,0,15],axis=2)
-    cc_max=np.mean(np.max(ccgp_all_m[:,0],axis=1),axis=2)
+    ccgp_orig_m=np.mean(ccgp_all[:,0,:,15],axis=(1,3))
+    ccgp_orig_std=np.std(np.mean(ccgp_all[:,0,:,15],axis=3),axis=1)
+    #ccgp_orig_std=np.std(ccgp_all[:,0,:,15],axis=(1,3))
+
+    shccgp_pre=nan*np.zeros((steps,n_rand,2,2))
+    for p in range(steps):
+        for pp in range(n_rand):
+            for ppp in range(2):
+                shccgp_pre[p,pp,ppp,0]=np.max(ccgp_all[p,0,pp,:,ppp,0])
+                shccgp_pre[p,pp,ppp,1]=np.max(ccgp_all[p,0,pp,:,ppp,1])
+    shccgp_m=np.mean(shccgp_pre,axis=(1,3))
+    #shccgp_std=np.std(shccgp_pre,axis=(1,3))
+    shccgp_std=np.std(np.mean(shccgp_pre,axis=3),axis=1)
     
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(xx,perf_all_m[:,0,0],color='blue',label='Choice',linestyle='--')
-    ax.plot(xx,perf_all_m[:,0,1],color='brown',label='Context',linestyle='--')
-    ax.plot(xx,cc_m[:,0],color='blue',label='CCGP Choice')
-    ax.plot(xx,cc_m[:,1],color='brown',label='CCGP Context')
-    ax.plot(xx,cc_max[:,0],color='blue',alpha=0.5,label='Sh-CCGP Choice')
-    ax.plot(xx,cc_max[:,1],color='brown',alpha=0.5,label='Sh-CCGP Context')
+    ax.plot(xx,ccgp_orig_m[:,0],color='blue',label='CCGP Choice')
+    ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='blue',alpha=0.5)
+    ax.plot(xx,ccgp_orig_m[:,1],color='brown',label='CCGP Context')
+    ax.fill_between(xx,ccgp_orig_m[:,1]-ccgp_orig_std[:,1],ccgp_orig_m[:,1]+ccgp_orig_std[:,1],color='brown',alpha=0.5)
+    ax.plot(xx,shccgp_m[:,0],color='blue',label='CCGP Choice')
+    ax.fill_between(xx,shccgp_m[:,0]-shccgp_std[:,0],shccgp_m[:,0]+shccgp_std[:,0],color='blue',alpha=0.5)
+    ax.plot(xx,shccgp_m[:,1],color='brown',label='CCGP Context')
+    ax.fill_between(xx,shccgp_m[:,1]-shccgp_std[:,1],shccgp_m[:,1]+shccgp_std[:,1],color='brown',alpha=0.5)
     ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
     #plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s_2.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
     
  
        
