@@ -163,20 +163,20 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 
 ##############################################
 
-monkeys=['Galileo']
-#bias_vec=np.linspace(-20,20,31) #Niels
-bias_vec=np.linspace(-15,15,31) #Galileo
+monkeys=['Niels']
+bias_vec=np.linspace(-20,20,31) #Niels
+#bias_vec=np.linspace(-15,15,31) #Galileo
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 #talig='response_edf'
 #dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 talig='dots_on'
-dic_time=np.array([0,800,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,600,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=100
+n_rand=10
 n_shuff=0
 perc_tr=0.8
 thres=0
@@ -333,11 +333,11 @@ for k in range(len(monkeys)):
     plt.legend(loc='best')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s_2.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
 
-    for p in range(steps):
-        for pp in range(2):
-            print ('Step ',p,'Var ',pp)
-            plt.hist(np.mean(shccgp_pre[p,:,pp],axis=1)-np.mean(ccgp_all[p,0,:,15,pp],axis=1),bins=100)
-            plt.show()
+    # for p in range(steps):
+    #     for pp in range(2):
+    #         print ('Step ',p,'Var ',pp)
+    #         plt.hist(np.mean(shccgp_pre[p,:,pp],axis=1)-np.mean(ccgp_all[p,0,:,15,pp],axis=1),bins=100)
+    #         plt.show()
             #sig=sig_test(np.mean(shccgp_pre[p,:,pp],axis=1),np.mean(ccgp_all[p,0,:,15,pp],axis=1))
             # print ('CCGP ',np.mean(np.mean(ccgp_all[p,0,:,15,pp],axis=1),axis=0),ccgp_orig_m[p,pp])
             # print ('Sh CCGP ',np.mean(np.mean(shccgp_pre[p,:,pp],axis=1),axis=0),shccgp_m[p,pp])
