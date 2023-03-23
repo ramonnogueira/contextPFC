@@ -103,16 +103,6 @@ def rotation_ccgp(pseudo,clase_all):
         pseudo_sh[:,ind_cl]=pseudo[:,ind_cl][:,:,rot_mat]
     return pseudo_sh
 
-
-def flat_time_pseudo(pseudo):
-    steps=pseudo.shape[0]
-    neu_total=pseudo.shape[-1]
-    pseudo_flat=nan*np.zeros((pseudo.shape[1],pseudo.shape[2],steps*neu_total))
-    for p in range(pseudo.shape[1]):
-        for pp in range(steps):
-            pseudo_flat[p,:,pp*neu_total:(pp+1)*neu_total]=pseudo[pp,p]
-    return pseudo_flat
-
 def abstraction_2D(feat_decod,feat_binary,bias,reg):
     exp_uq=np.unique(feat_binary,axis=0)
     feat_binary_exp=np.zeros(len(feat_binary))
@@ -151,6 +141,26 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
          #perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
     return perf,inter
 
+# def sig_test(dist1,dist2):
+#     dist_all=np.concatenate((dist1,dist2))
+#     clase=np.zeros(2*len(dist1))
+#     clase[len(dist1):]=1
+#     #
+#     d1m=np.mean(dist_all[clase==0])
+#     d2m=np.mean(dist_all[clase==1])
+#     diff=abs((np.mean(dist_all[clase==0])-np.mean(dist_all[clase==1])))
+#     #
+#     n_rand=10000
+#     diff_vec=np.zeros(n_rand)
+#     for i in range(n_rand):
+#         clase_sh=permutation(clase)
+#         diff_vec[i]=abs((np.mean(dist_all[clase_sh==0])-np.mean(dist_all[clase_sh==1])))
+
+#     diff_sort=np.sort(diff_vec)
+#     pval=len(diff_sort[diff_sort>diff])/n_rand
+#     return diff,diff_sort,pval
+        
+
 ##############################################
 
 monkeys=['Galileo']
@@ -166,7 +176,7 @@ steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=10
+n_rand=100
 n_shuff=0
 perc_tr=0.8
 thres=0
@@ -305,23 +315,36 @@ for k in range(len(monkeys)):
     #shccgp_std=np.std(shccgp_pre,axis=(1,3))
     shccgp_std=np.std(np.mean(shccgp_pre,axis=3),axis=1)
     
-    fig=plt.figure(figsize=(2.3,2))
+    fig=plt.figure(figsize=(3,2.5))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(xx,ccgp_orig_m[:,0],color='blue',label='CCGP Choice')
-    ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='blue',alpha=0.5)
-    ax.plot(xx,ccgp_orig_m[:,1],color='brown',label='CCGP Context')
-    ax.fill_between(xx,ccgp_orig_m[:,1]-ccgp_orig_std[:,1],ccgp_orig_m[:,1]+ccgp_orig_std[:,1],color='brown',alpha=0.5)
-    ax.plot(xx,shccgp_m[:,0],color='blue',label='CCGP Choice')
+    ax.plot(xx,ccgp_orig_m[:,0],color='royalblue',label='CCGP Choice')
+    ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='royalblue',alpha=0.5)
+    ax.plot(xx,ccgp_orig_m[:,1],color='orange',label='CCGP Context')
+    ax.fill_between(xx,ccgp_orig_m[:,1]-ccgp_orig_std[:,1],ccgp_orig_m[:,1]+ccgp_orig_std[:,1],color='orange',alpha=0.5)
+    ax.plot(xx,shccgp_m[:,0],color='blue',label='Sh-CCGP Choice')
     ax.fill_between(xx,shccgp_m[:,0]-shccgp_std[:,0],shccgp_m[:,0]+shccgp_std[:,0],color='blue',alpha=0.5)
-    ax.plot(xx,shccgp_m[:,1],color='brown',label='CCGP Context')
+    ax.plot(xx,shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
     ax.fill_between(xx,shccgp_m[:,1]-shccgp_std[:,1],shccgp_m[:,1]+shccgp_std[:,1],color='brown',alpha=0.5)
     ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
-    #plt.legend(loc='best')
+    plt.legend(loc='best')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s_2.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
+
+    for p in range(steps):
+        for pp in range(2):
+            print ('Step ',p,'Var ',pp)
+            plt.hist(np.mean(shccgp_pre[p,:,pp],axis=1)-np.mean(ccgp_all[p,0,:,15,pp],axis=1),bins=100)
+            plt.show()
+            #sig=sig_test(np.mean(shccgp_pre[p,:,pp],axis=1),np.mean(ccgp_all[p,0,:,15,pp],axis=1))
+            # print ('CCGP ',np.mean(np.mean(ccgp_all[p,0,:,15,pp],axis=1),axis=0),ccgp_orig_m[p,pp])
+            # print ('Sh CCGP ',np.mean(np.mean(shccgp_pre[p,:,pp],axis=1),axis=0),shccgp_m[p,pp])
+            # print ('Step ',p,'Var ',pp,'diff ',sig[0],'p val ',sig[2])
+            # plt.hist(sig[1])
+            # plt.axvline(sig[0])
+            # plt.show()
     
  
        
