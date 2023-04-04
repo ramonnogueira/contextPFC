@@ -44,7 +44,7 @@ class nn_recurrent():
             l1c1=torch.mean(self.loss(output[(target_seq_torch==1)&(context_torch==ctx_uq[1])][:,[0,1]],target_seq_torch[(target_seq_torch==1)&(context_torch==ctx_uq[1])].view(-1).long()))
             l_total=(l0c0+l1c0+l0c1+l1c1)
             #if t==0 or t==(t_total-1):
-            print (t,l_total.detach().numpy())
+            #print (t,l_total.detach().numpy())
             #if (l0c0+l1c0+l0c1+l1c1)<thres_fit:
             #    break
             for batch_idx, (data, contxt, targets) in enumerate(train_loader):
@@ -109,7 +109,7 @@ class recurrent_noisy(torch.nn.Module): # We always send the input with size bat
         out = net_units[:,-1].contiguous().view(-1, self.hidden_dim)
         out = self.fc(out)
         read_out_units = self.fc(net_units)
-        return out, hidden, net_units, read_out_units
+        return out, hidden, net_units, read_out_units # out: choice of readout unit last time step, hidden: state network last time step, 
             
 
 
