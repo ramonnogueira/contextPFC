@@ -47,113 +47,6 @@ warnings.warn = warn
 # RESULT:
 # Context is more decodable when it's behaviorally relevant: same strength of context (input signal) is much more present (DP) when there is an asymmetry (NEED CONFIRM). 
 
-def resolution_dim(clase,resol):
-    if resol=='1':
-        clase_vec=[0,1,2,3,4,5,6,7,8,9,10]    
-    if resol=='2':
-       #clase_vec=[0,1,2,3,4,5,6,7,8,9,10]    
-        clase_vec=[0,0,1,1,2,2,2,3,3,4,4]
-    if resol=='3':
-       #clase_vec=[0,1,2,3,4,5,6,7,8,9,10]    
-        clase_vec=[0,0,0,1,1,2,2,2,3,3,3]
-    if resol=='4':
-       #clase_vec=[0,1,2,3,4,5,6,7,8,9,10]    
-        clase_vec=[0,0,0,0,1,1,1,1,3,3,3]
-    if resol=='5':
-       #clase_vec=[0,1,2,3,4,5,6,7,8,9,10]    
-        clase_vec=[0,0,0,0,0,0,1,1,1,1,1]
-    #    
-    clase_uq=np.unique(clase)
-    clase_def=nan*np.zeros(len(clase))
-    for i in range(len(clase_uq)):
-        clase_def[clase==clase_uq[i]]=clase_vec[i]
-    return clase_def
-
-
-def dimensionality(data,clase,n_dim):
-    clase_uq=np.unique(clase)
-    len_1=len(clase_uq) # length or number of diferent categories or clases 
-    clase_dim_pre=np.zeros(len_1)
-    clase_dim_pre[int(0.5*len_1):]=1 # vector pre of coloring for the different clases
-    dim_vec=nan*np.zeros(n_dim) # vector pre of performance across random colorings
-    for d in range(n_dim):
-        clase_dim=np.random.permutation(clase_dim_pre) # random coloring on the loop
-        clase_d=nan*np.zeros(len(clase)) # random class asigned to each trial
-        for l in range(len(clase_uq)):
-            ind_l=np.where(clase==clase_uq[l])[0] 
-            clase_d[ind_l]=clase_dim[l]
-        # Classifier CV
-        n_cv=5
-        reg=1
-        skf=StratifiedKFold(n_splits=n_cv)
-        g=-1
-        perf_cv=nan*np.zeros(n_cv)
-        for train, test in skf.split(data,clase_d):
-            g=(g+1)
-            cl=LogisticRegression(C=1/reg,class_weight='balanced')
-            cl.fit(data[train],clase_d[train])
-            perf_cv[g]=cl.score(data[test],clase_d[test])
-        dim_vec[d]=np.mean(perf_cv)
-    return np.mean(dim_vec)
-
-def lin_comp_task(data,feat_bin):
-    n_cv=5
-    reg=1
-    perf=nan*np.zeros((3,n_cv))
-    # Linear Task
-    for i in range(2):
-        skf=StratifiedKFold(n_splits=n_cv)
-        g=-1
-        for train, test in skf.split(data,feat_bin[:,i]):
-            g=(g+1)
-            cl=LogisticRegression(C=1/reg,class_weight='balanced')
-            cl.fit(data[train],feat_bin[:,i][train])
-            perf[i,g]=cl.score(data[test],feat_bin[:,i][test])
-    # Complex Task
-    xor=np.sum(feat_bin,axis=1)%2
-    skf=StratifiedKFold(n_splits=n_cv)
-    g=-1
-    for train, test in skf.split(data,xor):
-        g=(g+1)
-        cl=LogisticRegression(C=1/reg,class_weight='balanced')
-        cl.fit(data[train],xor[train])
-        perf[2,g]=cl.score(data[test],xor[test])
-    return np.mean(perf,axis=1)
-
-def abstraction_2D(feat_decod,feat_binary,reg):
-    exp_uq=np.unique(feat_binary,axis=0)
-    feat_binary_exp=np.zeros(len(feat_binary))
-    for t in range(len(feat_binary)):
-        for tt in range((len(exp_uq))):
-            gg=(np.sum(feat_binary[t]==exp_uq[tt])==len(feat_binary[0]))
-            if gg:
-                feat_binary_exp[t]=tt
-    #
-    #dichotomies=np.array([[0,0,1,1],[0,1,0,1],[0,1,1,0]])
-    #train_dich=np.array([[[0,2],[1,3],[0,3],[1,2]],[[0,1],[2,3],[0,3],[1,2]],[[0,1],[2,3],[0,2],[1,3]]])
-    #test_dich=np.array([[[1,3],[0,2],[1,2],[0,3]],[[2,3],[0,1],[1,2],[0,3]],[[2,3],[0,1],[1,3],[0,2]]])
-    dichotomies=np.array([[0,0,1,1],[0,1,0,1]])
-    train_dich=np.array([[[0,2],[1,3]],[[0,1],[2,3]]])
-    test_dich=np.array([[[1,3],[0,2]],[[2,3],[0,1]]])
-    
-    perf=nan*np.zeros((len(dichotomies),len(train_dich[0]),2))
-    for k in range(len(dichotomies)): #Loop on "dichotomies"
-      for kk in range(len(train_dich[0])): #Loop on ways to train this particular "dichotomy"
-         ind_train=np.where((feat_binary_exp==train_dich[k][kk][0])|(feat_binary_exp==train_dich[k][kk][1]))[0]
-         ind_test=np.where((feat_binary_exp==test_dich[k][kk][0])|(feat_binary_exp==test_dich[k][kk][1]))[0]
-
-         task=nan*np.zeros(len(feat_binary_exp))
-         for i in range(4):
-             ind_task=(feat_binary_exp==i)
-             task[ind_task]=dichotomies[k][i]
-
-         supp=LogisticRegression(C=reg,class_weight='balanced',solver='lbfgs')
-         #supp=LinearSVC(C=reg,class_weight='balanced')
-         mod=supp.fit(feat_decod[ind_train],task[ind_train])
-         perf[k,kk,0]=supp.score(feat_decod[ind_train],task[ind_train])
-         perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
-    return perf
-
 def class_twovars(data,var1,var2):
     n_rand=10
     n_cv=5
@@ -212,7 +105,7 @@ disp_vec=np.array([0,1,2,3,4,5])
 
 reg=1e-5
 lr=0.01 
-n_files=5
+n_files=10
 
 coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
@@ -224,11 +117,6 @@ perf_task=nan*np.zeros((n_files,2,len(coh_uq),t_steps))
 perf_task_abs=nan*np.zeros((n_files,2,len(coh_uq_abs),t_steps))
 psycho=nan*np.zeros((n_files,len(coh_uq),t_steps,3))
 perf_bias=nan*np.zeros((n_files,len(coh_uq),t_steps,3))
-shatter_dim=nan*np.zeros((n_files,t_steps))
-dim_local=nan*np.zeros((n_files,t_steps,8))
-
-lin_comp_local=nan*np.zeros((n_files,t_steps,len(disp_vec),10,3))
-ccgp_local=nan*np.zeros((n_files,t_steps,len(disp_vec),10,2))
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,2))
 for hh in range(n_files):
     print (hh)
@@ -307,47 +195,46 @@ for hh in range(n_files):
 
 
 ######################################################
-# Figure psychometric
+
+print (np.mean(perf_dec_ctx,axis=0))
+
 psycho_m=np.mean(psycho,axis=0)
 psycho_sem=sem(psycho,axis=0)
-
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-#print (psycho_m)
-
-t_plot=19
-ax.plot(coh_uq*100,psycho_m[:,t_plot,0],color='black')
-ax.fill_between(coh_uq*100,psycho_m[:,t_plot,0]-psycho_sem[:,t_plot,0],psycho_m[:,t_plot,0]+psycho_sem[:,t_plot,0],color='black',alpha=0.6)
-ax.plot(coh_uq*100,psycho_m[:,t_plot,1],color='green')
-ax.fill_between(coh_uq*100,psycho_m[:,t_plot,1]-psycho_sem[:,t_plot,1],psycho_m[:,t_plot,1]+psycho_sem[:,t_plot,1],color='green',alpha=0.6)
-ax.plot(coh_uq*100,psycho_m[:,t_plot,2],color='blue')
-ax.fill_between(coh_uq*100,psycho_m[:,t_plot,2]-psycho_sem[:,t_plot,2],psycho_m[:,t_plot,2]+psycho_sem[:,t_plot,2],color='blue',alpha=0.6)
-ax.plot(coh_uq*100,0.5*np.ones(len(coh_uq)),color='black',linestyle='--')
-ax.axvline(0,color='black',linestyle='--')
-ax.set_ylim([0,1])
-ax.set_ylabel('Probability Right Response')
-ax.set_xlabel('Evidence Right Choice (%)')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_rnn_psychometric.pdf',dpi=500,bbox_inches='tight')
-
-# Probability Correct
 perfbias_m=np.mean(perf_bias,axis=0)
 perfbias_sem=sem(perf_bias,axis=0)
 
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
+for t_plot in range(t_steps):
+    # Figure psychometric
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    #print (psycho_m)
+    ax.plot(coh_uq*100,psycho_m[:,t_plot,0],color='black')
+    ax.fill_between(coh_uq*100,psycho_m[:,t_plot,0]-psycho_sem[:,t_plot,0],psycho_m[:,t_plot,0]+psycho_sem[:,t_plot,0],color='black',alpha=0.6)
+    ax.plot(coh_uq*100,psycho_m[:,t_plot,1],color='green')
+    ax.fill_between(coh_uq*100,psycho_m[:,t_plot,1]-psycho_sem[:,t_plot,1],psycho_m[:,t_plot,1]+psycho_sem[:,t_plot,1],color='green',alpha=0.6)
+    ax.plot(coh_uq*100,psycho_m[:,t_plot,2],color='blue')
+    ax.fill_between(coh_uq*100,psycho_m[:,t_plot,2]-psycho_sem[:,t_plot,2],psycho_m[:,t_plot,2]+psycho_sem[:,t_plot,2],color='blue',alpha=0.6)
+    ax.plot(coh_uq*100,0.5*np.ones(len(coh_uq)),color='black',linestyle='--')
+    ax.axvline(0,color='black',linestyle='--')
+    ax.set_ylim([0,1])
+    ax.set_ylabel('Probability Right Response')
+    ax.set_xlabel('Evidence Right Choice (%)')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i.png'%t_plot,dpi=500,bbox_inches='tight')
 
-t_plot=19
-ax.plot(coh_uq*100,perfbias_m[:,t_plot,0],color='black')
-ax.fill_between(coh_uq*100,perfbias_m[:,t_plot,0]-perfbias_sem[:,t_plot,0],perfbias_m[:,t_plot,0]+perfbias_sem[:,t_plot,0],color='black',alpha=0.6)
-ax.plot(coh_uq*100,perfbias_m[:,t_plot,1],color='green')
-ax.fill_between(coh_uq*100,perfbias_m[:,t_plot,1]-perfbias_sem[:,t_plot,1],perfbias_m[:,t_plot,1]+perfbias_sem[:,t_plot,1],color='green',alpha=0.6)
-ax.plot(coh_uq*100,perfbias_m[:,t_plot,2],color='blue')
-ax.fill_between(coh_uq*100,perfbias_m[:,t_plot,2]-perfbias_sem[:,t_plot,2],perfbias_m[:,t_plot,2]+perfbias_sem[:,t_plot,2],color='blue',alpha=0.6)
-ax.plot(coh_uq*100,0.5*np.ones(len(coh_uq)),color='black',linestyle='--')
-ax.axvline(0,color='black',linestyle='--')
-ax.set_ylim([0,1])
-ax.set_ylabel('Probability Correct')
-ax.set_xlabel('Evidence Right Choice (%)')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_rnn_perf_bias.pdf',dpi=500,bbox_inches='tight')        
+    # Probability Correct
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.plot(coh_uq*100,perfbias_m[:,t_plot,0],color='black')
+    ax.fill_between(coh_uq*100,perfbias_m[:,t_plot,0]-perfbias_sem[:,t_plot,0],perfbias_m[:,t_plot,0]+perfbias_sem[:,t_plot,0],color='black',alpha=0.6)
+    ax.plot(coh_uq*100,perfbias_m[:,t_plot,1],color='green')
+    ax.fill_between(coh_uq*100,perfbias_m[:,t_plot,1]-perfbias_sem[:,t_plot,1],perfbias_m[:,t_plot,1]+perfbias_sem[:,t_plot,1],color='green',alpha=0.6)
+    ax.plot(coh_uq*100,perfbias_m[:,t_plot,2],color='blue')
+    ax.fill_between(coh_uq*100,perfbias_m[:,t_plot,2]-perfbias_sem[:,t_plot,2],perfbias_m[:,t_plot,2]+perfbias_sem[:,t_plot,2],color='blue',alpha=0.6)
+    ax.plot(coh_uq*100,0.5*np.ones(len(coh_uq)),color='black',linestyle='--')
+    ax.axvline(0,color='black',linestyle='--')
+    ax.set_ylim([0,1])
+    ax.set_ylabel('Probability Correct')
+    ax.set_xlabel('Evidence Right Choice (%)')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i.png'%t_plot,dpi=500,bbox_inches='tight')        
