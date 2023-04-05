@@ -94,8 +94,8 @@ n_trials_test=200
 t_steps=20
 xx=np.arange(t_steps)/10
 
-batch_size=1100
-n_hidden=10
+batch_size=200
+n_hidden=50
 sigma_train=1
 sigma_test=1
 input_noise=1
@@ -104,14 +104,15 @@ scale_ctx=1
 disp_vec=np.array([0,1,2,3,4,5])
 
 reg=1e-5
-lr=0.01 
+lr=0.001
+n_epochs=200
 n_files=10
 
 coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
-wei_ctx=[1,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
+wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
 
 perf_task=nan*np.zeros((n_files,2,len(coh_uq),t_steps))
 perf_task_abs=nan*np.zeros((n_files,2,len(coh_uq_abs),t_steps))
@@ -130,7 +131,7 @@ for hh in range(n_files):
 
     # Train RNN
     rec=nn_pytorch.nn_recurrent(reg=reg,lr=lr,output_size=2,hidden_dim=n_hidden)
-    rec.fit(input_seq=all_train['input_rec'],target_seq=all_train['target_vec'],batch_size=batch_size,sigma_noise=sigma_train,wei_ctx=wei_ctx)
+    rec.fit(input_seq=all_train['input_rec'],target_seq=all_train['target_vec'],batch_size=batch_size,n_epochs=n_epochs,sigma_noise=sigma_train,wei_ctx=wei_ctx)
 
     # Indices trials
     index0=np.where(all_test['target_vec']==0)[0]
@@ -153,7 +154,7 @@ for hh in range(n_files):
     # Info Choice and Context
     for j in range(t_steps):
         perf_dec_ctx[hh,j]=class_twovars(ut_test[:,j],stimulus,context)
-    print (perf_dec_ctx[hh])    
+    #print (perf_dec_ctx[hh])    
     
     # Plot performance
     dec_train=np.argmax(zt_train,axis=2)
@@ -220,7 +221,7 @@ for t_plot in range(t_steps):
     ax.set_ylim([0,1])
     ax.set_ylabel('Probability Right Response')
     ax.set_xlabel('Evidence Right Choice (%)')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i.png'%t_plot,dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
     # Probability Correct
     fig=plt.figure(figsize=(2.3,2))
@@ -237,4 +238,4 @@ for t_plot in range(t_steps):
     ax.set_ylim([0,1])
     ax.set_ylabel('Probability Correct')
     ax.set_xlabel('Evidence Right Choice (%)')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i.png'%t_plot,dpi=500,bbox_inches='tight')        
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')        

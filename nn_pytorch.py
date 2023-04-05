@@ -23,7 +23,7 @@ class nn_recurrent():
         self.model=recurrent_noisy(output_size,hidden_dim)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.regularization)
 
-    def fit(self,input_seq,target_seq,batch_size,sigma_noise,wei_ctx): 
+    def fit(self,input_seq,target_seq,batch_size,n_epochs,sigma_noise,wei_ctx): 
         thres_fit=1e-3
         self.model.train()
         input_seq_np=np.array(input_seq,dtype=np.float32)
@@ -40,16 +40,15 @@ class nn_recurrent():
         index01=((target_seq_torch==1)&(context_torch==ctx_uq[0]))
         index00=((target_seq_torch==1)&(context_torch==ctx_uq[1]))
 
-        t_total=100
-        for t in range(t_total):
+        for t in range(n_epochs):
             output, hidden, net_units, read_out_units = self.model(input_seq_torch,sigma_noise)
             l0c0=torch.mean(self.loss(output[index11][:,[0,1]],target_seq_torch[index11].view(-1).long()))
             l0c1=torch.mean(self.loss(output[index10][:,[0,1]],target_seq_torch[index10].view(-1).long()))
             l1c0=torch.mean(self.loss(output[index01][:,[0,1]],target_seq_torch[index01].view(-1).long()))
             l1c1=torch.mean(self.loss(output[index00][:,[0,1]],target_seq_torch[index00].view(-1).long()))
             l_total=(l0c0+l1c0+l0c1+l1c1)
-            #if t==0 or t==(t_total-1):
-            #print (t,l_total.detach().numpy())
+            if t==0 or t==(n_epochs-1):
+                print (t,l_total.detach().numpy())
             #if (l0c0+l1c0+l0c1+l1c1)<thres_fit:
             #    break
             for batch_idx, (data, contxt, targets) in enumerate(train_loader):
@@ -101,7 +100,8 @@ class recurrent_noisy(torch.nn.Module): # We always send the input with size bat
             #hidden = torch.zeros(input.size(0),self.hidden_dim).to(input.device)
         
         def recurrence(input, hidden):
-            h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            #h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
             return h_new        
         # def recurrence_lin(input, hidden):
         #     h_new = (self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
