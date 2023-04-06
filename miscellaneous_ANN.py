@@ -38,6 +38,9 @@ def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx):
     input_vec=input_vec_pre[index_def]
     target_vec=target_vec_pre[index_def]
     coherence=coherence_pre[index_def]
+
+    # The motion direction at t=0 is always 0 to simulate the latency
+    input_vec[:,0,0]=0
     
     # Return input and target in torch format
     dic['input_rec']=Variable(torch.from_numpy(np.array(input_vec,dtype=np.float32)),requires_grad=False)

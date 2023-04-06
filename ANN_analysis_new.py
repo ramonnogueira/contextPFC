@@ -87,6 +87,16 @@ def class_twovars(data,var1,var2):
             perf[i,g,1]=cl.score(data_r[test],clas_r[test][:,1])
     return np.mean(perf,axis=(0,1))
 
+def rt_func(diff_zt,ind,zt_ref):
+    ztcoh=np.mean(diff_zt[ind],axis=0)
+    rt_pre=np.where(abs(ztcoh)>zt_ref)[0]
+    if len(rt_pre)==0:
+        rt=20
+    else:
+        rt=rt_pre[0]+1
+    return rt
+
+
 #######################################################
 # Parameters       
 n_trials_train=200
@@ -106,19 +116,24 @@ disp_vec=np.array([0,1,2,3,4,5])
 reg=1e-5
 lr=0.001
 n_epochs=200
-n_files=1
+n_files=10
+
+zt_ref=1.2 #Cut-off on decision variable for reaction time (threshold or the decision bound). Something between 1 and 2
+
+save_fig=True
 
 coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
-wei_ctx=[1,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
+wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
 
 perf_task=nan*np.zeros((n_files,2,len(coh_uq),t_steps))
 perf_task_abs=nan*np.zeros((n_files,2,len(coh_uq_abs),t_steps))
 psycho=nan*np.zeros((n_files,len(coh_uq),t_steps,3))
 perf_bias=nan*np.zeros((n_files,len(coh_uq),t_steps,3))
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,2))
+rt=nan*np.zeros((n_files,len(coh_uq),3))
 for hh in range(n_files):
     print (hh)
     # Def variables
@@ -147,13 +162,14 @@ for hh in range(n_files):
     dec_test=np.argmax(zt_test,axis=2)
     # Reaction time
     diff_zt=(zt_test[:,:,0]-zt_test[:,:,1])
-    zt_ref=1
-    rt=nan*np.zeros(len(coh_uq))
     for uu in range(len(coh_uq)):
-        ind_ref=np.where(coherence==coh_uq[uu])[0]
-        zt_coh=(diff_zt[ind_ref])
-        print (coh_uq[uu],zt_ref)
-    
+        ind=np.where(coherence==coh_uq[uu])[0]
+        ind0=np.where((coherence==coh_uq[uu])&(context==ctx_uq[0]))[0]
+        ind1=np.where((coherence==coh_uq[uu])&(context==ctx_uq[1]))[0]
+        rt[hh,uu,0]=rt_func(diff_zt,ind,zt_ref)
+        rt[hh,uu,1]=rt_func(diff_zt,ind0,zt_ref)
+        rt[hh,uu,2]=rt_func(diff_zt,ind1,zt_ref)
+        
     # Classifier weights
     w1=rec.model.fc.weight.detach().numpy()[0]
     w2=rec.model.fc.weight.detach().numpy()[1]
@@ -220,7 +236,8 @@ ax.plot(np.arange(t_steps),0.5*np.ones(t_steps),color='black',linestyle='--')
 ax.set_ylim([0.4,1])
 ax.set_ylabel('Probability Correct')
 ax.set_xlabel('Time')
-#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh.pdf',dpi=500,bbox_inches='tight')
+if save_fig:
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh.pdf',dpi=500,bbox_inches='tight')
 
 ########################################################
 print (np.mean(perf_dec_ctx,axis=0))
@@ -229,6 +246,25 @@ psycho_m=np.mean(psycho,axis=0)
 psycho_sem=sem(psycho,axis=0)
 perfbias_m=np.mean(perf_bias,axis=0)
 perfbias_sem=sem(perf_bias,axis=0)
+rt_m=np.mean(rt,axis=0)
+rt_sem=sem(rt,axis=0)
+
+# Plot Reaction Time
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(coh_uq,rt_m[:,0],color='black',label='All trials')
+ax.fill_between(coh_uq,rt_m[:,0]-rt_sem[:,0],rt_m[:,0]+rt_sem[:,0],color='black',alpha=0.5)
+ax.plot(coh_uq,rt_m[:,1],color='green',label='Context Left')
+ax.fill_between(coh_uq,rt_m[:,1]-rt_sem[:,1],rt_m[:,1]+rt_sem[:,1],color='green',alpha=0.5)
+ax.plot(coh_uq,rt_m[:,2],color='blue',label='Context Right')
+ax.fill_between(coh_uq,rt_m[:,2]-rt_sem[:,2],rt_m[:,2]+rt_sem[:,2],color='blue',alpha=0.5)
+ax.set_ylabel('Reaction time (steps)')
+ax.set_xlabel('Evidence Right Choice (%)')
+ax.set_ylim([1,20])
+if save_fig:
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time.pdf',dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time.png',dpi=500,bbox_inches='tight')
 
 for t_plot in range(t_steps):
     # Figure psychometric
@@ -247,7 +283,8 @@ for t_plot in range(t_steps):
     ax.set_ylim([0,1])
     ax.set_ylabel('Probability Right Response')
     ax.set_xlabel('Evidence Right Choice (%)')
-    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    if save_fig:
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
     # Probability Correct
     fig=plt.figure(figsize=(2.3,2))
@@ -264,4 +301,5 @@ for t_plot in range(t_steps):
     ax.set_ylim([0,1])
     ax.set_ylabel('Probability Correct')
     ax.set_xlabel('Evidence Right Choice (%)')
-    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')        
+    if save_fig:
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')        
