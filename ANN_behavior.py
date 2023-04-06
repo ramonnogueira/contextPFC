@@ -141,7 +141,7 @@ coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
-wei_ctx=[10,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
+wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
 
 perf_task=nan*np.zeros((n_files,2,len(coh_uq),t_steps))
 perf_task_abs=nan*np.zeros((n_files,2,len(coh_uq_abs),t_steps))
