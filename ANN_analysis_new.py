@@ -96,6 +96,21 @@ def rt_func(diff_zt,ind,zt_ref):
         rt=rt_pre[0]+1
     return rt
 
+def rt_dec_func(zt_test,diff_zt,dec_bound):
+    # Calculate reaction time
+    rt_vec=nan*np.zeros(len(diff_zt))
+    for tt in range(len(diff_zt)):
+        rt_pre=np.where(abs(diff_zt[tt])>dec_bound)[0]
+        if len(rt_pre)==0:
+            rt=20
+        else:
+            rt=rt_pre[0]+1
+        rt_vec[tt]=rt
+    # Calculate decision at t = reaction time
+    dec_vec=nan*np.zeros(len(diff_zt))
+    for tt in range(len(diff_zt)):
+        dec_vec[tt]=np.argmax(zt_test[tt,int(rt_vec[tt])-1])
+    return rt_vec,dec_vec
 
 #######################################################
 # Parameters       
@@ -111,14 +126,14 @@ sigma_test=1
 input_noise=1
 scale_ctx=1
 
-disp_vec=np.array([0,1,2,3,4,5])
-
 reg=1e-5
 lr=0.001
 n_epochs=200
 n_files=10
 
 zt_ref=1.2 #Cut-off on decision variable for reaction time (threshold or the decision bound). Something between 1 and 2
+#m_bound=0.5
+#dec_bound=np.array([t_steps*m_bound-i*m_bound for i in range(t_steps)])
 
 save_fig=True
 
@@ -126,7 +141,7 @@ coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
-wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
+wei_ctx=[10,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts. 
 
 perf_task=nan*np.zeros((n_files,2,len(coh_uq),t_steps))
 perf_task_abs=nan*np.zeros((n_files,2,len(coh_uq_abs),t_steps))
@@ -160,7 +175,7 @@ for hh in range(n_files):
     # Network Choice
     dec_train=np.argmax(zt_train,axis=2)
     dec_test=np.argmax(zt_test,axis=2)
-    # Reaction time
+    # Reaction time and network choice
     diff_zt=(zt_test[:,:,0]-zt_test[:,:,1])
     for uu in range(len(coh_uq)):
         ind=np.where(coherence==coh_uq[uu])[0]
@@ -237,7 +252,8 @@ ax.set_ylim([0.4,1])
 ax.set_ylabel('Probability Correct')
 ax.set_xlabel('Time')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh.pdf',dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 ########################################################
 print (np.mean(perf_dec_ctx,axis=0))
@@ -263,8 +279,8 @@ ax.set_ylabel('Reaction time (steps)')
 ax.set_xlabel('Evidence Right Choice (%)')
 ax.set_ylim([1,20])
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time.pdf',dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time.png',dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 for t_plot in range(t_steps):
     # Figure psychometric
