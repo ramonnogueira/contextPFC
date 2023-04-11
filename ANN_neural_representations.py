@@ -87,19 +87,21 @@ xx=np.arange(t_steps)/10
 batch_size=200
 n_hidden=50
 n_neu=5
+n_pca=50
 sigma_train=1
 sigma_test=2
 input_noise=1
 scale_ctx=1
 
-reg=1e-5
+reg=1e-2
 lr=0.001#0.001
 n_epochs=200
-n_files=2
+n_files=5
 
-save_fig=True
+save_fig=False
 
 coh_uq=np.linspace(-1,1,11)
+#coh_uq=np.linspace(-1,1,10)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
@@ -142,6 +144,7 @@ for hh in range(n_files):
     b1=rec.model.fc.bias.detach().numpy()[0]
     b2=rec.model.fc.bias.detach().numpy()[1]
     bias=(b1-b2)
+    print (weights)
 
     # Info Choice and Context
     for j in range(t_steps):
@@ -150,34 +153,38 @@ for hh in range(n_files):
 
     #############################
     # PCA Train. Stack PSTH for each coherence one after each other
-    mean_coh=nan*np.zeros((t_steps*2*len(coh_uq),n_hidden))
-    for j in range(n_hidden):
+    neu_rnd=np.sort(np.random.choice(np.arange(n_hidden),n_pca,replace=False))
+    
+    mean_coh=nan*np.zeros((t_steps*2*len(coh_uq),n_pca))
+    for j in range(n_pca):
         for jj in range(len(coh_uq)):
-            mean_coh[jj*t_steps:(jj+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,:,j],axis=0)
-            mean_coh[(jj+len(coh_uq))*t_steps:(jj+len(coh_uq)+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,:,j],axis=0)
+            mean_coh[jj*t_steps:(jj+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,:,neu_rnd[j]],axis=0)
+            mean_coh[(jj+len(coh_uq))*t_steps:(jj+len(coh_uq)+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,:,neu_rnd[j]],axis=0)
 
     embedding=PCA(n_components=3)
-    #fitPCA=embedding.fit(mean_coh)
-    #print (np.sum(fitPCA.explained_variance_ratio_))
     pseudo_mds=embedding.fit(mean_coh)
 
+    wei_trans=embedding.transform(np.array([weights[neu_rnd]]))[0]
+    xx, yy = np.meshgrid(np.arange(20)-10,np.arange(20)-10)
+    z = (-wei_trans[0]*xx-wei_trans[1]*yy-bias)/wei_trans[2]
+    
     # PCA Test
     col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue']
     alf_col=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
     for j in range(t_steps):
-        #print (' t ',j)
-        mean_coh=nan*np.zeros((len(coh_uq),n_hidden))
-        mean_coh_ctx=nan*np.zeros((2*len(coh_uq),n_hidden))
+        print (j)
+        mean_coh=nan*np.zeros((len(coh_uq),n_pca))
+        mean_coh_ctx=nan*np.zeros((2*len(coh_uq),n_pca))
         for jj in range(len(coh_uq)):
-            mean_coh[jj]=np.mean(ut_test[(coherence==coh_uq[jj])][:,j],axis=0)
-            mean_coh_ctx[jj]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,j],axis=0)
-            mean_coh_ctx[jj+len(coh_uq)]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,j],axis=0)
+            mean_coh[jj]=np.mean(ut_test[(coherence==coh_uq[jj])][:,j,neu_rnd],axis=0)
+            mean_coh_ctx[jj]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,j,neu_rnd],axis=0)
+            mean_coh_ctx[jj+len(coh_uq)]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,j,neu_rnd],axis=0)
 
         pseudo_mds=embedding.transform(mean_coh)
         pseudo_mds_ctx=embedding.transform(mean_coh_ctx)
         #pseudo_mds=mean_coh.copy()
         #pseudo_mds_ctx=mean_coh_ctx.copy()
-        wei_pca=embedding.transform(np.reshape(weights,(1,len(weights))))
+        #wei_pca=embedding.transform(np.reshape(weights,(1,len(weights))))
         #print (wei_pca,bias)
         
         # 3D
@@ -189,13 +196,15 @@ for hh in range(n_files):
         #    ax.scatter(pseudo_mds[jj,0],pseudo_mds[jj,1],pseudo_mds[jj,2],color='black',alpha=alf_col[jj])
         for jj in range(len(mean_coh_ctx)):
             ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col[jj],alpha=alph[jj])
+        ax.plot_surface(xx, yy, z, color='black',alpha=0.2)
         ax.set_xlabel('PC1')
         ax.set_ylabel('PC2')
         ax.set_zlabel('PC3')
         ax.set_xlim([-7,7])
-        ax.set_ylim([-3,3])
-        ax.set_zlim([-3,3])
+        ax.set_ylim([-4,4])
+        ax.set_zlim([-4,4])
         plt.show()
+        plt.close(fig)
 
     
 

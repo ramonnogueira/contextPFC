@@ -24,7 +24,10 @@ def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx):
         input_vec_pre[i*n_trials:(i+1)*n_trials,:,0]=np.random.normal(loc=coh_uq[i],scale=input_noise,size=(n_trials,t_steps))
         target_vec_pre[i*n_trials:(i+1)*n_trials]=np.sign(coh_uq[i])
         coherence_pre[i*n_trials:(i+1)*n_trials]=coh_uq[i]
-    target_vec_pre[target_vec_pre==0]=np.sign(np.random.normal(loc=0,scale=1,size=(n_trials)))
+    try:
+        target_vec_pre[target_vec_pre==0]=np.sign(np.random.normal(loc=0,scale=1,size=(n_trials)))
+    except:
+        print ('No 0 coherence')
     target_vec_pre[target_vec_pre==-1]=0
     # Add context
     context=scale_ctx*np.sign(np.random.normal(loc=0,scale=1,size=(len(coh_uq)*n_trials)))
