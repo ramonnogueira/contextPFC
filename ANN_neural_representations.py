@@ -40,11 +40,14 @@ def classifier(data,clase,reg):
         perf[g,1]=clf.score(data[test_index],clase[test_index])
     return np.mean(perf,axis=0)
 
-def class_twovars(data,var1,var2,n_neu):
+def class_twovars(data,feat_binary,bias_vec,n_neu):
     n_rand=10
     n_cv=5
     reg=1
-    perf=nan*np.zeros((n_rand,n_cv,2))
+    perf=nan*np.zeros((n_rand,n_cv,3))
+    perf_abs=nan*np.zeros((n_rand,len(bias_vec),2,2))
+    var1=feat_binary[:,0]
+    var2=feat_binary[:,1]
     uq1=np.unique(var1)
     uq2=np.unique(var2)
     for i in range(n_rand):
@@ -80,7 +83,21 @@ def class_twovars(data,var1,var2,n_neu):
             cl=LogisticRegression(C=1/reg)
             cl.fit(data_r[train][:,ind_neu],clas_r[train][:,1])
             perf[i,g,1]=cl.score(data_r[test][:,ind_neu],clas_r[test][:,1])
-    return np.mean(perf,axis=(0,1))
+        # Decode XOR
+        xor=np.sum(clas_r,axis=1)%2
+        skf=StratifiedKFold(n_splits=n_cv)
+        g=-1
+        for train, test in skf.split(data_r,xor):
+            g=(g+1)
+            cl=LogisticRegression(C=1/reg)
+            cl.fit(data_r[train][:,ind_neu],xor[train])
+            perf[i,g,2]=cl.score(data_r[test][:,ind_neu],xor[test])
+
+        # Abstraction
+        for f in range(len(bias_vec)):
+            perf_abs[i,f]=abstraction_2D(data_r,clas_r,bias_vec[f],1)[0]
+            
+    return np.mean(perf,axis=(0,1)),np.mean(perf_abs,axis=0)
 
 def rt_func(diff_zt,ind,zt_ref):
     ztcoh=np.mean(diff_zt[ind],axis=0)
@@ -90,6 +107,45 @@ def rt_func(diff_zt,ind,zt_ref):
     else:
         rt=rt_pre[0]+1
     return rt
+
+def abstraction_2D(feat_decod,feat_binary,bias,reg):
+    exp_uq=np.unique(feat_binary,axis=0)
+    feat_binary_exp=np.zeros(len(feat_binary))
+    for t in range(len(feat_binary)):
+        for tt in range((len(exp_uq))):
+            gg=(np.sum(feat_binary[t]==exp_uq[tt])==len(feat_binary[0]))
+            if gg:
+                feat_binary_exp[t]=tt
+    #
+    #dichotomies=np.array([[0,0,1,1],[0,1,0,1],[0,1,1,0]])
+    #train_dich=np.array([[[0,2],[1,3],[0,3],[1,2]],[[0,1],[2,3],[0,3],[1,2]],[[0,1],[2,3],[0,2],[1,3]]])
+    #test_dich=np.array([[[1,3],[0,2],[1,2],[0,3]],[[2,3],[0,1],[1,2],[0,3]],[[2,3],[0,1],[1,3],[0,2]]])
+    dichotomies=np.array([[0,0,1,1],[0,1,0,1]])
+    train_dich=np.array([[[0,2],[1,3]],[[0,1],[2,3]]])
+    test_dich=np.array([[[1,3],[0,2]],[[2,3],[0,1]]])
+    
+    perf=nan*np.zeros((len(dichotomies),len(train_dich[0])))
+    inter=nan*np.zeros((len(dichotomies),len(train_dich[0])))
+    for k in range(len(dichotomies)): #Loop on "dichotomies"
+      for kk in range(len(train_dich[0])): #Loop on ways to train this particular "dichotomy"
+         ind_train=np.where((feat_binary_exp==train_dich[k][kk][0])|(feat_binary_exp==train_dich[k][kk][1]))[0]
+         ind_test=np.where((feat_binary_exp==test_dich[k][kk][0])|(feat_binary_exp==test_dich[k][kk][1]))[0]
+
+         task=nan*np.zeros(len(feat_binary_exp))
+         for i in range(4):
+             ind_task=(feat_binary_exp==i)
+             task[ind_task]=dichotomies[k][i]
+
+         supp=LogisticRegression(C=1/reg,class_weight='balanced')
+         #supp=LinearSVC(C=1/reg,class_weight='balanced')
+         mod=supp.fit(feat_decod[ind_train],task[ind_train])
+         inter[k,kk]=mod.intercept_[0]
+         pred=(np.dot(feat_decod[ind_test],supp.coef_[0])+supp.intercept_+bias)>0
+         perf[k,kk]=np.mean(pred==task[ind_test])
+         #perf[k,kk,0]=supp.score(feat_decod[ind_train],task[ind_train])
+         #perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
+    return perf,inter
+
 
 #######################################################
 # Parameters       
@@ -110,7 +166,7 @@ scale_ctx=1
 reg=1e-2
 lr=0.001#0.001
 n_epochs=200
-n_files=1
+n_files=5
 
 save_fig=False
 
@@ -122,7 +178,9 @@ ctx_uq=np.array([-1,1])
 print (coh_uq_abs)
 wei_ctx=[1,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
-perf_dec_ctx=nan*np.zeros((n_files,t_steps,2))
+bias_vec=np.linspace(-10,10,31) #Niels
+perf_dec_ctx=nan*np.zeros((n_files,t_steps,3))
+perf_abs=nan*np.zeros((n_files,t_steps,len(bias_vec),2,2))
 for hh in range(n_files):
     print (hh)
     # Def variables
@@ -159,14 +217,28 @@ for hh in range(n_files):
     b1=rec.model.fc.bias.detach().numpy()[0]
     b2=rec.model.fc.bias.detach().numpy()[1]
     bias=(b1-b2)
-    print (weights)
+
+    feat_binary=nan*np.zeros((np.sum(correct),2))
+    feat_binary[:,0]=stimulus[correct]
+    feat_binary[:,1]=context[correct]
+    feat_binary[feat_binary==-1]=0
 
     # Info Choice and Context
-    for j in range(t_steps):
-        # Only correct trials!
-        perf_dec_ctx[hh,j]=class_twovars(ut_test[:,j][correct],stimulus[correct],context[correct],n_neu)
+    #for j in range(t_steps):
+    #    print (j)
+    #    # Only correct trials!
+    aa=class_twovars(ut_test[:,-1][correct],feat_binary,bias_vec,n_neu)
+    perf_dec_ctx[hh,-1]=aa[0]
+    perf_abs[hh,-1]=aa[1]
 
-            
+perf_abs_m=np.mean(perf_abs,axis=0)
+
+plt.plot(bias_vec,perf_abs_m[-1,:,0,0],color='blue')
+plt.plot(bias_vec,perf_abs_m[-1,:,0,1],color='royalblue')
+plt.plot(bias_vec,perf_abs_m[-1,:,1,1],color='brown')
+plt.plot(bias_vec,perf_abs_m[-1,:,1,1],color='orange')
+plt.sohw()
+
     # #############################
     # # PCA Train. Stack PSTH for each coherence one after each other
     # neu_rnd=np.sort(np.random.choice(np.arange(n_hidden),n_pca,replace=False))
