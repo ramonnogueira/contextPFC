@@ -68,7 +68,7 @@ def class_twovars(data,feat_binary,bias_vec,n_neu):
             data_r[ii*(mint):(ii+1)*mint]=data[ind_r]
             clas_r[ii*(mint):(ii+1)*mint]=class_all[ii]
         # Decode Var1
-        skf=StratifiedKFold(n_splits=n_cv)
+        skf=StratifiedKFold(n_splits=n_cv,shuffle=True)
         g=-1
         for train, test in skf.split(data_r,clas_r[:,0]):
             g=(g+1)
@@ -76,7 +76,7 @@ def class_twovars(data,feat_binary,bias_vec,n_neu):
             cl.fit(data_r[train][:,ind_neu],clas_r[train][:,0])
             perf[i,g,0]=cl.score(data_r[test][:,ind_neu],clas_r[test][:,0])
         # Decode Var2
-        skf=StratifiedKFold(n_splits=n_cv)
+        skf=StratifiedKFold(n_splits=n_cv,shuffle=True)
         g=-1
         for train, test in skf.split(data_r,clas_r[:,1]):
             g=(g+1)
@@ -85,7 +85,7 @@ def class_twovars(data,feat_binary,bias_vec,n_neu):
             perf[i,g,1]=cl.score(data_r[test][:,ind_neu],clas_r[test][:,1])
         # Decode XOR
         xor=np.sum(clas_r,axis=1)%2
-        skf=StratifiedKFold(n_splits=n_cv)
+        skf=StratifiedKFold(n_splits=n_cv,shuffle=True)
         g=-1
         for train, test in skf.split(data_r,xor):
             g=(g+1)
@@ -154,29 +154,37 @@ n_trials_test=200
 t_steps=20
 xx=np.arange(t_steps)/10
 
-batch_size=1000
-n_hidden=10
+batch_size=200
+n_hidden=30
 n_neu=10
 n_pca=10
 sigma_train=1
 sigma_test=1
-input_noise=1.5
+input_noise=2#1.5
 scale_ctx=1
 
-reg=1e-10
+reg=1e-10#1e-5
 lr=0.001#0.001
 n_epochs=200
-n_files=3
-t_abs=5
+n_files=2
 
-save_fig=False
+save_fig=True
 
+#coh_uq=np.linspace(-1,1,7)
 coh_uq=np.linspace(-1,1,11)
+#coh_uq=np.linspace(-0.5,0.5,11)
 #coh_uq=np.linspace(-1,1,10)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 ctx_uq=np.array([-1,1])
 print (coh_uq_abs)
+col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue']
+#alf_col=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
+alph=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8,0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
+#col=['darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','black','darkblue','darkblue','darkblue']
+#alph=[1,0.5,0.2,1,0.2,0.5,1,1,0.5,0.2,1,0.2,0.5,1]
+
+
 wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
 bias_vec=np.linspace(-5,5,31) 
@@ -229,103 +237,107 @@ for hh in range(n_files):
     #    print (j)
     #    # Only correct trials!
 
-    #############################
-    # PCA Train. Stack PSTH for each coherence one after each other
-    neu_rnd=np.sort(np.random.choice(np.arange(n_hidden),n_pca,replace=False))
+    # #############################
+    # # PCA Train. Stack PSTH for each coherence one after each other
+    # neu_rnd=np.sort(np.random.choice(np.arange(n_hidden),n_pca,replace=False))
     
-    mean_coh=nan*np.zeros((t_steps*2*len(coh_uq),n_pca))
-    for j in range(n_pca):
-        for jj in range(len(coh_uq)):
-            mean_coh[jj*t_steps:(jj+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,:,neu_rnd[j]],axis=0)
-            mean_coh[(jj+len(coh_uq))*t_steps:(jj+len(coh_uq)+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,:,neu_rnd[j]],axis=0)
+    # mean_coh=nan*np.zeros((t_steps*2*len(coh_uq),n_pca))
+    # for j in range(n_pca):
+    #     for jj in range(len(coh_uq)):
+    #         mean_coh[jj*t_steps:(jj+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,:,neu_rnd[j]],axis=0)
+    #         mean_coh[(jj+len(coh_uq))*t_steps:(jj+len(coh_uq)+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,:,neu_rnd[j]],axis=0)
 
-    embedding=PCA(n_components=3)
-    pseudo_mds=embedding.fit(mean_coh)
+    # embedding=PCA(n_components=3)
+    # pseudo_mds=embedding.fit(mean_coh)
 
-    wei_trans=embedding.transform(np.array([weights[neu_rnd]]))[0]
-    xx, yy = np.meshgrid(np.arange(20)-10,np.arange(20)-10)
-    z = (-wei_trans[0]*xx-wei_trans[1]*yy-bias)/wei_trans[2]
+    # wei_trans=embedding.transform(np.array([weights[neu_rnd]]))[0]
+    # xx, yy = np.meshgrid(np.arange(20)-10,np.arange(20)-10)
+    # z = (-wei_trans[0]*xx-wei_trans[1]*yy-bias)/wei_trans[2]
     
     # PCA Test
-    col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue']
-    alf_col=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
     for j in range(t_steps):
+        print (j)
         
         aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_neu)
         perf_dec_ctx[hh,j]=aa[0]
         perf_abs[hh,j]=aa[1]
+                
+        # mean_coh=nan*np.zeros((len(coh_uq),n_pca))
+        # mean_coh_ctx=nan*np.zeros((2*len(coh_uq),n_pca))
+        # for jj in range(len(coh_uq)):
+        #     mean_coh[jj]=np.mean(ut_test[(coherence==coh_uq[jj])][:,j,neu_rnd],axis=0)
+        #     mean_coh_ctx[jj]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,j,neu_rnd],axis=0)
+        #     mean_coh_ctx[jj+len(coh_uq)]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,j,neu_rnd],axis=0)
+
+        # pseudo_mds=embedding.transform(mean_coh)
+        # pseudo_mds_ctx=embedding.transform(mean_coh_ctx)
+        # #pseudo_mds=mean_coh.copy()
+        # #pseudo_mds_ctx=mean_coh_ctx.copy()
+        # #wei_pca=embedding.transform(np.reshape(weights,(1,len(weights))))
+        # #print (wei_pca,bias)
         
-        print (perf_dec_ctx[hh,j])
-        plt.plot(bias_vec,perf_abs[hh,j,:,0,0],color='blue')
-        plt.plot(bias_vec,perf_abs[hh,j,:,0,1],color='royalblue')
-        plt.plot(bias_vec,perf_abs[hh,j,:,1,0],color='brown')
-        plt.plot(bias_vec,perf_abs[hh,j,:,1,1],color='orange')
-        plt.show()
-        plt.close()
-        
-        print (j)
-        mean_coh=nan*np.zeros((len(coh_uq),n_pca))
-        mean_coh_ctx=nan*np.zeros((2*len(coh_uq),n_pca))
-        for jj in range(len(coh_uq)):
-            mean_coh[jj]=np.mean(ut_test[(coherence==coh_uq[jj])][:,j,neu_rnd],axis=0)
-            mean_coh_ctx[jj]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,j,neu_rnd],axis=0)
-            mean_coh_ctx[jj+len(coh_uq)]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,j,neu_rnd],axis=0)
+        # # 3D
+        # #if j==19:
+        # fig = plt.figure()#figsize=(2,2)
+        # ax = fig.add_subplot(111, projection='3d')
+        # #for jj in range(len(mean_coh)):
+        # #    ax.scatter(pseudo_mds[jj,0],pseudo_mds[jj,1],pseudo_mds[jj,2],color='black',alpha=alf_col[jj])
+        # for jj in range(len(mean_coh_ctx)):
+        #     ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col[jj],alpha=alph[jj])
+        # ax.plot_surface(xx, yy, z, color='black',alpha=0.2)
+        # ax.set_xlabel('PC1')
+        # ax.set_ylabel('PC2')
+        # ax.set_zlabel('PC3')
+        # ax.set_xlim([-4,4])
+        # ax.set_ylim([-4,4])
+        # ax.set_zlim([-4,4])
+        # plt.show()
+        # plt.close(fig)
 
-        pseudo_mds=embedding.transform(mean_coh)
-        pseudo_mds_ctx=embedding.transform(mean_coh_ctx)
-        #pseudo_mds=mean_coh.copy()
-        #pseudo_mds_ctx=mean_coh_ctx.copy()
-        #wei_pca=embedding.transform(np.reshape(weights,(1,len(weights))))
-        #print (wei_pca,bias)
-        
-        # 3D
-        #if j==19:
-        alph=[1,0.8,0.6,0.4,0.2,1,0.2,0.4,0.6,0.8,1,1,0.8,0.6,0.4,0.2,1,0.2,0.4,0.6,0.8,1.0]
-        fig = plt.figure()#figsize=(2,2)
-        ax = fig.add_subplot(111, projection='3d')
-        #for jj in range(len(mean_coh)):
-        #    ax.scatter(pseudo_mds[jj,0],pseudo_mds[jj,1],pseudo_mds[jj,2],color='black',alpha=alf_col[jj])
-        for jj in range(len(mean_coh_ctx)):
-            ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col[jj],alpha=alph[jj])
-        ax.plot_surface(xx, yy, z, color='black',alpha=0.2)
-        ax.set_xlabel('PC1')
-        ax.set_ylabel('PC2')
-        ax.set_zlabel('PC3')
-        ax.set_xlim([-4,4])
-        ax.set_ylim([-4,4])
-        ax.set_zlim([-4,4])
-        plt.show()
-        plt.close(fig)
-
-
-#perf_dec_m=np.mean(perf_dec_ctx,axis=0)
-#perf_abs_m=np.mean(perf_abs,axis=0)
-
-print (perf_dec_m)
 
 
 ######################################################
 
-print (np.mean(perf_dec_ctx,axis=0))
-
 # Plot decoding performance for stimulus (only correct!) and context
-perf_dec_ctx_m=np.mean(perf_dec_ctx,axis=0)
-perf_dec_ctx_sem=sem(perf_dec_ctx,axis=0)
+perf_dec_m=np.mean(perf_dec_ctx,axis=0)
+perf_dec_sem=sem(perf_dec_ctx,axis=0)
+perf_abs_m=np.mean(perf_abs,axis=0)
 
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.plot(np.arange(t_steps),perf_dec_ctx_m[:,0],color='blue')
-ax.fill_between(np.arange(t_steps),perf_dec_ctx_m[:,0]-perf_dec_ctx_sem[:,0],perf_dec_ctx_m[:,0]+perf_dec_ctx_sem[:,0],color='blue',alpha=0.5)
-ax.plot(np.arange(t_steps),perf_dec_ctx_m[:,1],color='brown')
-ax.fill_between(np.arange(t_steps),perf_dec_ctx_m[:,1]-perf_dec_ctx_sem[:,1],perf_dec_ctx_m[:,1]+perf_dec_ctx_sem[:,1],color='brown',alpha=0.5)
+ax.plot(np.arange(t_steps),perf_dec_m[:,0],color='blue')
+ax.fill_between(np.arange(t_steps),perf_dec_m[:,0]-perf_dec_sem[:,0],perf_dec_m[:,0]+perf_dec_sem[:,0],color='blue',alpha=0.5)
+ax.plot(np.arange(t_steps),perf_dec_m[:,1],color='brown')
+ax.fill_between(np.arange(t_steps),perf_dec_m[:,1]-perf_dec_sem[:,1],perf_dec_m[:,1]+perf_dec_sem[:,1],color='brown',alpha=0.5)
+ax.plot(np.arange(t_steps),perf_dec_m[:,2],color='black')
+ax.fill_between(np.arange(t_steps),perf_dec_m[:,2]-perf_dec_sem[:,2],perf_dec_m[:,2]+perf_dec_sem[:,2],color='black',alpha=0.5)
 ax.plot(np.arange(t_steps),0.5*np.ones(t_steps),color='black',linestyle='--')
 ax.set_ylim([0.4,1])
 ax.set_ylabel('Decoding Performance')
 ax.set_xlabel('Time')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_new.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_new.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+
+# Shifted-CCGP
+perf_abs_m=np.mean(perf_abs,axis=0)
+# plt.plot(bias_vec,perf_abs[hh,j,:,0,0],color='blue')
+# plt.plot(bias_vec,perf_abs[hh,j,:,0,1],color='royalblue')
+# plt.plot(bias_vec,perf_abs[hh,j,:,1,0],color='brown')
+# plt.plot(bias_vec,perf_abs[hh,j,:,1,1],color='orange')
+# plt.ylim([0.4,1])
+# plt.show()
+# plt.close()
+
+for j in range(t_steps):
+    plt.plot(bias_vec,perf_abs_m[j,:,0,0],color='blue')
+    plt.plot(bias_vec,perf_abs_m[j,:,0,1],color='royalblue')
+    plt.plot(bias_vec,perf_abs_m[j,:,1,0],color='brown')
+    plt.plot(bias_vec,perf_abs_m[j,:,1,1],color='orange')
+    plt.ylim([0.4,1])
+    plt.show()
+    plt.close()
 
 # MDS
 #pair_mat=nan*np.zeros((n_files,2*len(coh_uq),2*len(coh_uq),2))
