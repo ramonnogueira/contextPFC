@@ -119,14 +119,14 @@ n_trials_test=200
 t_steps=20
 xx=np.arange(t_steps)/10
 
-batch_size=200
-n_hidden=50
+batch_size=1000
+n_hidden=10
 sigma_train=1
 sigma_test=1
-input_noise=1
+input_noise=2
 scale_ctx=1
 
-reg=1e-5
+reg=1e-10
 lr=0.001
 n_epochs=200
 n_files=10
@@ -252,8 +252,8 @@ ax.set_ylim([0.4,1])
 ax.set_ylabel('Probability Correct')
 ax.set_xlabel('Time')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i_new.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i_new.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 ########################################################
 print (np.mean(perf_dec_ctx,axis=0))
@@ -279,8 +279,8 @@ ax.set_ylabel('Reaction time (steps)')
 ax.set_xlabel('Evidence Right Choice (%)')
 ax.set_ylim([1,20])
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i_new.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i_new.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 for t_plot in range(t_steps):
     # Figure psychometric
@@ -300,7 +300,7 @@ for t_plot in range(t_steps):
     ax.set_ylabel('Probability Right Response')
     ax.set_xlabel('Evidence Right Choice (%)')
     if save_fig:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i_new.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
     # Probability Correct
     fig=plt.figure(figsize=(2.3,2))
@@ -318,4 +318,4 @@ for t_plot in range(t_steps):
     ax.set_ylabel('Probability Correct')
     ax.set_xlabel('Evidence Right Choice (%)')
     if save_fig:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i_rr%i%i.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')        
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_perf_bias_t%i_rr%i%i_new.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')        
