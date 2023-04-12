@@ -167,6 +167,7 @@ reg=1e-10
 lr=0.001#0.001
 n_epochs=200
 n_files=3
+t_abs=5
 
 save_fig=False
 
@@ -176,9 +177,9 @@ coh_uq=np.linspace(-1,1,11)
 coh_uq_abs=coh_uq[coh_uq>=0]
 ctx_uq=np.array([-1,1])
 print (coh_uq_abs)
-wei_ctx=[3,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
-bias_vec=np.linspace(-7,7,31) 
+bias_vec=np.linspace(-5,5,31) 
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,3))
 perf_abs=nan*np.zeros((n_files,t_steps,len(bias_vec),2,2))
 for hh in range(n_files):
@@ -227,9 +228,6 @@ for hh in range(n_files):
     #for j in range(t_steps):
     #    print (j)
     #    # Only correct trials!
-    aa=class_twovars(ut_test[:,-1][correct],feat_binary[correct],bias_vec,n_neu)
-    perf_dec_ctx[hh,-1]=aa[0]
-    perf_abs[hh,-1]=aa[1]
 
     #############################
     # PCA Train. Stack PSTH for each coherence one after each other
@@ -252,6 +250,19 @@ for hh in range(n_files):
     col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue']
     alf_col=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
     for j in range(t_steps):
+        
+        aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_neu)
+        perf_dec_ctx[hh,j]=aa[0]
+        perf_abs[hh,j]=aa[1]
+        
+        print (perf_dec_ctx[hh,j])
+        plt.plot(bias_vec,perf_abs[hh,j,:,0,0],color='blue')
+        plt.plot(bias_vec,perf_abs[hh,j,:,0,1],color='royalblue')
+        plt.plot(bias_vec,perf_abs[hh,j,:,1,0],color='brown')
+        plt.plot(bias_vec,perf_abs[hh,j,:,1,1],color='orange')
+        plt.show()
+        plt.close()
+        
         print (j)
         mean_coh=nan*np.zeros((len(coh_uq),n_pca))
         mean_coh_ctx=nan*np.zeros((2*len(coh_uq),n_pca))
@@ -286,12 +297,6 @@ for hh in range(n_files):
         plt.show()
         plt.close(fig)
 
-    print (perf_dec_ctx[hh,-1])
-    plt.plot(bias_vec,perf_abs[hh,-1,:,0,0],color='blue')
-    plt.plot(bias_vec,perf_abs[hh,-1,:,0,1],color='royalblue')
-    plt.plot(bias_vec,perf_abs[hh,-1,:,1,0],color='brown')
-    plt.plot(bias_vec,perf_abs[hh,-1,:,1,1],color='orange')
-    plt.show()
 
 #perf_dec_m=np.mean(perf_dec_ctx,axis=0)
 #perf_abs_m=np.mean(perf_abs,axis=0)

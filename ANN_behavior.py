@@ -123,7 +123,7 @@ batch_size=1000
 n_hidden=10
 sigma_train=1
 sigma_test=1
-input_noise=2
+input_noise=1.5
 scale_ctx=1
 
 reg=1e-10
