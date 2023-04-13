@@ -100,8 +100,8 @@ class recurrent_noisy(torch.nn.Module): # We always send the input with size bat
             #hidden = torch.zeros(input.size(0),self.hidden_dim).to(input.device)
         
         def recurrence(input, hidden):
-            #h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-            h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            #h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
             return h_new        
         # def recurrence_lin(input, hidden):
         #     h_new = (self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
