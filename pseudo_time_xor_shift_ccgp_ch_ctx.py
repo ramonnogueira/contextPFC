@@ -284,10 +284,10 @@ for k in range(len(monkeys)):
     print (perf_all_m)
     
     # Plot performance Tasks and XOR vs time
-    fig=plt.figure(figsize=(2.3,2))
+    fig=plt.figure(figsize=(3,2.5))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(xx,perf_all_m[:,0,0],color='blue',label='Choice')
+    ax.plot(xx,perf_all_m[:,0,0],color='blue',label='Direction')
     ax.fill_between(xx,perf_all_m[:,0,0]-perf_all_std[:,0,0],perf_all_m[:,0,0]+perf_all_std[:,0,0],color='blue',alpha=0.5)
     ax.plot(xx,perf_all_m[:,0,1],color='brown',label='Context')
     ax.fill_between(xx,perf_all_m[:,0,1]-perf_all_std[:,0,1],perf_all_m[:,0,1]+perf_all_std[:,0,1],color='brown',alpha=0.5)
@@ -298,7 +298,7 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
  
     # Plot Shifted CCGP
     ccgp_orig_m=np.mean(ccgp_all[:,0,:,15],axis=(1,3))
@@ -318,11 +318,11 @@ for k in range(len(monkeys)):
     fig=plt.figure(figsize=(3,2.5))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(xx,ccgp_orig_m[:,0],color='royalblue',label='CCGP Choice')
+    ax.plot(xx,ccgp_orig_m[:,0],color='royalblue',label='CCGP Direction')
     ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='royalblue',alpha=0.5)
     ax.plot(xx,ccgp_orig_m[:,1],color='orange',label='CCGP Context')
     ax.fill_between(xx,ccgp_orig_m[:,1]-ccgp_orig_std[:,1],ccgp_orig_m[:,1]+ccgp_orig_std[:,1],color='orange',alpha=0.5)
-    ax.plot(xx,shccgp_m[:,0],color='blue',label='Sh-CCGP Choice')
+    ax.plot(xx,shccgp_m[:,0],color='blue',label='Sh-CCGP Direction')
     ax.fill_between(xx,shccgp_m[:,0]-shccgp_std[:,0],shccgp_m[:,0]+shccgp_std[:,0],color='blue',alpha=0.5)
     ax.plot(xx,shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
     ax.fill_between(xx,shccgp_m[:,1]-shccgp_std[:,1],shccgp_m[:,1]+shccgp_std[:,1],color='brown',alpha=0.5)
@@ -331,7 +331,24 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s_2.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_time_pseudo_tl_%s_%s.pdf'%(talig,monkeys[k]),dpi=500,bbox_inches='tight')
+
+
+    for t in range(steps):
+        fig=plt.figure(figsize=(3,2.5))
+        ax=fig.add_subplot(111)
+        miscellaneous.adjust_spines(ax,['left','bottom'])
+        ax.plot(bias_vec,np.mean(ccgp_all[t,0,:,:,0,0],axis=0),color='royalblue',label='Sh-CCGP Direction 1')
+        ax.plot(bias_vec,np.mean(ccgp_all[t,0,:,:,0,1],axis=0),color='blue',label='Sh-CCGP Direction 2')
+        ax.plot(bias_vec,np.mean(ccgp_all[t,0,:,:,1,0],axis=0),color='orange',label='Sh-CCGP Context 1')
+        ax.plot(bias_vec,np.mean(ccgp_all[t,0,:,:,1,1],axis=0),color='brown',label='Sh-CCGP Context 2')
+        #ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='royalblue',alpha=0.5)
+        ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
+        ax.set_ylim([0.4,1])
+        ax.set_xlabel('Bias')
+        ax.set_ylabel('Decoding Performance')
+        plt.legend(loc='best')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i.pdf'%(talig,monkeys[k],t),dpi=500,bbox_inches='tight')
 
     # for p in range(steps):
     #     for pp in range(2):

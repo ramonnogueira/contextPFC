@@ -197,12 +197,29 @@ ax.set_xlabel('Evidence Right Choice (%)')
 plt.xticks(xx,coh_plot[1])
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_all.pdf'%(monkey),dpi=500,bbox_inches='tight')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_all.png'%(monkey),dpi=500,bbox_inches='tight')
- 
+
+# Chronometric All
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+xx=np.arange(n_coh)-int(n_coh/2)
+ax.plot(xx[indnan0],chrono_neuro_flat_m[:,0][indnan0],color='black')
+ax.plot(xx[indnan],chrono_neuro_flat_m[:,1][indnan],color='green')
+ax.plot(xx[indnan],chrono_neuro_flat_m[:,2][indnan],color='blue')
+ax.plot(np.arange(n_coh)-n_coh/2,0.5*np.ones(15),color='black',linestyle='--')
+ax.axvline(0,color='black',linestyle='--')
+ax.set_ylim([0,1])
+ax.set_ylabel('Probability Right Response')
+ax.set_xlabel('Evidence Right Choice (%)')
+#plt.xticks(xx[indnan0],coh_plot[k][indnan0])
+plt.xticks(xx,coh_plot[1])
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chrono_%s_all.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chrono_%s_all.png'%(monkey),dpi=500,bbox_inches='tight')
+
+
 ##################################
 psycho_neuro_m=np.nanmean(psycho_neuro_pre,axis=(1))
 psycho_neuro_std=np.nanstd(psycho_neuro_pre,axis=(1))
-chrono_neuro_m=np.nanmean(chrono_neuro_pre,axis=(1))
-chrono_neuro_std=np.nanstd(chrono_neuro_pre,axis=(1))
 
 # Figure Psychometric
 for t_plot in range(steps):
@@ -238,38 +255,46 @@ for t_plot in range(steps):
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_t_%i.pdf'%(monkey,t_plot),dpi=500,bbox_inches='tight')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_t_%i.png'%(monkey,t_plot),dpi=500,bbox_inches='tight')
 
-# # # Figure Chronometric
-# # for t_plot in range(steps):
-# #     fig=plt.figure(figsize=(2.3,2))
-# #     ax=fig.add_subplot(111)
-# #     miscellaneous.adjust_spines(ax,['left','bottom'])
-# #     xx=np.arange(n_coh)-int(n_coh/2)
-# #     # Curve fit
-# #     indnan0=~np.isnan(chrono_neuro_m[t_plot,:,0])
-# #     popt0,pcov0=curve_fit(log_curve_abs,xx[indnan0],chrono_neuro_m[t_plot,:,0][indnan0])
-# #     yy0=log_curve_abs(xx[indnan0],popt0[0],popt0[1])
-# #     ax.scatter(xx[indnan0],chrono_neuro_m[t_plot,:,0][indnan0],color='black',s=3)
-# #     ax.plot(xx[indnan0],yy0,color='black')
+########################################################
+# Figure Chronometric
 
-# #     indnan=~np.isnan(chrono_neuro_m[t_plot,:,1])
-# #     popt1,pcov1=curve_fit(log_curve_abs,xx[indnan],chrono_neuro_m[t_plot,:,1][indnan])
-# #     yy1=log_curve_abs(xx[indnan],popt1[0],popt1[1])
-# #     ax.scatter(xx[indnan],chrono_neuro_m[t_plot,:,1][indnan],color='green',s=3)
-# #     ax.plot(xx[indnan],yy1,color='green')
+chrono_neuro_m=np.nanmean(chrono_neuro_pre,axis=(1))
+chrono_neuro_std=np.nanstd(chrono_neuro_pre,axis=(1))
 
-# #     indnan=~np.isnan(chrono_neuro_m[t_plot,:,2])
-# #     popt2,pcov2=curve_fit(log_curve_abs,xx[indnan],chrono_neuro_m[t_plot,:,2][indnan])
-# #     yy2=log_curve_abs(xx[indnan],popt2[0],popt2[1])
-# #     ax.scatter(xx[indnan],chrono_neuro_m[t_plot,:,2][indnan],color='blue',s=3)
-# #     ax.plot(xx[indnan],yy2,color='blue')
+for t_plot in range(steps):
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    xx=np.arange(n_coh)-int(n_coh/2)
+    # Curve fit
+    # indnan0=~np.isnan(chrono_neuro_m[t_plot,:,0])
+    # popt0,pcov0=curve_fit(log_curve_abs,xx[indnan0],chrono_neuro_m[t_plot,:,0][indnan0])
+    # yy0=log_curve_abs(xx[indnan0],popt0[0],popt0[1])
+    # ax.scatter(xx[indnan0],chrono_neuro_m[t_plot,:,0][indnan0],color='black',s=3)
+    # ax.plot(xx[indnan0],yy0,color='black')
 
-# #     ax.plot(np.arange(n_coh)-n_coh/2,0.5*np.ones(15),color='black',linestyle='--')
-# #     ax.axvline(0,color='black',linestyle='--')
-# #     ax.set_ylim([0,1])
-# #     ax.set_ylabel('Probability Right Response')
-# #     ax.set_xlabel('Evidence Right Choice (%)')
-# #     plt.xticks(xx[indnan0],coh_plot[k][indnan0])
-#     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_neuro_pseudo_chronometric_%s_t_%i.pdf'%(monkeys[k],t_plot),dpi=500,bbox_inches='tight')
+    # indnan=~np.isnan(chrono_neuro_m[t_plot,:,1])
+    # popt1,pcov1=curve_fit(log_curve_abs,xx[indnan],chrono_neuro_m[t_plot,:,1][indnan])
+    # yy1=log_curve_abs(xx[indnan],popt1[0],popt1[1])
+    # ax.scatter(xx[indnan],chrono_neuro_m[t_plot,:,1][indnan],color='green',s=3)
+    # ax.plot(xx[indnan],yy1,color='green')
+
+    # indnan=~np.isnan(chrono_neuro_m[t_plot,:,2])
+    # popt2,pcov2=curve_fit(log_curve_abs,xx[indnan],chrono_neuro_m[t_plot,:,2][indnan])
+    # yy2=log_curve_abs(xx[indnan],popt2[0],popt2[1])
+    # ax.scatter(xx[indnan],chrono_neuro_m[t_plot,:,2][indnan],color='blue',s=3)
+    # ax.plot(xx[indnan],yy2,color='blue')
+
+    ax.plot(xx[indnan0],chrono_neuro_m[t_plot,:,0][indnan0],color='black')
+    ax.plot(xx[indnan],chrono_neuro_m[t_plot,:,1][indnan],color='green')
+    ax.plot(xx[indnan],chrono_neuro_m[t_plot,:,2][indnan],color='blue')
+    ax.plot(np.arange(n_coh)-n_coh/2,0.5*np.ones(15),color='black',linestyle='--')
+    ax.axvline(0,color='black',linestyle='--')
+    ax.set_ylim([0,1])
+    ax.set_ylabel('Probability Right Response')
+    ax.set_xlabel('Evidence Right Choice (%)')
+    plt.xticks(xx[indnan0],coh_plot[1][indnan0])
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronometric_%s_t_%i.pdf'%(monkey,t_plot),dpi=500,bbox_inches='tight')
 
 
 #ax.plot(np.arange(15),psycho_neuro_m[t_plot,:,1],color='green')        
@@ -278,42 +303,3 @@ for t_plot in range(steps):
 #ax.fill_between(np.arange(15),psycho_neuro_m[t_plot,:,1]-psycho_neuro_std[t_plot,:,1],psycho_neuro_m[t_plot,:,1]+psycho_neuro_std[t_plot,:,1],color='green',alpha=0.6)
 #ax.fill_between(np.arange(15),psycho_neuro_m[t_plot,:,2]-psycho_neuro_std[t_plot,:,2],psycho_neuro_m[t_plot,:,2]+psycho_neuro_std[t_plot,:,2],color='blue',alpha=0.6)
 
-#     # Psychometric for the different time steps
-#     for i in range(steps):
-#         #print (' ',i)
-#         #try:
-#         sum_nan=np.sum(np.isnan(pseudo_tr_pre[i,0]),axis=1)
-#         index_nonan=np.where(sum_nan==0)[0]
-#         pseudo_tr=pseudo_tr_pre[i,0][index_nonan]
-#         pseudo_te=pseudo_te_pre[i,0][index_nonan]
-#         clase_all=clase_all_pre[index_nonan]
-#         clase_coh=clase_coh_pre[index_nonan]
-#         clase_ctx=clase_ctx_pre[index_nonan]
-#         stim=stim_pre[index_nonan]
-
-#         cl=LogisticRegression(C=1/reg,class_weight='balanced')
-#         cl.fit(pseudo_tr,stim) # Cuidado con decode Stim y no Choice!
-
-#         for j in range(n_coh):
-#             #print ('  ',j)
-#             try:
-#                 ind_coh=np.where((clase_coh==j))[0]
-#                 ind_coh0=np.where((clase_coh==j)&(clase_ctx==0))[0] # Left more rewarded
-#                 ind_coh1=np.where((clase_coh==j)&(clase_ctx==1))[0] # Right more rewarded
-
-#                 chrono_neuro_pre[i,ii,j,0]=cl.score(pseudo_te[ind_coh],stim[ind_coh])
-#                 chrono_neuro_pre[i,ii,j,1]=cl.score(pseudo_te[ind_coh0],stim[ind_coh0])
-#                 chrono_neuro_pre[i,ii,j,2]=cl.score(pseudo_te[ind_coh1],stim[ind_coh1])
-#                 psycho_neuro_pre[i,ii,j,0]=np.mean(cl.predict(pseudo_te[ind_coh]))
-#                 psycho_neuro_pre[i,ii,j,1]=np.mean(cl.predict(pseudo_te[ind_coh0]))
-#                 psycho_neuro_pre[i,ii,j,2]=np.mean(cl.predict(pseudo_te[ind_coh1]))
-#             except:
-#                 None
-#                 #print ('Error t ',i,'rand ',ii,'coh ',j)
-
-# psycho_neuro_m=np.mean(psycho_neuro_pre,axis=(1))
-# psycho_neuro_std=np.std(psycho_neuro_pre,axis=(1))
-# chrono_neuro_m=np.mean(chrono_neuro_pre,axis=(1))
-# chrono_neuro_std=np.std(chrono_neuro_pre,axis=(1))
-#print (psycho_neuro_m)
-#print (chrono_neuro_m)
