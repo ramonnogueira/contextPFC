@@ -149,30 +149,30 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 #######################################################
 # Parameters       
 n_trials_train=200
-n_trials_test=200
+n_trials_test=100
 t_steps=20
 xx=np.arange(t_steps)/10
 
 batch_size=1000
-n_hidden=10
+n_hidden=10 #10
 n_neu=10
 n_pca=10
 sigma_train=1
-sigma_test=1
-input_noise=1.5
+sigma_test=1 #1
+input_noise=1.5 #1.5
 scale_ctx=1
 
-reg=1e-10
+reg=1e-5 #1e-10
 lr=0.001
 n_epochs=200
-n_files=2
+n_files=5
 
 save_fig=True
 n_rand=10
 
 #coh_uq=np.linspace(-1,1,3)
-coh_uq=np.linspace(-1,1,11)
-#coh_uq=np.linspace(-0.5,0.5,11)
+#coh_uq=np.linspace(-1,1,11)
+coh_uq=np.linspace(-0.3,0.3,11)
 #coh_uq=np.linspace(-1,1,10)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
@@ -185,9 +185,10 @@ alph=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8,0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.
 #alph=[1,0.5,0.2,1,0.2,0.5,1,1,0.5,0.2,1,0.2,0.5,1]
 
 
-wei_ctx=[5,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
-bias_vec=np.linspace(-5,5,31) 
+#bias_vec=np.linspace(-5,5,31)
+bias_vec=np.linspace(-20,20,31) 
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,3))
 perf_abs=nan*np.zeros((n_files,t_steps,len(bias_vec),2,2))
 for hh in range(n_files):
@@ -319,22 +320,13 @@ ax.set_ylim([0.4,1])
 ax.set_ylabel('Decoding Performance')
 ax.set_xlabel('Time')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_new.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_new.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 ###################################################
 # Shifted-CCGP
 perf_abs_m=np.mean(perf_abs,axis=0)
 perf_abs_sem=sem(perf_abs,axis=0)
-for j in range(t_steps):
-    plt.plot(bias_vec,perf_abs_m[j,:,0,0],color='blue')
-    plt.plot(bias_vec,perf_abs_m[j,:,0,1],color='royalblue')
-    plt.plot(bias_vec,perf_abs_m[j,:,1,0],color='brown')
-    plt.plot(bias_vec,perf_abs_m[j,:,1,1],color='orange')
-    plt.ylim([0.4,1])
-    plt.show()
-    plt.close()
-
 ccgp_orig_m=np.mean(perf_abs[:,:,15],axis=(0,3))
 ccgp_orig_sem=sem(np.mean(perf_abs[:,:,15],axis=3),axis=0)
 
@@ -365,9 +357,17 @@ ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_new.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_new.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
+for j in range(t_steps):
+    plt.plot(bias_vec,perf_abs_m[j,:,0,0],color='blue')
+    plt.plot(bias_vec,perf_abs_m[j,:,0,1],color='royalblue')
+    plt.plot(bias_vec,perf_abs_m[j,:,1,0],color='brown')
+    plt.plot(bias_vec,perf_abs_m[j,:,1,1],color='orange')
+    plt.ylim([0.4,1])
+    plt.show()
+    plt.close()
 
 
 # MDS
