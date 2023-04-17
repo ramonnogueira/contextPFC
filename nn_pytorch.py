@@ -47,8 +47,8 @@ class nn_recurrent():
             l1c0=torch.mean(self.loss(output[index01][:,[0,1]],target_seq_torch[index01].view(-1).long()))
             l1c1=torch.mean(self.loss(output[index00][:,[0,1]],target_seq_torch[index00].view(-1).long()))
             l_total=(l0c0+l1c0+l0c1+l1c1)
-            if t==0 or t==(n_epochs-1):
-                print (t,l_total.detach().numpy())
+            #if t==0 or t==(n_epochs-1):
+            print (t,l_total.detach().numpy())
             #if (l0c0+l1c0+l0c1+l1c1)<thres_fit:
             #    break
             for batch_idx, (data, contxt, targets) in enumerate(train_loader):

@@ -149,7 +149,7 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 #######################################################
 # Parameters       
 n_trials_train=200
-n_trials_test=100
+n_trials_test=200
 t_steps=20
 xx=np.arange(t_steps)/10
 
@@ -163,21 +163,22 @@ input_noise=1.5 #1.5
 scale_ctx=1
 
 reg=1e-5 #1e-10
-lr=0.001
-n_epochs=200
-n_files=5
+lr=0.0001
+n_epochs=10000
+n_files=1
 
 save_fig=True
 n_rand=10
 
-#coh_uq=np.linspace(-1,1,3)
 #coh_uq=np.linspace(-1,1,11)
-coh_uq=np.linspace(-0.3,0.3,11)
-#coh_uq=np.linspace(-1,1,10)
+coh_uq=np.linspace(-0.5,0.5,11)
+coh_uq_test=np.linspace(-0.5,0.5,11)
+#coh_uq_test=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 ctx_uq=np.array([-1,1])
-print (coh_uq_abs)
+
+
 col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue']
 #alf_col=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
 alph=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8,0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8]
@@ -195,11 +196,12 @@ for hh in range(n_files):
     print (hh)
     # Def variables
     all_train=miscellaneous_ANN.create_input(n_trials_train,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx)
-    all_test=miscellaneous_ANN.create_input(n_trials_test,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx)
+    all_test=miscellaneous_ANN.create_input(n_trials_test,t_steps,coh_uq_test,input_noise,scale_ctx=scale_ctx)
     context=all_test['input_rec'].detach().numpy()[:,0,1]
     ctx_uq=np.unique(context)
     stimulus=all_test['target_vec'].detach().numpy()
     coherence=all_test['coherence']
+    print (np.unique(coherence))
 
     # Train RNN
     rec=nn_pytorch.nn_recurrent(reg=reg,lr=lr,output_size=2,hidden_dim=n_hidden)
@@ -320,8 +322,8 @@ ax.set_ylim([0.4,1])
 ax.set_ylabel('Decoding Performance')
 ax.set_xlabel('Time')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba2.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 ###################################################
 # Shifted-CCGP
@@ -357,8 +359,8 @@ ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba2.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 for j in range(t_steps):
     plt.plot(bias_vec,perf_abs_m[j,:,0,0],color='blue')
