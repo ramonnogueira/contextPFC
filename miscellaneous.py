@@ -427,8 +427,8 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
         ind_correct=np.where(reward==1)[0]
         rt=beha['reaction_time'][ind_correct] 
 
-        #firing_rate_pre=getRasters_unsorted(data,talig,dic_time,index_nonan,thres)
-        firing_rate_pre=getRasters(data,talig,dic_time,index_nonan,thres)
+        firing_rate_pre=getRasters_unsorted(data,talig,dic_time,index_nonan,thres) #Careful!
+        #firing_rate_pre=getRasters(data,talig,dic_time,index_nonan,thres)
         
         firing_rate=normalize_fr(firing_rate_pre)[ind_correct] 
         n_neu=len(firing_rate[0])
