@@ -260,6 +260,7 @@ for hh in range(n_files):
     #     #print (j)
 
         #aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_rand,n_neu)
+        # IMPORTANT!!!
         aa=class_twovars(ut_test[:,j],feat_binary,bias_vec,n_rand,n_neu)
         perf_dec_ctx[hh,j]=aa[0]
         perf_abs[hh,j]=aa[1]
