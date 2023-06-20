@@ -404,7 +404,7 @@ def pseudopop_coherence_context(abs_path,files,talig,dic_time,steps,thres,nt,n_r
     dic['clase_ctx']=clase_ctx
     return dic
 
-def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,signed,tpre_sacc,group_coh,shuff):
+def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,signed,tpre_sacc,group_coh,shuff,learning):
     if signed==True:
         n_coh=15
         quant='coherence_signed'
@@ -427,8 +427,10 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
         ind_correct=np.where(reward==1)[0]
         rt=beha['reaction_time'][ind_correct] 
 
-        firing_rate_pre=getRasters_unsorted(data,talig,dic_time,index_nonan,thres) #Careful!
-        #firing_rate_pre=getRasters(data,talig,dic_time,index_nonan,thres)
+        if learning==True:
+            firing_rate_pre=getRasters_unsorted(data,talig,dic_time,index_nonan,thres) 
+        if learning==False:
+            firing_rate_pre=getRasters(data,talig,dic_time,index_nonan,thres)
         
         firing_rate=normalize_fr(firing_rate_pre)[ind_correct] 
         n_neu=len(firing_rate[0])

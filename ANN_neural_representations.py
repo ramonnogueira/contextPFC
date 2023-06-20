@@ -149,31 +149,31 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 #######################################################
 # Parameters       
 n_trials_train=200
-n_trials_test=10
+n_trials_test=200
 t_steps=20
 xx=np.arange(t_steps)/10
 
-batch_size=1000
-n_hidden=10 #10
+batch_size=100
+n_hidden=10
 n_neu=10
 n_pca=10
 sigma_train=1
-sigma_test=1 #1
-input_noise=1.5 #1.5
+sigma_test=1
+input_noise=1
 scale_ctx=1
 
-reg=1e-10 #1e-10
+reg=1e-5 #1e-10
 lr=0.001
 n_epochs=200
-n_files=5
+n_files=10
 
 save_fig=True
 n_rand=10
 
+#coh_uq=np.linspace(-1,1,11)
 coh_uq=np.linspace(-1,1,11)
-#coh_uq=np.linspace(-0.75,0.75,11)
-#coh_uq_test=np.linspace(-0.75,0.75,11)
 coh_uq_test=np.linspace(-1,1,11)
+#coh_uq_test=np.linspace(-0.1,0.1,7)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 ctx_uq=np.array([-1,1])
@@ -185,11 +185,9 @@ alph=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8,0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.
 #col=['darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','black','darkblue','darkblue','darkblue']
 #alph=[1,0.5,0.2,1,0.2,0.5,1,1,0.5,0.2,1,0.2,0.5,1]
 
-
-wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+wei_ctx=[4,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
 bias_vec=np.linspace(-10,10,31)
-#bias_vec=np.linspace(-20,20,31) 
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,3))
 perf_abs=nan*np.zeros((n_files,t_steps,len(bias_vec),2,2))
 for hh in range(n_files):
@@ -201,7 +199,7 @@ for hh in range(n_files):
     ctx_uq=np.unique(context)
     stimulus=all_test['target_vec'].detach().numpy()
     coherence=all_test['coherence']
-    print (np.unique(coherence))
+    #print (np.unique(coherence))
 
     # Train RNN
     rec=nn_pytorch.nn_recurrent(reg=reg,lr=lr,output_size=2,hidden_dim=n_hidden)
@@ -240,15 +238,15 @@ for hh in range(n_files):
     #    print (j)
     #    # Only correct trials!
 
-    # #############################
-    # # PCA Train. Stack PSTH for each coherence one after each other
+    #############################
+    # PCA Train. Stack PSTH for each coherence one after each other
     # neu_rnd=np.sort(np.random.choice(np.arange(n_hidden),n_pca,replace=False))
     
-    # mean_coh=nan*np.zeros((t_steps*2*len(coh_uq),n_pca))
+    # mean_coh=nan*np.zeros((t_steps*2*len(coh_uq_test),n_pca))
     # for j in range(n_pca):
-    #     for jj in range(len(coh_uq)):
-    #         mean_coh[jj*t_steps:(jj+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,:,neu_rnd[j]],axis=0)
-    #         mean_coh[(jj+len(coh_uq))*t_steps:(jj+len(coh_uq)+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,:,neu_rnd[j]],axis=0)
+    #     for jj in range(len(coh_uq_test)):
+    #         mean_coh[jj*t_steps:(jj+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq_test[jj])&(context==ctx_uq[0])][:,:,neu_rnd[j]],axis=0)
+    #         mean_coh[(jj+len(coh_uq_test))*t_steps:(jj+len(coh_uq_test)+1)*t_steps,j]=np.mean(ut_test[(coherence==coh_uq_test[jj])&(context==ctx_uq[1])][:,:,neu_rnd[j]],axis=0)
 
     # embedding=PCA(n_components=3)
     # pseudo_mds=embedding.fit(mean_coh)
@@ -257,45 +255,46 @@ for hh in range(n_files):
     # xx, yy = np.meshgrid(np.arange(20)-10,np.arange(20)-10)
     # z = (-wei_trans[0]*xx-wei_trans[1]*yy-bias)/wei_trans[2]
     
-    # PCA Test
+    # # PCA Test
     for j in range(t_steps):
-        print (j)
+    #     #print (j)
 
-        aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_rand,n_neu)
+        #aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_rand,n_neu)
+        aa=class_twovars(ut_test[:,j],feat_binary,bias_vec,n_rand,n_neu)
         perf_dec_ctx[hh,j]=aa[0]
         perf_abs[hh,j]=aa[1]
         
-        # mean_coh=nan*np.zeros((len(coh_uq),n_pca))
-        # mean_coh_ctx=nan*np.zeros((2*len(coh_uq),n_pca))
-        # for jj in range(len(coh_uq)):
-        #     mean_coh[jj]=np.mean(ut_test[(coherence==coh_uq[jj])][:,j,neu_rnd],axis=0)
-        #     mean_coh_ctx[jj]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[0])][:,j,neu_rnd],axis=0)
-        #     mean_coh_ctx[jj+len(coh_uq)]=np.mean(ut_test[(coherence==coh_uq[jj])&(context==ctx_uq[1])][:,j,neu_rnd],axis=0)
+    #     mean_coh=nan*np.zeros((len(coh_uq_test),n_pca))
+    #     mean_coh_ctx=nan*np.zeros((2*len(coh_uq_test),n_pca))
+    #     for jj in range(len(coh_uq_test)):
+    #         mean_coh[jj]=np.mean(ut_test[(coherence==coh_uq_test[jj])][:,j,neu_rnd],axis=0)
+    #         mean_coh_ctx[jj]=np.mean(ut_test[(coherence==coh_uq_test[jj])&(context==ctx_uq[0])][:,j,neu_rnd],axis=0)
+    #         mean_coh_ctx[jj+len(coh_uq_test)]=np.mean(ut_test[(coherence==coh_uq_test[jj])&(context==ctx_uq[1])][:,j,neu_rnd],axis=0)
 
-        # pseudo_mds=embedding.transform(mean_coh)
-        # pseudo_mds_ctx=embedding.transform(mean_coh_ctx)
-        # #pseudo_mds=mean_coh.copy()
-        # #pseudo_mds_ctx=mean_coh_ctx.copy()
-        # #wei_pca=embedding.transform(np.reshape(weights,(1,len(weights))))
-        # #print (wei_pca,bias)
+    #     pseudo_mds=embedding.transform(mean_coh)
+    #     pseudo_mds_ctx=embedding.transform(mean_coh_ctx)
+    #     #pseudo_mds=mean_coh.copy()
+    #     #pseudo_mds_ctx=mean_coh_ctx.copy()
+    #     #wei_pca=embedding.transform(np.reshape(weights,(1,len(weights))))
+    #     #print (wei_pca,bias)
         
-        # # 3D
-        # #if j==19:
-        # fig = plt.figure()#figsize=(2,2)
-        # ax = fig.add_subplot(111, projection='3d')
-        # #for jj in range(len(mean_coh)):
-        # #    ax.scatter(pseudo_mds[jj,0],pseudo_mds[jj,1],pseudo_mds[jj,2],color='black',alpha=alf_col[jj])
-        # for jj in range(len(mean_coh_ctx)):
-        #     ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col[jj],alpha=alph[jj])
-        # #ax.plot_surface(xx, yy, z, color='black',alpha=0.2)
-        # ax.set_xlabel('PC1')
-        # ax.set_ylabel('PC2')
-        # ax.set_zlabel('PC3')
-        # ax.set_xlim([-4,4])
-        # ax.set_ylim([-4,4])
-        # ax.set_zlim([-4,4])
-        # plt.show()
-        # plt.close(fig)
+    #     # 3D
+    #     #if j==19 or j==0:
+    #     fig = plt.figure()#figsize=(2,2)
+    #     ax = fig.add_subplot(111, projection='3d')
+    #     #for jj in range(len(mean_coh)):
+    #     #    ax.scatter(pseudo_mds[jj,0],pseudo_mds[jj,1],pseudo_mds[jj,2],color='black',alpha=alf_col[jj])
+    #     for jj in range(len(mean_coh_ctx)):
+    #         ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col[jj],alpha=alph[jj])
+    #         #ax.plot_surface(xx, yy, z, color='black',alpha=0.2)
+    #     ax.set_xlabel('PC1')
+    #     ax.set_ylabel('PC2')
+    #     ax.set_zlabel('PC3')
+    #     ax.set_xlim([-4,4])
+    #     ax.set_ylim([-4,4])
+    #     ax.set_zlim([-4,4])
+    #     plt.show()
+    #     plt.close(fig)
 
 
 
@@ -320,8 +319,8 @@ ax.set_ylim([0.4,1])
 ax.set_ylabel('Decoding Performance')
 ax.set_xlabel('Time')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba3.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_prueba3.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 ###################################################
 # Shifted-CCGP
@@ -357,8 +356,8 @@ ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
 if save_fig:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba3.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_prueba3.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 # Shifted CCGP
 for j in range(t_steps):
@@ -379,8 +378,8 @@ for j in range(t_steps):
     ax.set_xlabel('Bias')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rnn_shifted_ccgp_neu_%i_tt%i%i_t%i_2.pdf'%(n_neu,wei_ctx[0],wei_ctx[1],j),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rnn_shifted_ccgp_neu_%i_tt%i%i_t%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1],j),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rnn_shifted_ccgp_neu_%i_tt%i%i_t%i.pdf'%(n_neu,wei_ctx[0],wei_ctx[1],j),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rnn_shifted_ccgp_neu_%i_tt%i%i_t%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1],j),dpi=500,bbox_inches='tight')
     
     
 
