@@ -11,7 +11,7 @@ import itertools
 nan=float('nan')
 
 
-def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx):
+def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx,ctx_noise):
     dic={}
     input_vec_pre=nan*np.zeros((n_trials*len(coh_uq),t_steps,2))
     target_vec_pre=nan*np.zeros(n_trials*len(coh_uq))
@@ -30,7 +30,7 @@ def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx):
         print ('No 0 coherence')
     target_vec_pre[target_vec_pre==-1]=0
     # Add context
-    context=scale_ctx*np.sign(np.random.normal(loc=0,scale=1,size=(len(coh_uq)*n_trials)))
+    context=(scale_ctx*np.sign(np.random.normal(loc=0,scale=1,size=(len(coh_uq)*n_trials)))+np.random.normal(loc=0,scale=ctx_noise,size=len(coh_uq)*n_trials))
     #context[context==-1]=0
     for i in range(t_steps):
         input_vec_pre[:,i,1]=context
