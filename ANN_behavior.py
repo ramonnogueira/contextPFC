@@ -143,7 +143,8 @@ n_hidden=10
 sigma_train=1
 sigma_test=1
 input_noise=1
-scale_ctx=1 #smaller than 0.01 there is no effect in psycho curves. 
+scale_ctx=1 #smaller than 0.01 there is no effect in psycho curves.
+ctx_noise=1
 
 reg=1e-5
 lr=0.01
@@ -159,7 +160,7 @@ coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
-wei_ctx=[2,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+wei_ctx=[4,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 beta=0
 b_exp=1
 
@@ -173,16 +174,16 @@ rt=nan*np.zeros((n_files,len(coh_uq),3))
 for hh in range(n_files):
     print (hh)
     # Def variables
-    all_train=miscellaneous_ANN.create_input(n_trials_train,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx)
-    all_test=miscellaneous_ANN.create_input(n_trials_test,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx)
-    context=all_test['input_rec'].detach().numpy()[:,0,1]
+    all_train=miscellaneous_ANN.create_input(n_trials_train,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx,ctx_noise=ctx_noise)
+    all_test=miscellaneous_ANN.create_input(n_trials_test,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx,ctx_noise=ctx_noise)
+    context=all_test['context']
     ctx_uq=np.unique(context)
     stimulus=all_test['target_vec'].detach().numpy()
     coherence=all_test['coherence']
 
     # Train RNN
     rec=nn_pytorch.nn_recurrent_sparse(reg=reg,lr=lr,output_size=2,hidden_dim=n_hidden)
-    rec.fit(input_seq=all_train['input_rec'],target_seq=all_train['target_vec'],batch_size=batch_size,n_epochs=n_epochs,sigma_noise=sigma_train,wei_ctx=wei_ctx,beta=beta,b_exp=b_exp)
+    rec.fit(input_seq=all_train['input_rec'],target_seq=all_train['target_vec'],context=all_train['context'],batch_size=batch_size,n_epochs=n_epochs,sigma_noise=sigma_train,wei_ctx=wei_ctx,beta=beta,b_exp=b_exp)
 
     # Indices trials
     index0=np.where(all_test['target_vec']==0)[0]

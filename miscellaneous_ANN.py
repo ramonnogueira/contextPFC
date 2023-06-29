@@ -30,10 +30,11 @@ def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx,ctx_noise):
         print ('No 0 coherence')
     target_vec_pre[target_vec_pre==-1]=0
     # Add context
-    context=(scale_ctx*np.sign(np.random.normal(loc=0,scale=1,size=(len(coh_uq)*n_trials)))+np.random.normal(loc=0,scale=ctx_noise,size=len(coh_uq)*n_trials))
+    context_pre=scale_ctx*np.sign(np.random.normal(loc=0,scale=1,size=(len(coh_uq)*n_trials)))
+    context_noise=(context_pre+np.random.normal(loc=0,scale=ctx_noise,size=len(coh_uq)*n_trials))
     #context[context==-1]=0
     for i in range(t_steps):
-        input_vec_pre[:,i,1]=context
+        input_vec_pre[:,i,1]=context_noise
     
     # Shuffle indeces
     index_def=np.random.permutation(np.arange(len(coh_uq)*n_trials))
@@ -41,6 +42,7 @@ def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx,ctx_noise):
     input_vec=input_vec_pre[index_def]
     target_vec=target_vec_pre[index_def]
     coherence=coherence_pre[index_def]
+    context=context_pre[index_def]
 
     # The motion direction at t=0 is always 0 to simulate the latency
     input_vec[:,0,0]=0
@@ -49,5 +51,6 @@ def create_input(n_trials,t_steps,coh_uq,input_noise,scale_ctx,ctx_noise):
     dic['input_rec']=Variable(torch.from_numpy(np.array(input_vec,dtype=np.float32)),requires_grad=False)
     dic['target_vec']=Variable(torch.from_numpy(np.array(target_vec,dtype=np.int16)),requires_grad=False)
     dic['coherence']=coherence
+    dic['context']=context
     return dic
 

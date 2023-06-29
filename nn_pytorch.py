@@ -15,59 +15,59 @@ dtype = torch.FloatTensor
 # Target shape has to be: Batch x Steps (x Target dim)
 # The output of the model concatenates all time steps from all trials
 
-class nn_recurrent():
-    def __init__(self,reg,lr,output_size,hidden_dim):
-        self.regularization=reg
-        self.learning_rate=lr
-        self.loss=torch.nn.CrossEntropyLoss(reduction='none')
-        self.model=recurrent_noisy(output_size,hidden_dim)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.regularization)
+# class nn_recurrent():
+#     def __init__(self,reg,lr,output_size,hidden_dim):
+#         self.regularization=reg
+#         self.learning_rate=lr
+#         self.loss=torch.nn.CrossEntropyLoss(reduction='none')
+#         self.model=recurrent_noisy(output_size,hidden_dim)
+#         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.regularization)
 
-    def fit(self,input_seq,target_seq,batch_size,n_epochs,sigma_noise,wei_ctx): 
-        thres_fit=1e-3
-        self.model.train()
-        input_seq_np=np.array(input_seq,dtype=np.float32)
-        context_np=np.array(input_seq[:,0,1],dtype=np.float32)
-        ctx_uq=np.unique(context_np)
-        target_seq_np=np.array(target_seq,dtype=np.int16)
-        input_seq_torch=Variable(torch.from_numpy(input_seq_np),requires_grad=False)
-        context_torch=Variable(torch.from_numpy(context_np),requires_grad=False)
-        target_seq_torch=Variable(torch.from_numpy(target_seq_np),requires_grad=False)
-        train_loader=DataLoader(torch.utils.data.TensorDataset(input_seq_torch,context_torch,target_seq_torch),batch_size=batch_size,shuffle=True)
+#     def fit(self,input_seq,target_seq,batch_size,n_epochs,sigma_noise,wei_ctx): 
+#         thres_fit=1e-3
+#         self.model.train()
+#         input_seq_np=np.array(input_seq,dtype=np.float32)
+#         context_np=np.array(input_seq[:,0,1],dtype=np.float32)
+#         ctx_uq=np.unique(context_np)
+#         target_seq_np=np.array(target_seq,dtype=np.int16)
+#         input_seq_torch=Variable(torch.from_numpy(input_seq_np),requires_grad=False)
+#         context_torch=Variable(torch.from_numpy(context_np),requires_grad=False)
+#         target_seq_torch=Variable(torch.from_numpy(target_seq_np),requires_grad=False)
+#         train_loader=DataLoader(torch.utils.data.TensorDataset(input_seq_torch,context_torch,target_seq_torch),batch_size=batch_size,shuffle=True)
         
-        index11=((target_seq_torch==0)&(context_torch==ctx_uq[0]))
-        index10=((target_seq_torch==0)&(context_torch==ctx_uq[1]))
-        index01=((target_seq_torch==1)&(context_torch==ctx_uq[0]))
-        index00=((target_seq_torch==1)&(context_torch==ctx_uq[1]))
+#         index11=((target_seq_torch==0)&(context_torch==ctx_uq[0]))
+#         index10=((target_seq_torch==0)&(context_torch==ctx_uq[1]))
+#         index01=((target_seq_torch==1)&(context_torch==ctx_uq[0]))
+#         index00=((target_seq_torch==1)&(context_torch==ctx_uq[1]))
 
-        for t in range(n_epochs):
-            output, hidden, net_units, read_out_units = self.model(input_seq_torch,sigma_noise)
-            l0c0=torch.mean(self.loss(output[index11][:,[0,1]],target_seq_torch[index11].view(-1).long()))
-            l0c1=torch.mean(self.loss(output[index10][:,[0,1]],target_seq_torch[index10].view(-1).long()))
-            l1c0=torch.mean(self.loss(output[index01][:,[0,1]],target_seq_torch[index01].view(-1).long()))
-            l1c1=torch.mean(self.loss(output[index00][:,[0,1]],target_seq_torch[index00].view(-1).long()))
-            l_total=(l0c0+l1c0+l0c1+l1c1)
-            if t==0 or t==(n_epochs-1):
-                print (t,l_total.detach().numpy())
-            #if (l0c0+l1c0+l0c1+l1c1)<thres_fit:
-            #    break
-            for batch_idx, (data, contxt, targets) in enumerate(train_loader):
-                ind11=(targets==0)*(contxt==ctx_uq[0])
-                ind10=(targets==0)*(contxt==ctx_uq[1])
-                ind01=(targets==1)*(contxt==ctx_uq[0])
-                ind00=(targets==1)*(contxt==ctx_uq[1])
-                self.optimizer.zero_grad()
-                output, hidden, net_units, read_out_units = self.model(data,sigma_noise)
-                loss0_ct0=torch.mean(self.loss(output[ind11][:,[0,1]],targets[ind11].view(-1).long()))
-                loss0_ct1=torch.mean(self.loss(output[ind10][:,[0,1]],targets[ind10].view(-1).long()))
-                loss1_ct0=torch.mean(self.loss(output[ind01][:,[0,1]],targets[ind01].view(-1).long()))
-                loss1_ct1=torch.mean(self.loss(output[ind00][:,[0,1]],targets[ind00].view(-1).long()))
-                loss=(wei_ctx[0]*(loss0_ct0+loss1_ct1)+wei_ctx[1]*(loss1_ct0+loss0_ct1))
-                #loss_ctx=(torch.mean(self.loss(output[:,[2,3]],contxt.view(-1).long())))
-                #loss=(wei_task[0]*loss_rdm+wei_task[1]*loss_ctx)
-                loss.backward()
-                self.optimizer.step()
-        return self.model.state_dict()
+#         for t in range(n_epochs):
+#             output, hidden, net_units, read_out_units = self.model(input_seq_torch,sigma_noise)
+#             l0c0=torch.mean(self.loss(output[index11][:,[0,1]],target_seq_torch[index11].view(-1).long()))
+#             l0c1=torch.mean(self.loss(output[index10][:,[0,1]],target_seq_torch[index10].view(-1).long()))
+#             l1c0=torch.mean(self.loss(output[index01][:,[0,1]],target_seq_torch[index01].view(-1).long()))
+#             l1c1=torch.mean(self.loss(output[index00][:,[0,1]],target_seq_torch[index00].view(-1).long()))
+#             l_total=(l0c0+l1c0+l0c1+l1c1)
+#             if t==0 or t==(n_epochs-1):
+#                 print (t,l_total.detach().numpy())
+#             #if (l0c0+l1c0+l0c1+l1c1)<thres_fit:
+#             #    break
+#             for batch_idx, (data, contxt, targets) in enumerate(train_loader):
+#                 ind11=(targets==0)*(contxt==ctx_uq[0])
+#                 ind10=(targets==0)*(contxt==ctx_uq[1])
+#                 ind01=(targets==1)*(contxt==ctx_uq[0])
+#                 ind00=(targets==1)*(contxt==ctx_uq[1])
+#                 self.optimizer.zero_grad()
+#                 output, hidden, net_units, read_out_units = self.model(data,sigma_noise)
+#                 loss0_ct0=torch.mean(self.loss(output[ind11][:,[0,1]],targets[ind11].view(-1).long()))
+#                 loss0_ct1=torch.mean(self.loss(output[ind10][:,[0,1]],targets[ind10].view(-1).long()))
+#                 loss1_ct0=torch.mean(self.loss(output[ind01][:,[0,1]],targets[ind01].view(-1).long()))
+#                 loss1_ct1=torch.mean(self.loss(output[ind00][:,[0,1]],targets[ind00].view(-1).long()))
+#                 loss=(wei_ctx[0]*(loss0_ct0+loss1_ct1)+wei_ctx[1]*(loss1_ct0+loss0_ct1))
+#                 #loss_ctx=(torch.mean(self.loss(output[:,[2,3]],contxt.view(-1).long())))
+#                 #loss=(wei_task[0]*loss_rdm+wei_task[1]*loss_ctx)
+#                 loss.backward()
+#                 self.optimizer.step()
+#         return self.model.state_dict()
 
 ############################################
 def sparsity_loss(data,p):
@@ -82,11 +82,11 @@ class nn_recurrent_sparse():
         self.model=recurrent_noisy(output_size,hidden_dim)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.regularization)
 
-    def fit(self,input_seq,target_seq,batch_size,n_epochs,sigma_noise,wei_ctx,beta,b_exp): 
+    def fit(self,input_seq,target_seq,context,batch_size,n_epochs,sigma_noise,wei_ctx,beta,b_exp): 
         thres_fit=1e-3
         self.model.train()
         input_seq_np=np.array(input_seq,dtype=np.float32)
-        context_np=np.array(input_seq[:,0,1],dtype=np.float32)
+        context_np=np.array(context,dtype=np.float32)
         ctx_uq=np.unique(context_np)
         target_seq_np=np.array(target_seq,dtype=np.int16)
         input_seq_torch=Variable(torch.from_numpy(input_seq_np),requires_grad=False)
@@ -98,7 +98,7 @@ class nn_recurrent_sparse():
         index10=((target_seq_torch==0)&(context_torch==ctx_uq[1]))
         index01=((target_seq_torch==1)&(context_torch==ctx_uq[0]))
         index00=((target_seq_torch==1)&(context_torch==ctx_uq[1]))
-
+    
         for t in range(n_epochs):
             output, hidden, net_units, read_out_units = self.model(input_seq_torch,sigma_noise)
             l0c0=torch.mean(self.loss(output[index11][:,[0,1]],target_seq_torch[index11].view(-1).long()))
@@ -115,6 +115,7 @@ class nn_recurrent_sparse():
                 ind10=(targets==0)*(contxt==ctx_uq[1])
                 ind01=(targets==1)*(contxt==ctx_uq[0])
                 ind00=(targets==1)*(contxt==ctx_uq[1])
+                
                 self.optimizer.zero_grad()
                 output, hidden, net_units, read_out_units = self.model(data,sigma_noise)
                 loss0_ct0=torch.mean(self.loss(output[ind11][:,[0,1]],targets[ind11].view(-1).long()))
