@@ -42,7 +42,7 @@ steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=20
+n_rand=10
 n_shuff=0
 perc_tr=0.8
 thres=0
@@ -67,7 +67,8 @@ def log_curve_abs(x,a,c):
 abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey)
 files=os.listdir(abs_path)
 
-xx_coh=np.arange(n_coh)-int(n_coh/2)
+#xx_coh=np.arange(n_coh)-int(n_coh/2)
+xx_coh=np.array([-75,-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2,75])
          
 
 chrono_neuro_pre=nan*np.zeros((steps,n_rand,n_coh,3))
