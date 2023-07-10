@@ -64,11 +64,15 @@ def log_curve(x,a,c):
     num=1+np.exp(-a*x+c)
     return 1/num
 
+def chrono_curve(x,a,c):
+    num=1+np.exp(-abs(a)*x+c)
+    return 1/num
+
 #def chrono_curve(x,a,b,c,tl0,tr0):
 #    return (b/(a*x+c))*np.tanh(a*x+c)+tl0*np.heaviside(-x,0)+tr0*np.heaviside(x,0)
 
-def chrono_curve(x,a,b,c,t0):
-   return (b/(a*x+c))*np.tanh(a*x+c)+t0
+#def chrono_curve(x,a,b,c,t0):
+#   return (b/(a*x+c))*np.tanh(a*x+c)+t0
 
 #def chrono_curve(x,b,t0):
 #    return (b/x)*np.tanh(x)+t0
@@ -178,18 +182,18 @@ for kk in range(len(files)):
     # popt2,pcov2=curve_fit(chrono_curve,coh_set_signed,chrono[kk,:,2])#,p0=(-1000,0,1000))
     # fit_chrono[kk,:,2]=chrono_curve(xx_coh,popt2[0],popt2[1])#,popt2[2],popt0[3])
 
-    # popt0,pcov0=curve_fit(chrono_curve,coh_signed,np.log(rt),method='lm',nan_policy='omit')#,p0=(10,0.1,6))
-    # fit_chrono[kk,:,0]=np.exp(chrono_curve(xx_coh,popt0[0],popt0[1],popt0[2],popt0[3]))
-    # print (popt0)
-    # print (pcov0)
-    # popt1,pcov1=curve_fit(chrono_curve,coh_signed[context==0],np.log(rt[context==0]),method='lm',nan_policy='omit')#,p0=(10,0.1,6))
-    # fit_chrono[kk,:,1]=np.exp(chrono_curve(xx_coh,popt1[0],popt1[1],popt1[2],popt0[3]))
-    # print (popt1)
-    # print (pcov1)
-    # popt2,pcov2=curve_fit(chrono_curve,coh_signed[context==1],np.log(rt[context==1]),method='lm',nan_policy='omit')#,p0=(10,0.1,6))
-    # fit_chrono[kk,:,2]=np.exp(chrono_curve(xx_coh,popt2[0],popt2[1],popt2[2],popt0[3]))
-    # print (popt2)
-    # print (pcov2)
+    popt0,pcov0=curve_fit(chrono_curve,coh_signed,np.log(rt),nan_policy='omit',p0=(1,0.1))
+    fit_chrono[kk,:,0]=np.exp(chrono_curve(xx_coh,popt0[0],popt0[1]))#,popt0[2],popt0[3]))
+    print (popt0)
+    print (pcov0)
+    popt1,pcov1=curve_fit(chrono_curve,coh_signed[context==0],np.log(rt[context==0]),method='lm',nan_policy='omit')#,p0=(10,0.1,6))
+    fit_chrono[kk,:,1]=np.exp(chrono_curve(xx_coh,popt1[0],popt1[1]))#,popt1[2],popt0[3]))
+    print (popt1)
+    print (pcov1)
+    popt2,pcov2=curve_fit(chrono_curve,coh_signed[context==1],np.log(rt[context==1]),method='lm',nan_policy='omit')#,p0=(10,0.1,6))
+    fit_chrono[kk,:,2]=np.exp(chrono_curve(xx_coh,popt2[0],popt2[1]))#,popt2[2],popt0[3]))
+    print (popt2)
+    print (pcov2)
    
    
                       
@@ -233,15 +237,15 @@ fit_chrono_sem=sem(fit_chrono,axis=0)
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(1,1,1)
 adjust_spines(ax,['left','bottom'])
-#ax.plot(100*xx_coh,fit_chrono_m[:,0],color='black',label='All',alpha=0.5)
-#ax.fill_between(100*xx_coh,fit_chrono_m[:,0]-fit_chrono_sem[:,0],fit_chrono_m[:,0]+fit_chrono_sem[:,0],color='black',alpha=0.5)
-#ax.plot(100*xx_coh,fit_chrono_m[:,1],color='green',label='Context Left',linewidth=1,alpha=0.5)
-#ax.fill_between(100*xx_coh,fit_chrono_m[:,1]-fit_chrono_sem[:,1],fit_chrono_m[:,1]+fit_chrono_sem[:,1],color='green',alpha=0.5)
-#ax.plot(100*xx_coh,fit_chrono_m[:,2],color='blue',label='Context Right',linewidth=1,alpha=0.5)
-#ax.fill_between(100*xx_coh,fit_chrono_m[:,2]-fit_chrono_sem[:,2],fit_chrono_m[:,2]+fit_chrono_sem[:,2],color='blue',alpha=0.5)
-#ax.scatter(100*coh_set_signed,chrono_m[:,0],color='black',s=2)
-#ax.scatter(100*coh_set_signed,chrono_m[:,1],color='green',s=2)#,alpha=0.5)
-#ax.scatter(100*coh_set_signed,chrono_m[:,2],color='blue',s=2)#,alpha=0.5)
+ax.plot(100*xx_coh,fit_chrono_m[:,0],color='black',label='All',alpha=0.5)
+ax.fill_between(100*xx_coh,fit_chrono_m[:,0]-fit_chrono_sem[:,0],fit_chrono_m[:,0]+fit_chrono_sem[:,0],color='black',alpha=0.5)
+ax.plot(100*xx_coh,fit_chrono_m[:,1],color='green',label='Context Left',linewidth=1,alpha=0.5)
+ax.fill_between(100*xx_coh,fit_chrono_m[:,1]-fit_chrono_sem[:,1],fit_chrono_m[:,1]+fit_chrono_sem[:,1],color='green',alpha=0.5)
+ax.plot(100*xx_coh,fit_chrono_m[:,2],color='blue',label='Context Right',linewidth=1,alpha=0.5)
+ax.fill_between(100*xx_coh,fit_chrono_m[:,2]-fit_chrono_sem[:,2],fit_chrono_m[:,2]+fit_chrono_sem[:,2],color='blue',alpha=0.5)
+ax.scatter(100*coh_set_signed,chrono_m[:,0],color='black',s=2)
+ax.scatter(100*coh_set_signed,chrono_m[:,1],color='green',s=2)#,alpha=0.5)
+ax.scatter(100*coh_set_signed,chrono_m[:,2],color='blue',s=2)#,alpha=0.5)
 ax.plot(100*coh_set_signed,chrono_m[:,0],color='black',label='All')
 ax.fill_between(100*coh_set_signed,chrono_m[:,0]-chrono_sem[:,0],chrono_m[:,0]+chrono_sem[:,0],color='black',alpha=0.5)
 ax.plot(100*coh_set_signed,chrono_m[:,1],color='green',label='Context Left')

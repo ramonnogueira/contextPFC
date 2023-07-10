@@ -164,7 +164,8 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 ##############################################
 
 monkeys=['Niels']
-bias_vec=np.linspace(-20,20,31) #Niels
+#bias_vec=np.linspace(-20,20,31) #Niels
+bias_vec=np.linspace(-0.000002,0.000002,31) #Niels
 #bias_vec=np.linspace(-15,15,31) #Galileo
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
@@ -180,7 +181,7 @@ n_rand=10
 n_shuff=0
 perc_tr=0.8
 thres=0
-reg=1e0
+reg=1e10
 n_coh=15
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -223,7 +224,7 @@ for k in range(len(monkeys)):
     perf_all=nan*np.zeros((steps,len(group_coh_vec),n_rand,3))
     ccgp_all=nan*np.zeros((steps,len(group_coh_vec),n_rand,len(bias_vec),2,2))
     #inter_all=nan*np.zeros((n_rand,len(bias_vec),2,2))
-    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False)
+    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False,learning=False)
     
     for kk in range(steps):
         print (kk)

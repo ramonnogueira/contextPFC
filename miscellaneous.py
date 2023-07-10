@@ -414,6 +414,11 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
     pseudo_all_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files)))
     pseudo_tr_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files))) 
     pseudo_te_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files)))
+
+    #context_new=nan*np.zeros((n_rand,2*n_coh*nt))
+    #stimulus_new=nan*np.zeros((n_rand,2*n_coh*nt))
+    #choice_new=nan*np.zeros((n_rand,2*n_coh*nt))
+    
     neu_t=0
     time_w=dic_time[-2]
     step_t=dic_time[-1]
@@ -460,9 +465,12 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
                         dow=(k*n_coh+j)*nt
                         up=(k*n_coh+j+1)*nt
                         try:
-                            pseudo_all_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_ctx_p,nt,replace=True)][:,:,i]
-                            pseudo_tr_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_ctx_p[0:nt_coh_ctx],nt,replace=True)][:,:,i]
-                            pseudo_te_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_ctx_p[nt_coh_ctx:],nt,replace=True)][:,:,i]
+                            ind_coh_ctx_p_ch_all=np.random.choice(ind_coh_ctx_p,nt,replace=True)
+                            ind_coh_ctx_p_ch_tr=np.random.choice(ind_coh_ctx_p[0:nt_coh_ctx],nt,replace=True)
+                            ind_coh_ctx_p_ch_te=np.random.choice(ind_coh_ctx_p[nt_coh_ctx:],nt,replace=True)
+                            pseudo_all_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[ind_coh_ctx_p_ch_all][:,:,i]
+                            pseudo_tr_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[ind_coh_ctx_p_ch_tr][:,:,i]
+                            pseudo_te_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[ind_coh_ctx_p_ch_te][:,:,i]
                         except:
                             None
                             #print ('Error %i %i %i %i '%(i,k,j,ii))
@@ -487,6 +495,9 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
     dic['clase_all']=clase_all
     dic['clase_coh']=clase_coh
     dic['clase_ctx']=clase_ctx
+    #dic['context']=context_new
+    #dic['stimulus']=stimulus_new
+    #dic['choice']=choice_new
     return dic
 
 def pseudopopulation_nvar(abs_path,files,quant,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tback):

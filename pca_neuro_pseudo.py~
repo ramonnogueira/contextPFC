@@ -34,10 +34,10 @@ warnings.warn = warn
 
 ###################################################3
 
-monkey='Niels'#['Galileo']#'Niels']#,]
+monkey='Galileo'#['Galileo']#'Niels']#,]
 
 talig='dots_on' #'targ_on','dots_on'
-dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
+dic_time=np.array([0,800,200,200]) # time pre, time post, bin size, step size
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -46,7 +46,7 @@ n_rand=20
 n_shuff=0
 perc_tr=0.8
 thres=0
-reg=1e2
+reg=1e1
 n_coh=15
 
 coh_plot=np.array([['-75','-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2','75'],
@@ -211,7 +211,7 @@ ax.axvline(0,color='black',linestyle='--')
 ax.set_ylim([0,1])
 ax.set_ylabel('Probability Right Response')
 ax.set_xlabel('Evidence Right Choice (%)')
-plt.xticks(xx_coh,coh_plot[0])
+plt.xticks(xx_coh,coh_plot[1])
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.pdf'%(monkey),dpi=500,bbox_inches='tight')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.png'%(monkey),dpi=500,bbox_inches='tight')
 
@@ -238,7 +238,7 @@ ax.plot(xx_coh,0.5*np.ones(15),color='black',linestyle='--')
 ax.set_ylim([0,0.6])
 ax.set_ylabel('Probability Error')
 ax.set_xlabel('Evidence Right Choice (%)')
-plt.xticks(xx_coh,coh_plot[0])
+plt.xticks(xx_coh,coh_plot[1])
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat.pdf'%(monkey),dpi=500,bbox_inches='tight')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat.png'%(monkey),dpi=500,bbox_inches='tight')
 
@@ -271,7 +271,7 @@ for t_plot in range(steps):
     ax.set_ylim([0,1])
     ax.set_ylabel('Probability Right Response')
     ax.set_xlabel('Evidence Right Choice (%)')
-    plt.xticks(xx_coh,coh_plot[0])
+    plt.xticks(xx_coh,coh_plot[1])
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_t_%i.pdf'%(monkey,t_plot),dpi=500,bbox_inches='tight')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_t_%i.png'%(monkey,t_plot),dpi=500,bbox_inches='tight')
 
