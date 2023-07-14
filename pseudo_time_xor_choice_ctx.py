@@ -163,12 +163,10 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 
 ##############################################
 
-monkey='Niels'
-bias_vec=np.linspace(-20,20,31) #Niels
-#bias_vec=np.linspace(-15,15,31) #Galileo
+monkey='Galileo'
 
 talig='dots_on'
-dic_time=np.array([0,450,200,50])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,650,200,50])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 print (xx)

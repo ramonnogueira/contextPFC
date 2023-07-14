@@ -32,6 +32,14 @@ def warn(*args, **kwargs):
 import warnings
 warnings.warn = warn
 
+def log_curve(x,a,c):
+    num=1+np.exp(-a*x+c)
+    return 1/num
+    
+def log_curve_abs(x,a,c):
+    num=1+np.exp(-a*abs(x)+c)
+    return 1/num
+
 ###################################################3
 
 monkey='Niels'#['Galileo']#'Niels']#,]
@@ -42,34 +50,30 @@ steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=10
+n_rand=50
 n_shuff=0
 perc_tr=0.8
 thres=0
 reg=1e2
 n_coh=15
-
-coh_plot=np.array([['-75','-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2','75'],
-                   ['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2']])
-
 tpre_sacc=50
-#group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
-group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
 
-def log_curve(x,a,c):
-    num=1+np.exp(-a*x+c)
-    return 1/num
-    
-def log_curve_abs(x,a,c):
-    num=1+np.exp(-a*abs(x)+c)
-    return 1/num
+if monkey=='Niels':
+    xx_coh_pre=np.array([-75,-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2,75])
+    xx_plot=np.array(['-75','-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2','75'])
+if monkey=='Galileo':
+    xx_coh_pre=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
+    xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
+xx_coh=np.log(abs(xx_coh_pre))
+xx_coh[xx_coh<-100]=0
+xx_coh[xx_coh_pre<0]=-1*xx_coh[xx_coh_pre<0]
+
+print (xx_coh)
+
+group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
     
 abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey)
 files=os.listdir(abs_path)
-
-#xx_coh=np.arange(n_coh)-int(n_coh/2)
-xx_coh=np.array([-75,-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2,75])
-         
 
 chrono_neuro_pre=nan*np.zeros((steps,n_rand,n_coh,3))
 psycho_neuro_pre=nan*np.zeros((steps,n_rand,n_coh,3))
@@ -209,10 +213,12 @@ ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,2]-fit_psycho_neuro_flat_std[:,
 
 ax.plot(xx_coh,0.5*np.ones(15),color='black',linestyle='--')
 ax.axvline(0,color='black',linestyle='--')
-ax.set_ylim([0,1])
 ax.set_ylabel('Probability Right Response')
 ax.set_xlabel('Evidence Right Choice (%)')
-plt.xticks(xx_coh,coh_plot[0])
+ax.set_ylim([-0.05,1.05])
+plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
+#plt.legend(loc='best')
+plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.pdf'%(monkey),dpi=500,bbox_inches='tight')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.png'%(monkey),dpi=500,bbox_inches='tight')
 
