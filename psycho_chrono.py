@@ -71,8 +71,8 @@ def log_curve(x,a,c):
 #def chrono_curve(x,a,b,c,tl0,tr0):
 #    return (b/(a*x+c))*np.tanh(a*x+c)+tl0*np.heaviside(-x,0)+tr0*np.heaviside(x,0)
 
-def chrono_curve(x,a,b,c,t0):
-  return (b/(a*x+c))*np.tanh(a*x+c)+t0
+#def chrono_curve(x,a,b,c,t0):
+#  return (b/(a*x+c))*np.tanh(a*x+c)+t0
 
 #def chrono_curve(x,b,t0):
 #    return (b/x)*np.tanh(x)+t0
@@ -93,8 +93,8 @@ def chrono_curve(x,a,b,c,t0):
 #def chrono_curve(x,B,K,c,b,t0):
 #    return B/(K*(c+b))*np.tanh(B*K*(c+b))+t0
     
-#def chrono_curve(x,a,c,t0):
-#    return np.exp(a*((x-c)**2))+t0
+def chrono_curve(x,a,c,t0):
+    return np.exp(a*((x-c)**2))+t0
 
 #################################################
 
@@ -129,7 +129,7 @@ for kk in range(len(files)):
     index_nonan=beha['index_nonan']
     reward=beha['reward']
     coh_signed=beha['coherence_signed']
-    coh_log=np.log(abs(coh_signed))
+    coh_log=np.log(abs(100*coh_signed))
     coh_log[coh_log<-100]=0
     coh_log[coh_signed<0]=-1*coh_log[coh_signed<0]
     coh_set_signed=np.unique(coh_signed)
@@ -182,6 +182,9 @@ for kk in range(len(files)):
         chrono[kk,i,0]=np.nanmean(rt[ind_coh])
         chrono[kk,i,1]=np.nanmean(rt[ind_coh][ind_ct0])
         chrono[kk,i,2]=np.nanmean(rt[ind_coh][ind_ct1])
+       # chrono[kk,i,0]=np.nanmean(np.log(rt[ind_coh]))
+       # chrono[kk,i,1]=np.nanmean(np.log(rt[ind_coh][ind_ct0]))
+       # chrono[kk,i,2]=np.nanmean(np.log(rt[ind_coh][ind_ct1]))
 
     # Fit Chronometric
     # popt0,pcov0=curve_fit(chrono_curve,xx_coh,chrono[kk,:,0])#,p0=(1,1000))#,p0=(1,0,100,500))#,p0=(-1000,0,1000))
@@ -191,19 +194,19 @@ for kk in range(len(files)):
     # popt2,pcov2=curve_fit(chrono_curve,xx_coh,chrono[kk,:,2])#,p0=(-1000,0,1000))
     # fit_chrono[kk,:,2]=chrono_curve(xx_coh,popt2[0],popt2[1],popt2[2],popt0[3])
 
-    # popt0,pcov0=curve_fit(chrono_curve,xx_coh,np.log(rt))#,nan_policy='omit',p0=(1,0.1))
-    # fit_chrono[kk,:,0]=np.exp(chrono_curve(xx_coh,popt0[0],popt0[1],popt0[2],popt0[3]))
-    # print (popt0)
-    # print (pcov0)
-    # popt1,pcov1=curve_fit(chrono_curve,xx_coh[context==0],np.log(rt[context==0]))#,method='lm',nan_policy='omit')#,p0=(10,0.1,6))
-    # fit_chrono[kk,:,1]=np.exp(chrono_curve(xx_coh,popt1[0],popt1[1],popt1[2],popt0[3]))
-    # print (popt1)
-    # print (pcov1)
-    # popt2,pcov2=curve_fit(chrono_curve,xx_coh[context==1],np.log(rt[context==1]))#,method='lm',nan_policy='omit')#,p0=(10,0.1,6))
-    # fit_chrono[kk,:,2]=np.exp(chrono_curve(xx_coh,popt2[0],popt2[1],popt2[2],popt0[3]))
-    # print (popt2)
-    # print (pcov2)
-                      
+    popt0,pcov0=curve_fit(chrono_curve,coh_log,np.log(rt),nan_policy='omit',p0=(-0.1,0.1,6))
+    fit_chrono[kk,:,0]=np.exp(chrono_curve(xx_coh,popt0[0],popt0[1],popt0[2]))#,popt0[3]))
+    print (popt0)
+    print (pcov0)
+    popt1,pcov1=curve_fit(chrono_curve,coh_log[context==0],np.log(rt[context==0]),nan_policy='omit',p0=(-0.1,0.1,6))
+    fit_chrono[kk,:,1]=np.exp(chrono_curve(xx_coh,popt1[0],popt1[1],popt1[2]))#,popt0[3])
+    print (popt1)
+    print (pcov1)
+    popt2,pcov2=curve_fit(chrono_curve,coh_log[context==1],np.log(rt[context==1]),nan_policy='omit',p0=(-0.1,0.1,6))
+    fit_chrono[kk,:,2]=np.exp(chrono_curve(xx_coh,popt2[0],popt2[1],popt2[2]))#,popt0[3])
+    print (popt2)
+    print (pcov2)
+
 #################################################################
 # Plot Psychometric
 psycho_m=np.mean(psycho,axis=0)
@@ -252,17 +255,17 @@ ax.fill_between(xx_coh,fit_chrono_m[:,2]-fit_chrono_sem[:,2],fit_chrono_m[:,2]+f
 ax.scatter(xx_coh,chrono_m[:,0],color='black',s=3)
 ax.scatter(xx_coh,chrono_m[:,1],color='green',s=3)#,alpha=0.5)
 ax.scatter(xx_coh,chrono_m[:,2],color='blue',s=3)#,alpha=0.5)
-ax.plot(xx_coh,chrono_m[:,0],color='black',label='All')
-ax.fill_between(xx_coh,chrono_m[:,0]-chrono_sem[:,0],chrono_m[:,0]+chrono_sem[:,0],color='black',alpha=0.5)
-ax.plot(xx_coh,chrono_m[:,1],color='green',label='Context Left')
-ax.fill_between(xx_coh,chrono_m[:,1]-chrono_sem[:,1],chrono_m[:,1]+chrono_sem[:,1],color='green',alpha=0.5)
-ax.plot(xx_coh,chrono_m[:,2],color='blue',label='Context Right')
-ax.fill_between(xx_coh,chrono_m[:,2]-chrono_sem[:,2],chrono_m[:,2]+chrono_sem[:,2],color='blue',alpha=0.5)
+#ax.plot(xx_coh,chrono_m[:,0],color='black',label='All')
+#ax.fill_between(xx_coh,chrono_m[:,0]-chrono_sem[:,0],chrono_m[:,0]+chrono_sem[:,0],color='black',alpha=0.5)
+#ax.plot(xx_coh,chrono_m[:,1],color='green',label='Context Left')
+#ax.fill_between(xx_coh,chrono_m[:,1]-chrono_sem[:,1],chrono_m[:,1]+chrono_sem[:,1],color='green',alpha=0.5)
+#ax.plot(xx_coh,chrono_m[:,2],color='blue',label='Context Right')
+#ax.fill_between(xx_coh,chrono_m[:,2]-chrono_sem[:,2],chrono_m[:,2]+chrono_sem[:,2],color='blue',alpha=0.5)
 ax.set_ylabel('Reaction Time (ms)')
 ax.set_xlabel('Evidence Right (% Coherence)')
 plt.legend(loc='best')
 plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-plt.yscale('log')
+#plt.yscale('log')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s.pdf'%monkey,dpi=500,bbox_inches='tight')
 
 
