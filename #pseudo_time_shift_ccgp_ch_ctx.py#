@@ -148,6 +148,7 @@ for kk in range(steps):
         sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
         indnan_flat=(sum_nan==0) # True will be used, False discarded
         ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+        print (sum_nan[::nt])
         ccgp_all[kk,ii]=abstraction_2D_bias(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias_vec=bias_vec,reg=reg)
 
 # Plot Shifted CCGP
