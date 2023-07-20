@@ -309,10 +309,10 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/pseudo_time_shift_ccgp_ch_ct
 # Evaluate significance
 for i in range(steps):
     print (xx[i])
-    #plt.hist(shccgp_m_sh[:,i,0]-ccgp_orig_m_sh[:,i,0])
-    #plt.axvline(shccgp_m[i,0]-ccgp_orig_m[i,0])
-    print (shccgp_m[i,1]-ccgp_orig_m[i,1])
-    print (np.mean(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]),np.std(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]))
-    #plt.show()
+    plt.hist(shccgp_m_sh[:,i,0]-ccgp_orig_m_sh[:,i,0])
+    plt.axvline(shccgp_m[i,0]-ccgp_orig_m[i,0])
+    #print (shccgp_m[i,1]-ccgp_orig_m[i,1])
+    #print (np.mean(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]),np.std(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]))
+    plt.show()
  
        
