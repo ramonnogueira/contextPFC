@@ -42,138 +42,19 @@ def clase_resolution(group_coh,coherence):
         clase_coh[ind]=group_coh[i]
     return clase_coh
     
-
-def shuffle_distr(pseudo_tr,pseudo_te,clase_all,rot_mat_vec):
-    clase_uq=np.unique(clase_all)
-    pseudo_tr_sh=nan*np.zeros(np.shape(pseudo_tr))
-    pseudo_te_sh=nan*np.zeros(np.shape(pseudo_te))
-    for i in range(len(clase_uq)):
-        ind_cl=np.where(clase_all==clase_uq[i])[0]
-        rot_mat=rot_mat_vec[i]
-        #print (rot_mat)
-        #pseudo_tr_sh[ind_cl]=np.dot(pseudo_tr[ind_cl],rot_mat)
-        #pseudo_te_sh[ind_cl]=np.dot(pseudo_te[ind_cl],rot_mat)
-        pseudo_tr_sh[ind_cl]=pseudo_tr[ind_cl][:,rot_mat]
-        pseudo_te_sh[ind_cl]=pseudo_te[ind_cl][:,rot_mat]
-    return pseudo_tr_sh,pseudo_te_sh
-
-def index_shuffle(num_neu,clase_all):
-    clase_uq=np.unique(clase_all)
-    #rot_mat_vec=nan*np.zeros((len(clase_uq),num_neu,num_neu))
-    rot_mat_vec=[]#nan*np.zeros((len(clase_uq),num_neu))
-    for i in range(len(clase_uq)):
-        #print (i)
-        #rot_mat_vec[i]=ortho_group.rvs(num_neu)
-        rot_mat_vec.append(np.random.permutation(np.arange(num_neu)))
-    rot_mat_vec=np.array(rot_mat_vec)
-    return rot_mat_vec
-
-def null_model_coh(repr_tr,repr_te,pert_std,n_coh,nt):
-    n_neu=len(repr_tr[0])
-    repr_tr_pert=nan*np.zeros(np.shape(repr_tr))
-    repr_te_pert=nan*np.zeros(np.shape(repr_te))
-    for i in range(2*n_coh):
-        pert=np.random.normal(0,pert_std,n_neu)
-        for ii in range(nt):
-            repr_tr_pert[i*nt+ii]=(repr_tr[i*nt+ii]+pert)
-            repr_te_pert[i*nt+ii]=(repr_te[i*nt+ii]+pert)
-    return repr_tr_pert,repr_te_pert
-
-def classifier(data,var):
-    n_cv=5
-    reg=1
-    perf=nan*np.zeros((n_cv,2))
-    skf=StratifiedKFold(n_splits=n_cv)
-    g=-1
-    for train, test in skf.split(data,var):
-        g=(g+1)
-        cl=LogisticRegression(C=1/reg)
-        cl.fit(data[train],var[train])
-        perf[g,0]=cl.score(data[train],var[train])
-        perf[g,1]=cl.score(data[test],var[test])
-    return np.mean(perf,axis=0)
-
-def rotation_ccgp(pseudo,clase_all):
-    clase_uq=np.unique(clase_all)
-    num_neu=pseudo.shape[-1]
-    pseudo_sh=nan*np.zeros(np.shape(pseudo))
-    for i in range(len(clase_uq)):
-        ind_cl=np.where(clase_all==clase_uq[i])[0]
-        rot_mat=np.random.permutation(np.arange(num_neu))
-        pseudo_sh[:,ind_cl]=pseudo[:,ind_cl][:,:,rot_mat]
-    return pseudo_sh
-
-def abstraction_2D(feat_decod,feat_binary,bias,reg):
-    exp_uq=np.unique(feat_binary,axis=0)
-    feat_binary_exp=np.zeros(len(feat_binary))
-    for t in range(len(feat_binary)):
-        for tt in range((len(exp_uq))):
-            gg=(np.sum(feat_binary[t]==exp_uq[tt])==len(feat_binary[0]))
-            if gg:
-                feat_binary_exp[t]=tt
-    #
-    #dichotomies=np.array([[0,0,1,1],[0,1,0,1],[0,1,1,0]])
-    #train_dich=np.array([[[0,2],[1,3],[0,3],[1,2]],[[0,1],[2,3],[0,3],[1,2]],[[0,1],[2,3],[0,2],[1,3]]])
-    #test_dich=np.array([[[1,3],[0,2],[1,2],[0,3]],[[2,3],[0,1],[1,2],[0,3]],[[2,3],[0,1],[1,3],[0,2]]])
-    dichotomies=np.array([[0,0,1,1],[0,1,0,1]])
-    train_dich=np.array([[[0,2],[1,3]],[[0,1],[2,3]]])
-    test_dich=np.array([[[1,3],[0,2]],[[2,3],[0,1]]])
-    
-    perf=nan*np.zeros((len(dichotomies),len(train_dich[0])))
-    inter=nan*np.zeros((len(dichotomies),len(train_dich[0])))
-    for k in range(len(dichotomies)): #Loop on "dichotomies"
-      for kk in range(len(train_dich[0])): #Loop on ways to train this particular "dichotomy"
-         ind_train=np.where((feat_binary_exp==train_dich[k][kk][0])|(feat_binary_exp==train_dich[k][kk][1]))[0]
-         ind_test=np.where((feat_binary_exp==test_dich[k][kk][0])|(feat_binary_exp==test_dich[k][kk][1]))[0]
-
-         task=nan*np.zeros(len(feat_binary_exp))
-         for i in range(4):
-             ind_task=(feat_binary_exp==i)
-             task[ind_task]=dichotomies[k][i]
-
-         supp=LogisticRegression(C=1/reg,class_weight='balanced')
-         #supp=LinearSVC(C=1/reg,class_weight='balanced')
-         mod=supp.fit(feat_decod[ind_train],task[ind_train])
-         inter[k,kk]=mod.intercept_[0]
-         pred=(np.dot(feat_decod[ind_test],supp.coef_[0])+supp.intercept_+bias)>0
-         perf[k,kk]=np.mean(pred==task[ind_test])
-         #perf[k,kk,0]=supp.score(feat_decod[ind_train],task[ind_train])
-         #perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
-    return perf,inter
-
-# def sig_test(dist1,dist2):
-#     dist_all=np.concatenate((dist1,dist2))
-#     clase=np.zeros(2*len(dist1))
-#     clase[len(dist1):]=1
-#     #
-#     d1m=np.mean(dist_all[clase==0])
-#     d2m=np.mean(dist_all[clase==1])
-#     diff=abs((np.mean(dist_all[clase==0])-np.mean(dist_all[clase==1])))
-#     #
-#     n_rand=10000
-#     diff_vec=np.zeros(n_rand)
-#     for i in range(n_rand):
-#         clase_sh=permutation(clase)
-#         diff_vec[i]=abs((np.mean(dist_all[clase_sh==0])-np.mean(dist_all[clase_sh==1])))
-
-#     diff_sort=np.sort(diff_vec)
-#     pval=len(diff_sort[diff_sort>diff])/n_rand
-#     return diff,diff_sort,pval
-        
-
 ##############################################
 
-monkey='Galileo'
+monkey='Niels'
 
 talig='dots_on'
-dic_time=np.array([0,650,200,50])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,450,200,50])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 print (xx)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=10
-n_shuff=20
+n_rand=20
+n_shuff=100
 perc_tr=0.8
 thres=0
 reg=1e2
@@ -194,12 +75,11 @@ print (files)
 ###################
 # Original
 perf_all=nan*np.zeros((steps,n_rand,3))
+# Careful! in this function I am only using correct trials so that choice and stimulus are the same    
 pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False,learning=False)
     
 for kk in range(steps):
     print (kk)
-    # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
-    pseudo_all=pseudo['pseudo_all'][kk]
     pseudo_tr=pseudo['pseudo_tr'][kk]
     pseudo_te=pseudo['pseudo_te'][kk]
     context=pseudo['clase_ctx']
@@ -258,7 +138,6 @@ for g in range(n_shuff):
     
     for kk in range(steps):
         # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
-        pseudo_all=pseudo['pseudo_all'][kk]
         pseudo_tr=pseudo['pseudo_tr'][kk]
         pseudo_te=pseudo['pseudo_te'][kk]
         context=pseudo['clase_ctx']

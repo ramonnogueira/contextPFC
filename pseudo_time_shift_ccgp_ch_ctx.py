@@ -282,6 +282,11 @@ for n in range(n_shuff):
 shccgp_m_sh=np.mean(shccgp_pre_sh,axis=(2,4))
 shccgp_std_sh=np.std(shccgp_m_sh,axis=0)
 
+# Null hypothesis regions
+ind_null=int((5/n_shuff)*100)
+ccgp_null=np.sort(ccgp_orig_m_sh,axis=0)
+shccgp_null=np.sort(shccgp_m_sh,axis=0)
+
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
@@ -294,10 +299,10 @@ ax.fill_between(xx,shccgp_m[:,0]-shccgp_std[:,0],shccgp_m[:,0]+shccgp_std[:,0],c
 ax.plot(xx,shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
 ax.fill_between(xx,shccgp_m[:,1]-shccgp_std[:,1],shccgp_m[:,1]+shccgp_std[:,1],color='brown',alpha=0.5)
 # Shuffled
-ax.fill_between(xx,np.mean(ccgp_orig_m_sh[:,:,0],axis=0)-ccgp_orig_std_sh[:,0],np.mean(ccgp_orig_m_sh[:,:,0],axis=0)+ccgp_orig_std_sh[:,0],color='royalblue',alpha=0.3)
-ax.fill_between(xx,np.mean(ccgp_orig_m_sh[:,:,1],axis=0)-ccgp_orig_std_sh[:,1],np.mean(ccgp_orig_m_sh[:,:,1],axis=0)+ccgp_orig_std_sh[:,1],color='orange',alpha=0.3)
-ax.fill_between(xx,np.mean(shccgp_m_sh[:,:,0],axis=0)-shccgp_std_sh[:,0],np.mean(shccgp_m_sh[:,:,0],axis=0)+shccgp_std_sh[:,0],color='blue',alpha=0.3)
-ax.fill_between(xx,np.mean(shccgp_m_sh[:,:,1],axis=0)-shccgp_std_sh[:,1],np.mean(shccgp_m_sh[:,:,1],axis=0)+shccgp_std_sh[:,1],color='brown',alpha=0.3)
+ax.fill_between(xx,ccgp_null[ind_null,:,0],ccgp_null[-ind_null,:,0],color='royalblue',alpha=0.3)
+ax.fill_between(xx,ccgp_null[ind_null,:,1],ccgp_null[-ind_null,:,1],color='orange',alpha=0.3)
+ax.fill_between(xx,shccgp_null[ind_null,:,0],shccgp_null[-ind_null,:,0],color='blue',alpha=0.3)
+ax.fill_between(xx,shccgp_null[ind_null,:,1],shccgp_null[-ind_null,:,1],color='brown',alpha=0.3)
 ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
 ax.set_ylim([0.4,1])
 ax.set_xlabel('Time (sec)')
@@ -309,10 +314,13 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/pseudo_time_shift_ccgp_ch_ct
 # Evaluate significance
 for i in range(steps):
     print (xx[i])
-    #plt.hist(shccgp_m_sh[:,i,0]-ccgp_orig_m_sh[:,i,0])
-    #plt.axvline(shccgp_m[i,0]-ccgp_orig_m[i,0])
-    print (shccgp_m[i,1]-ccgp_orig_m[i,1])
-    print (np.mean(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]),np.std(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]))
-    #plt.show()
+    plt.hist(shccgp_null[:,i,0]-ccgp_null[:,i,0],color='blue',alpha=0.5,bins=100)
+    plt.axvline(shccgp_m[i,0]-ccgp_orig_m[i,0],color='blue')
+    print (shccgp_null[:,i,0]-ccgp_null[:,i,0],shccgp_m[i,0]-ccgp_orig_m[i,0])
+    plt.show()
+    plt.hist(shccgp_null[:,i,1]-ccgp_null[:,i,1],color='brown',alpha=0.5,bins=100)
+    plt.axvline(shccgp_m[i,1]-ccgp_orig_m[i,1],color='brown')
+    print (shccgp_null[:,i,1]-ccgp_null[:,i,1],shccgp_m[i,1]-ccgp_orig_m[i,1])
+    plt.show()
  
        
