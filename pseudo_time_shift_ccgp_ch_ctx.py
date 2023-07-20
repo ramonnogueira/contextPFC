@@ -87,16 +87,16 @@ def abstraction_2D_bias(feat_decod,feat_binary,bias_vec,reg):
 
 monkey='Galileo'
 
-talig='dots_on'
+talig='dots_on' #'response_edf' #dots_on
 dic_time=np.array([0,650,200,50])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 print (xx)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=10
+n_rand=20
 n_bias=101
-n_shuff=0
+n_shuff=100
 perc_tr=0.8
 thres=0
 reg=1e2
@@ -109,7 +109,6 @@ if monkey=='Niels':
     group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
 if monkey=='Galileo':
     bias_vec=np.linspace(-8,8,n_bias) 
-    #group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]) # Cuidado!
     group_coh=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) 
 
 abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey)
@@ -124,8 +123,6 @@ for kk in range(steps):
     print (kk)
     # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
     pseudo_all=pseudo['pseudo_all'][kk]
-    pseudo_tr=pseudo['pseudo_tr'][kk]
-    #pseudo_te=pseudo['pseudo_te'][kk]
     context=pseudo['clase_ctx']
     clase_all=pseudo['clase_all']
     coherence=pseudo['clase_coh']
@@ -145,9 +142,28 @@ for kk in range(steps):
     
     for ii in range(n_rand):
         #print (' ',ii)
-        sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
+        sum_nan=np.sum(np.isnan(pseudo_all[ii]),axis=1)
         indnan_flat=(sum_nan==0) # True will be used, False discarded
-        ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+        ind_nonan_pre=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+
+        # Cuidado con esto
+        ind_nnan00_pre=ind_nonan_pre[np.where((feat_binary[:,0]==0)&(feat_binary[:,1]==0))[0]]
+        ind_nnan01_pre=ind_nonan_pre[np.where((feat_binary[:,0]==0)&(feat_binary[:,1]==1))[0]]
+        ind_nnan10_pre=ind_nonan_pre[np.where((feat_binary[:,0]==1)&(feat_binary[:,1]==0))[0]]
+        ind_nnan11_pre=ind_nonan_pre[np.where((feat_binary[:,0]==1)&(feat_binary[:,1]==1))[0]]
+        ind_nonan_q=(ind_nnan00_pre*ind_nnan01_pre*ind_nnan10_pre[::-1]*ind_nnan11_pre[::-1])
+        ind_nonan=ind_nonan_pre.copy()
+        if monkey=='Niels':
+            ind_nonan[100:700]=ind_nonan_q
+            ind_nonan[800:1400]=ind_nonan_q[::-1]
+            ind_nonan[1600:2200]=ind_nonan_q
+            ind_nonan[2300:2900]=ind_nonan_q[::-1]
+        if monkey=='Galileo':
+            ind_nonan[0:700]=ind_nonan_q
+            ind_nonan[800:1500]=ind_nonan_q[::-1]
+            ind_nonan[1500:2200]=ind_nonan_q
+            ind_nonan[2300:3000]=ind_nonan_q[::-1]
+        #
         ccgp_all[kk,ii]=abstraction_2D_bias(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias_vec=bias_vec,reg=reg)
 
 # Plot Shifted CCGP
@@ -165,33 +181,19 @@ shccgp_m=np.mean(shccgp_pre,axis=(1,3))
 #shccgp_std=np.std(shccgp_pre,axis=(1,3))
 shccgp_std=np.std(np.mean(shccgp_pre,axis=3),axis=1)
     
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.plot(xx,ccgp_orig_m[:,0],color='royalblue',label='CCGP Direction')
-ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='royalblue',alpha=0.5)
-ax.plot(xx,ccgp_orig_m[:,1],color='orange',label='CCGP Context')
-ax.fill_between(xx,ccgp_orig_m[:,1]-ccgp_orig_std[:,1],ccgp_orig_m[:,1]+ccgp_orig_std[:,1],color='orange',alpha=0.5)
-ax.plot(xx,shccgp_m[:,0],color='blue',label='Sh-CCGP Direction')
-ax.fill_between(xx,shccgp_m[:,0]-shccgp_std[:,0],shccgp_m[:,0]+shccgp_std[:,0],color='blue',alpha=0.5)
-ax.plot(xx,shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
-ax.fill_between(xx,shccgp_m[:,1]-shccgp_std[:,1],shccgp_m[:,1]+shccgp_std[:,1],color='brown',alpha=0.5)
-ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-ax.set_ylim([0.4,1])
-ax.set_xlabel('Time (sec)')
-ax.set_ylabel('Decoding Performance')
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/pseudo_time_shift_ccgp_ch_ctx_%s_%s.pdf'%(talig,monkey),dpi=500,bbox_inches='tight')
-
+# Plot as a function of time
 for t in range(steps):
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,0,0],axis=0),color='royalblue',label='Sh-CCGP Direction 1')
+    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,0,0],axis=0)-np.std(ccgp_all[t,:,:,0,0],axis=0),np.mean(ccgp_all[t,:,:,0,0],axis=0)+np.std(ccgp_all[t,:,:,0,0],axis=0),color='royalblue',alpha=0.5)
     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,0,1],axis=0),color='blue',label='Sh-CCGP Direction 2')
+    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,0,1],axis=0)-np.std(ccgp_all[t,:,:,0,1],axis=0),np.mean(ccgp_all[t,:,:,0,1],axis=0)+np.std(ccgp_all[t,:,:,0,1],axis=0),color='blue',alpha=0.5)
     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,0],axis=0),color='orange',label='Sh-CCGP Context 1')
+    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,0],axis=0)-np.std(ccgp_all[t,:,:,1,0],axis=0),np.mean(ccgp_all[t,:,:,1,0],axis=0)+np.std(ccgp_all[t,:,:,1,0],axis=0),color='orange',alpha=0.5)
     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0),color='brown',label='Sh-CCGP Context 2')
-    #ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='royalblue',alpha=0.5)
+    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0)-np.std(ccgp_all[t,:,:,1,1],axis=0),np.mean(ccgp_all[t,:,:,1,1],axis=0)+np.std(ccgp_all[t,:,:,1,1],axis=0),color='brown',alpha=0.5)
     ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Bias')
@@ -199,18 +201,18 @@ for t in range(steps):
     plt.legend(loc='best')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i.pdf'%(talig,monkey,t),dpi=500,bbox_inches='tight')
 
-# for p in range(steps):
-#     for pp in range(2):
-#         print ('Step ',p,'Var ',pp)
-#         plt.hist(np.mean(shccgp_pre[p,:,pp],axis=1)-np.mean(ccgp_all[p,0,:,15,pp],axis=1),bins=100)
-#         plt.show()
-# sig=sig_test(np.mean(shccgp_pre[p,:,pp],axis=1),np.mean(ccgp_all[p,0,:,15,pp],axis=1))
-# print ('CCGP ',np.mean(np.mean(ccgp_all[p,0,:,15,pp],axis=1),axis=0),ccgp_orig_m[p,pp])
-# print ('Sh CCGP ',np.mean(np.mean(shccgp_pre[p,:,pp],axis=1),axis=0),shccgp_m[p,pp])
-# print ('Step ',p,'Var ',pp,'diff ',sig[0],'p val ',sig[2])
-# plt.hist(sig[1])
-# plt.axvline(sig[0])
-# plt.show()
+# # for p in range(steps):
+# #     for pp in range(2):
+# #         print ('Step ',p,'Var ',pp)
+# #         plt.hist(np.mean(shccgp_pre[p,:,pp],axis=1)-np.mean(ccgp_all[p,0,:,15,pp],axis=1),bins=100)
+# #         plt.show()
+# # sig=sig_test(np.mean(shccgp_pre[p,:,pp],axis=1),np.mean(ccgp_all[p,0,:,15,pp],axis=1))
+# # print ('CCGP ',np.mean(np.mean(ccgp_all[p,0,:,15,pp],axis=1),axis=0),ccgp_orig_m[p,pp])
+# # print ('Sh CCGP ',np.mean(np.mean(shccgp_pre[p,:,pp],axis=1),axis=0),shccgp_m[p,pp])
+# # print ('Step ',p,'Var ',pp,'diff ',sig[0],'p val ',sig[2])
+# # plt.hist(sig[1])
+# # plt.axvline(sig[0])
+# # plt.show()
 
 
 #################################################
@@ -244,7 +246,26 @@ for n in range(n_shuff): # Loop over null hypothesis iterations
         for ii in range(n_rand):
             sum_nan=np.sum(np.isnan(pseudo_all[ii]),axis=1)
             indnan_flat=(sum_nan==0) # True will be used, False discarded
-            ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+            ind_nonan_pre=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+
+            # Cuidado con esto
+            ind_nnan00_pre=ind_nonan_pre[np.where((feat_binary[:,0]==0)&(feat_binary[:,1]==0))[0]]
+            ind_nnan01_pre=ind_nonan_pre[np.where((feat_binary[:,0]==0)&(feat_binary[:,1]==1))[0]]
+            ind_nnan10_pre=ind_nonan_pre[np.where((feat_binary[:,0]==1)&(feat_binary[:,1]==0))[0]]
+            ind_nnan11_pre=ind_nonan_pre[np.where((feat_binary[:,0]==1)&(feat_binary[:,1]==1))[0]]
+            ind_nonan_q=(ind_nnan00_pre*ind_nnan01_pre*ind_nnan10_pre[::-1]*ind_nnan11_pre[::-1])
+            ind_nonan=ind_nonan_pre.copy()
+            if monkey=='Niels':
+                ind_nonan[100:700]=ind_nonan_q
+                ind_nonan[800:1400]=ind_nonan_q[::-1]
+                ind_nonan[1600:2200]=ind_nonan_q
+                ind_nonan[2300:2900]=ind_nonan_q[::-1]
+            if monkey=='Galileo':
+                ind_nonan[0:700]=ind_nonan_q
+                ind_nonan[800:1500]=ind_nonan_q[::-1]
+                ind_nonan[1500:2200]=ind_nonan_q
+                ind_nonan[2300:3000]=ind_nonan_q[::-1]
+    
             ccgp_all_sh[n,kk,ii]=abstraction_2D_bias(pseudo_all[ii][ind_nonan],feat_binary[ind_nonan],bias_vec=bias_vec,reg=reg)
 
 # Plot Shuffled Shifted CCGP
@@ -261,10 +282,37 @@ for n in range(n_shuff):
 shccgp_m_sh=np.mean(shccgp_pre_sh,axis=(2,4))
 shccgp_std_sh=np.std(shccgp_m_sh,axis=0)
 
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(xx,ccgp_orig_m[:,0],color='royalblue',label='CCGP Direction')
+ax.fill_between(xx,ccgp_orig_m[:,0]-ccgp_orig_std[:,0],ccgp_orig_m[:,0]+ccgp_orig_std[:,0],color='royalblue',alpha=0.5)
+ax.plot(xx,ccgp_orig_m[:,1],color='orange',label='CCGP Context')
+ax.fill_between(xx,ccgp_orig_m[:,1]-ccgp_orig_std[:,1],ccgp_orig_m[:,1]+ccgp_orig_std[:,1],color='orange',alpha=0.5)
+ax.plot(xx,shccgp_m[:,0],color='blue',label='Sh-CCGP Direction')
+ax.fill_between(xx,shccgp_m[:,0]-shccgp_std[:,0],shccgp_m[:,0]+shccgp_std[:,0],color='blue',alpha=0.5)
+ax.plot(xx,shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
+ax.fill_between(xx,shccgp_m[:,1]-shccgp_std[:,1],shccgp_m[:,1]+shccgp_std[:,1],color='brown',alpha=0.5)
+# Shuffled
+ax.fill_between(xx,np.mean(ccgp_orig_m_sh[:,:,0],axis=0)-ccgp_orig_std_sh[:,0],np.mean(ccgp_orig_m_sh[:,:,0],axis=0)+ccgp_orig_std_sh[:,0],color='royalblue',alpha=0.3)
+ax.fill_between(xx,np.mean(ccgp_orig_m_sh[:,:,1],axis=0)-ccgp_orig_std_sh[:,1],np.mean(ccgp_orig_m_sh[:,:,1],axis=0)+ccgp_orig_std_sh[:,1],color='orange',alpha=0.3)
+ax.fill_between(xx,np.mean(shccgp_m_sh[:,:,0],axis=0)-shccgp_std_sh[:,0],np.mean(shccgp_m_sh[:,:,0],axis=0)+shccgp_std_sh[:,0],color='blue',alpha=0.3)
+ax.fill_between(xx,np.mean(shccgp_m_sh[:,:,1],axis=0)-shccgp_std_sh[:,1],np.mean(shccgp_m_sh[:,:,1],axis=0)+shccgp_std_sh[:,1],color='brown',alpha=0.3)
+ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+ax.set_ylim([0.4,1])
+ax.set_xlabel('Time (sec)')
+ax.set_ylabel('Decoding Performance')
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/pseudo_time_shift_ccgp_ch_ctx_%s_%s.pdf'%(talig,monkey),dpi=500,bbox_inches='tight')
+
+###############
+# Evaluate significance
 for i in range(steps):
     print (xx[i])
-    plt.hist(shccgp_m_sh[:,i,0]-ccgp_orig_m_sh[:,i,0])
-    plt.axvline(shccgp_m[i,0]-ccgp_orig_m[i,0])
-    plt.show()
+    #plt.hist(shccgp_m_sh[:,i,0]-ccgp_orig_m_sh[:,i,0])
+    #plt.axvline(shccgp_m[i,0]-ccgp_orig_m[i,0])
+    print (shccgp_m[i,1]-ccgp_orig_m[i,1])
+    print (np.mean(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]),np.std(shccgp_m_sh[:,i,1]-ccgp_orig_m_sh[:,i,1]))
+    #plt.show()
  
        
