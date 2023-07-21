@@ -180,10 +180,13 @@ for g in range(n_shuff):
             cl.fit(pseudo_tr[ii][ind_nonan],xor[ind_nonan])
             perf_all_sh[g,kk,ii,2]=cl.score(pseudo_te[ii][ind_nonan],xor[ind_nonan])
         
-perf_all_sh_pre_m=np.mean(perf_all_sh,axis=2)
-perf_all_sh_m=np.mean(perf_all_sh_pre_m,axis=0)
-perf_all_sh_std=np.std(perf_all_sh_pre_m,axis=0)
-print (perf_all_sh_m)
+perf_all_sh_m=np.mean(perf_all_sh,axis=2)
+#perf_all_sh_m=np.mean(perf_all_sh_pre_m,axis=0)
+#perf_all_sh_std=np.std(perf_all_sh_pre_m,axis=0)
+#print (perf_all_sh_m)
+
+ind_null=int((5/n_shuff)*100)
+perf_null=np.sort(perf_all_sh_m,axis=0)
 
 #######################################################################
 # Plot performance Tasks and XOR vs time
@@ -198,9 +201,12 @@ ax.fill_between(xx,perf_all_m[:,1]-perf_all_std[:,1],perf_all_m[:,1]+perf_all_st
 ax.plot(xx,perf_all_m[:,2],color='black',label='XOR')
 ax.fill_between(xx,perf_all_m[:,2]-perf_all_std[:,2],perf_all_m[:,2]+perf_all_std[:,2],color='black',alpha=0.5)
 # Shuffled
-ax.fill_between(xx,perf_all_sh_m[:,0]-perf_all_sh_std[:,0],perf_all_sh_m[:,0]+perf_all_sh_std[:,0],color='blue',alpha=0.3)
-ax.fill_between(xx,perf_all_sh_m[:,1]-perf_all_sh_std[:,1],perf_all_sh_m[:,1]+perf_all_sh_std[:,1],color='brown',alpha=0.3)
-ax.fill_between(xx,perf_all_sh_m[:,2]-perf_all_sh_std[:,2],perf_all_sh_m[:,2]+perf_all_sh_std[:,2],color='black',alpha=0.3)
+#ax.fill_between(xx,perf_all_sh_m[:,0]-perf_all_sh_std[:,0],perf_all_sh_m[:,0]+perf_all_sh_std[:,0],color='blue',alpha=0.3)
+#ax.fill_between(xx,perf_all_sh_m[:,1]-perf_all_sh_std[:,1],perf_all_sh_m[:,1]+perf_all_sh_std[:,1],color='brown',alpha=0.3)
+#ax.fill_between(xx,perf_all_sh_m[:,2]-perf_all_sh_std[:,2],perf_all_sh_m[:,2]+perf_all_sh_std[:,2],color='black',alpha=0.3)
+ax.fill_between(xx,perf_null[ind_null,:,0],perf_null[-ind_null,:,0],color='blue',alpha=0.3)
+ax.fill_between(xx,perf_null[ind_null,:,1],perf_null[-ind_null,:,1],color='brown',alpha=0.3)
+ax.fill_between(xx,perf_null[ind_null,:,2],perf_null[-ind_null,:,2],color='black',alpha=0.3)
 #
 ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
 ax.set_ylim([0.4,1])
