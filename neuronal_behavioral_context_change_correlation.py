@@ -53,25 +53,6 @@ def adjust_spines(ax, spines):
         # no xaxis ticks
         ax.xaxis.set_ticks([])
 
-def getField(data,name,extra=False):
-    ind=np.where(data['FIRA'][0]['events'][0]==name)[0][0]
-    var_pre=data['FIRA'][1][:,ind]
-    if extra:
-        var=nan*np.zeros(np.shape(var_pre))
-        for i in range(len(var)):
-            if type(var_pre[i])==int:
-                var[i]=var_pre[i]
-            else:
-                var[i]=nan
-    else:
-        var=var_pre.copy()    
-    return var
-
-def trans_rew(x):
-    rew=nan*np.zeros((len(x),2))
-    for i in range(len(x)):
-        rew[i]=x[i]
-    return rew
 
 def order_files(x):
     ord_pre=[]
@@ -81,15 +62,22 @@ def order_files(x):
     order=np.argsort(ord_pre)
     return order
 
+def gauss(x,mu,sig):
+    return 1/(sig*np.sqrt(2*np.pi))*np.exp(-0.5*((x-mu)**2)/(sig**2))
+
 def func(x,a,b,c):
     y=1.0/(1+np.exp(-a*x))
     return b*y+c
 
+def intercept(a,b,c):
+    return np.log(b/(0.5-c)-1)/(-a)
+    
+
 #################################################
 
-monkey='Niels'
+monkey='Galileo'
 t_back=50
-t_forw=50
+t_forw=200
 #t_forw=50
 ng=1
 #ng=3
@@ -106,9 +94,8 @@ print (files)
 
 xx=np.arange(t_back+t_forw)-t_back
 beha_ctx_ch=nan*np.zeros((len(files),t_back+t_forw))
-neu_ctx_ch=nan*np.zeros((len(files),t_back+t_forw))
-print ('t forward',t_forw)
-
+fit_func=nan*np.zeros((len(files),t_forw))
+inter=nan*np.zeros((len(files)))
 for kk in range(len(files)):
     print (files[kk])
     #Load data
@@ -128,6 +115,8 @@ for kk in range(len(files)):
     ind_ch=np.where(abs(ctx_ch)==1)[0]
     indch_ct10=np.where(ctx_ch==-1)[0]
     indch_ct01=np.where(ctx_ch==1)[0]
+
+    print (ind_ch,len(choice))
   
     #firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=0)
     #firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
@@ -146,11 +135,47 @@ for kk in range(len(files)):
         except:
             print ('Error Behavior Forward ',jj)
 
-plt.plot(xx,np.mean(beha_ctx_ch,axis=0))
+    sig_kernel=1e0 # not smaller than 1
+    kernel=gauss(xx,0,sig_kernel)
+    print (np.sum(kernel))
+    plt.plot(xx,kernel)
+    plt.show()
+    
+    convo=np.convolve(beha_ctx_ch[kk],kernel,mode='same')
+    print (convo)
+    
+    # popt,pcov=curve_fit(func,xx[t_back:],convo[t_back:],nan_policy='omit',p0=(0.01,0.5,0.1))
+    # fit_func[kk]=func(xx[t_back:],popt[0],popt[1],popt[2])
+    # inter[kk]=intercept(popt[0],popt[1],popt[2])
+    # print (popt)
+    # print (pcov)
+    # print (inter)
+
+    popt,pcov=curve_fit(func,xx[t_back:],beha_ctx_ch[t_back:],nan_policy='omit',p0=(0.01,0.5,0.1))
+    fit_func[kk]=func(xx[t_back:],popt[0],popt[1],popt[2])
+    inter[kk]=intercept(popt[0],popt[1],popt[2])
+    print (popt)
+    print (pcov)
+    print (inter)
+
+    plt.scatter(xx,beha_ctx_ch[kk],color='blue')
+    plt.scatter(xx,convo,color='green')
+    plt.plot(xx[t_back:],fit_func[kk],color='black')
+    plt.ylim([0,1])
+    plt.show()
+
+beha_ctx_ch_m=np.nanmean(beha_ctx_ch,axis=0)
+
+plt.scatter(xx,beha_ctx_ch_m,color='green',s=5)
+plt.plot(xx[t_back:],np.mean(fit_func,axis=0),color='green')
 plt.ylim([0,1])
+plt.axvline(0,color='black',linestyle='--')
+plt.plot(xx,0.5*np.ones(t_back+t_forw),color='black',linestyle='--')
+plt.plot(xx[0:t_back],np.mean(beha_ctx_ch_m[0:t_back])*np.ones(t_back),color='green')
 plt.show()
         
     #     #################################################
+
     #     # Neuronal
     #     # Extract indices for training classifier (remove the one for testing from the entire dataset)
     #     ind_train=np.arange(len(coherence))
