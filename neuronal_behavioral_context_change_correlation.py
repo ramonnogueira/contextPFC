@@ -84,6 +84,9 @@ def func3(x,a,b,c,d):
 def func4(x,a,b):
     return a*x+b
 
+def func(x,a,b):
+    return 1.0/(1+np.exp(-a*x+b))
+
 def intercept0(a,b):
     return np.log(b/0.5-1)/(-a)
 
@@ -113,26 +116,26 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel):
     print (popt)
     print (pcov)
     print (inter)
-    plt.scatter(xx,yy,color='blue')
-    plt.scatter(xx,convo,color='green')
+    plt.scatter(xx,yy,color='blue',s=1)
+    plt.scatter(xx,convo,color='green',s=1)
     plt.plot(xx[t_back:],fit_func,color='black')
     plt.axvline(0,color='black',linestyle='--')
     plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    plt.ylim([0,1])
+    plt.ylim([-0.1,1.1])
     plt.show()
     return fit_func,inter
   
 #################################################
 
-monkey='Galileo'
+monkey='Niels'
 t_back=50
-t_forw=50
+t_forw=100
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
 dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 
-thres=1
+thres=0
 reg=1e-5
 
 xx=np.arange(t_back+t_forw)-t_back
@@ -166,6 +169,7 @@ fit_neu=nan*np.zeros((len(files_groups),t_forw))
 inter_neu=nan*np.zeros((len(files_groups)))
 
 for hh in range(len(files_groups)):
+    xx_forw_pre=nan*np.zeros((100,(t_back+t_forw)))
     beha_pre=nan*np.zeros((100,(t_back+t_forw)))
     neu_ctx_pre=nan*np.zeros((100,(t_back+t_forw)))
     gg=-1
@@ -207,14 +211,15 @@ for hh in range(len(files_groups)):
                 try:
                     beha_pre[gg,j]=(choice[ind_ch[h]-t_back+j]==context[ind_ch[h]-t_back+j])
                 except:
-                    None
-                    #print ('Error Behavior Back ',h,j)
+                    #None
+                    print ('Error Behavior Back ',h,j)
             for j in range(t_forw):
                 try:
                     beha_pre[gg,t_back+j]=(choice[ind_ch[h]+j]==context[ind_ch[h]+j])
                 except:
-                    None
-                    #print ('Error Behavior Forward ',h,j)
+                    #None
+                    print ('Error Behavior Forward ',h,j)
+            xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
 
         ####################################################3
         # Neuronal
@@ -242,14 +247,14 @@ for hh in range(len(files_groups)):
                     neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
                 except:
                     None
-                    print ('Error Behavior Back ',o,j)
+                    print ('Error Neuro Back ',o,j)
             for j in range(t_forw):
                 try:
                     neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]+j])
                 except:
                     None
-                    print ('Error Behavior Forward ',o,j)        
-
+                    print ('Error Neuro Forward ',o,j) 
+                    
     beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
     neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
  
@@ -257,12 +262,12 @@ for hh in range(len(files_groups)):
     fit_beha[hh]=aa[0]
     inter_beha[hh]=aa[1]
 
-    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel)
-    fit_neu[hh]=aa[0]
-    inter_neu[hh]=aa[1]
+    # aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel)
+    # fit_neu[hh]=aa[0]
+    # inter_neu[hh]=aa[1]
 
-    print ('Beha ',inter_beha[hh])
-    print ('Neu ',inter_neu[hh])
+    #print ('Beha ',inter_beha[hh])
+    #print ('Neu ',inter_neu[hh])
     
     #################################################
     # ng=ng_dic[monkeys[k]]
@@ -332,4 +337,22 @@ for hh in range(len(files_groups)):
 # plt.axvline(0,color='black',linestyle='--')
 # plt.plot(xx,0.5*np.ones(t_back+t_forw),color='black',linestyle='--')
 # plt.plot(xx[0:t_back],np.mean(beha_ctx_ch_m[0:t_back])*np.ones(t_back),color='green')
+# plt.show()
+
+# print (np.ndarray.flatten(xx_forw_pre[0:gg+1,t_back:]).reshape(-1,1))
+# fb=LogisticRegression(C=1,class_weight='balanced')
+# fb.fit(np.ndarray.flatten(xx_forw_pre[0:gg+1,t_back:]).reshape(-1,1),np.ndarray.flatten(beha_pre[0:gg+1,t_back:]))
+# inter_beha[hh]=(fb.intercept_[0]/fb.coef_[0][0])
+# print (inter_beha[hh])
+
+# kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
+# #print (np.sum(kernel))
+# convo=np.convolve(beha_ctx_ch[hh],kernel,mode='same')
+
+# plt.scatter(xx,beha_ctx_ch[hh],color='blue',s=1)
+# plt.scatter(xx,convo,color='green',s=1)
+# plt.plot(xx[t_back:],func(xx[t_back:],fb.coef_[0][0],fb.intercept_[0]),color='black')
+# plt.axvline(0,color='black',linestyle='--')
+# plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+# plt.ylim([-0.1,1.1])
 # plt.show()
