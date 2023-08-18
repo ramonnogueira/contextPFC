@@ -65,10 +65,14 @@ def order_files(x):
 def gauss(x,mu,sig):
     return 1/(sig*np.sqrt(2*np.pi))*np.exp(-0.5*((x-mu)**2)/(sig**2))
 
+def func(x,a,b):
+    return 1.0/(1+np.exp(-a*x+b))
+
 def func0(x,a,b):
     y=1.0/(1+np.exp(-a*x))
     return b*y
 
+# Best for behavior
 def func1(x,a,b,c):
     y=1.0/(1+np.exp(-a*x))
     return b*y+c
@@ -84,8 +88,8 @@ def func3(x,a,b,c,d):
 def func4(x,a,b):
     return a*x+b
 
-def func(x,a,b):
-    return 1.0/(1+np.exp(-a*x+b))
+def intercept(a,b):
+    return b/a
 
 def intercept0(a,b):
     return np.log(b/0.5-1)/(-a)
@@ -102,17 +106,18 @@ def intercept3(a,b,c,d):
 def intercept4(a,b):
     return (0.5-b)/a
 
-def fit_plot(xx,yy,t_back,t_forw,sig_kernel):
+def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev):
     p0=(0.1,0.5,0.1)
+    #p0=(0.1,1,0.1)
 
     kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
     #print (np.sum(kernel))
     convo=np.convolve(yy,kernel,mode='same')
     
-    popt,pcov=curve_fit(func4,xx[t_back:],yy[t_back:],nan_policy='omit')#,p0=p0)
-    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',p0=p0)
-    fit_func=func4(xx[t_back:],popt[0],popt[1])#,popt[2])
-    inter=intercept4(popt[0],popt[1])#,popt[2])
+    popt,pcov=curve_fit(func1,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,p0=p0)
+    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev)#,p0=p0)
+    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
+    inter=intercept1(popt[0],popt[1],popt[2])
     print (popt)
     print (pcov)
     print (inter)
@@ -127,29 +132,30 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel):
   
 #################################################
 
-monkey='Niels'
+monkey='Galileo'
 t_back=50
-t_forw=100
+t_forw=50
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
 dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 
 thres=0
-reg=1e-5
+reg=1e0
+maxfev=100000
 
 xx=np.arange(t_back+t_forw)-t_back
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 if monkey=='Niels':
-    group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+    #group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
     #files_groups=[[0,4],[4,8],[8,12]]
     #files_groups=[[0,3],[3,6],[6,9],[9,12]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
     files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
 
 if monkey=='Galileo':
-    group_coh=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) 
+    #group_coh=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) 
     #files_groups=[[0,10],[10,20],[20,30]]
     #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
     files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
@@ -219,7 +225,7 @@ for hh in range(len(files_groups)):
                 except:
                     #None
                     print ('Error Behavior Forward ',h,j)
-            xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
+            #xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
 
         ####################################################3
         # Neuronal
@@ -236,6 +242,8 @@ for hh in range(len(files_groups)):
             ind_del=np.array(ind_del)
             ind_train=np.delete(ind_train,ind_del)
 
+        print (len(context),len(ind_train))
+
         # Fit classifier
         cl=LogisticRegression(C=1/reg,class_weight='balanced')
         cl.fit(firing_rate[ind_train],context[ind_train])
@@ -244,13 +252,15 @@ for hh in range(len(files_groups)):
             oo+=1
             for j in range(t_back):
                 try:
-                    neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
+                    #neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
+                    neu_ctx_pre[oo,j]=cl.score(firing_rate[(ind_ch[o]-t_back+j)].reshape(1,-1),context[ind_ch[o]-t_back+j].reshape(1,-1))
                 except:
                     None
                     print ('Error Neuro Back ',o,j)
             for j in range(t_forw):
                 try:
-                    neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]+j])
+                    #neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]+j])
+                    neu_ctx_pre[oo,t_back+j]=cl.score(firing_rate[(ind_ch[o]+j)].reshape(1,-1),context[ind_ch[o]+j].reshape(1,-1))
                 except:
                     None
                     print ('Error Neuro Forward ',o,j) 
@@ -258,101 +268,14 @@ for hh in range(len(files_groups)):
     beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
     neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
  
-    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel)
+    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev)
     fit_beha[hh]=aa[0]
     inter_beha[hh]=aa[1]
 
-    # aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel)
-    # fit_neu[hh]=aa[0]
-    # inter_neu[hh]=aa[1]
+    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev)
+    fit_neu[hh]=aa[0]
+    inter_neu[hh]=aa[1]
 
-    #print ('Beha ',inter_beha[hh])
-    #print ('Neu ',inter_neu[hh])
+    print ('Beha ',inter_beha[hh])
+    print ('Neu ',inter_neu[hh])
     
-    #################################################
-    # ng=ng_dic[monkeys[k]]
-    # n_files=int(len(files)/ng)
-    # beha_interx=nan*np.zeros(n_files)
-    # neu_interx=nan*np.zeros(n_files)
-    # for kk in range(n_files):
-    #     # BEHAVIOR
-    #     beha_ctx_fit=np.nanmean(beha_ctx_ch[ng*kk:ng*(kk+1)][:,t_back:],axis=0)
-    #     xx_fit=xx[t_back:]
-    #     # popt, pcov = curve_fit(func,xx_fit,beha_ctx_fit,[1,1,0],bounds=([0,0,-np.inf],[np.inf,np.inf,np.inf]))
-    #     linr=LinearRegression()
-    #     linr.fit(np.reshape(xx_fit,(len(xx_fit),1)),beha_ctx_fit)
-    #     beha_interx[kk]=(0.5-linr.intercept_)/linr.coef_[0]
-    #     print ('  Beha Inter x ',beha_interx[kk])
-    #     plt.plot(xx_fit,beha_ctx_fit,color='green')
-    #     #plt.plot(xx_fit,func(xx_fit,popt[0],popt[1],popt[2]),color='red')#,popt[2]
-    #     plt.plot(xx_fit,linr.coef_[0]*xx_fit+linr.intercept_,color='red')
-    #     plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    #     plt.ylabel('Probability (Choice==Context)')
-    #     plt.ylim([0,1])
-    #     plt.xlabel('Trials from Context Switch')
-    #     plt.show()
-    #     # NEURONS
-    #     neu_ctx_fit=np.nanmean(neu_ctx_ch[ng*kk:ng*(kk+1)][:,t_back:],axis=0)
-    #     xx_fit=xx[t_back:]
-    #     #popt, pcov = curve_fit(func,xx_fit,neu_ctx_fit,[1,1,0],bounds=([0,0,-np.inf],[np.inf,np.inf,np.inf]))
-    #     linr=LinearRegression()
-    #     linr.fit(np.reshape(xx_fit,(len(xx_fit),1)),neu_ctx_fit)
-    #     neu_interx[kk]=(0.5-linr.intercept_)/linr.coef_[0]
-    #     print ('  Neuro Inter x ',neu_interx[kk])
-    #     plt.plot(xx_fit,neu_ctx_fit,color='green')
-    #     #plt.plot(xx_fit,func(xx_fit,popt[0],popt[1],popt[2]),color='red')
-    #     plt.plot(xx_fit,linr.coef_[0]*xx_fit+linr.intercept_,color='red')
-    #     plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    #     plt.ylabel('Decoding Perf. Context')
-    #     plt.ylim([0,1])
-    #     plt.xlabel('Trials from Context Switch')
-    #     plt.show()    
-
-    # thres_s=500
-    # ind_def_b=np.where(abs(beha_interx)<thres_s)[0]
-    # ind_def_n=np.where(abs(neu_interx)<thres_s)[0]
-    # ind_def=np.intersect1d(ind_def_b,ind_def_n)
-    # plt.scatter(np.arange(len(beha_interx[ind_def]))+1,beha_interx[ind_def],color='green')
-    # plt.ylabel('Behavioral Threshold')
-    # plt.xlabel('Session')
-    # plt.show()
-    # plt.scatter(np.arange(len(neu_interx[ind_def]))+1,neu_interx[ind_def],color='green')
-    # plt.ylabel('Neural Threshold')
-    # plt.xlabel('Session')
-    # plt.show()
-    # slope, intercept, r, p, se = stats.linregress(beha_interx[ind_def],neu_interx[ind_def])
-    # print (slope,intercept,r**2,p)
-    # plt.scatter(beha_interx[ind_def],neu_interx[ind_def],alpha=(np.arange(len(ind_def))+1)/len(ind_def))
-    # plt.xlabel('Behavior')
-    # plt.ylabel('Neuronal')
-    # plt.show()
-
-
-# 
-# beha_ctx_ch_m=np.nanmean(beha_ctx_ch,axis=0)
-
-# plt.scatter(xx,beha_ctx_ch_m,color='green',s=5)
-# plt.plot(xx[t_back:],np.nanmean(fit_func,axis=0),color='green')
-# plt.ylim([0,1])
-# plt.axvline(0,color='black',linestyle='--')
-# plt.plot(xx,0.5*np.ones(t_back+t_forw),color='black',linestyle='--')
-# plt.plot(xx[0:t_back],np.mean(beha_ctx_ch_m[0:t_back])*np.ones(t_back),color='green')
-# plt.show()
-
-# print (np.ndarray.flatten(xx_forw_pre[0:gg+1,t_back:]).reshape(-1,1))
-# fb=LogisticRegression(C=1,class_weight='balanced')
-# fb.fit(np.ndarray.flatten(xx_forw_pre[0:gg+1,t_back:]).reshape(-1,1),np.ndarray.flatten(beha_pre[0:gg+1,t_back:]))
-# inter_beha[hh]=(fb.intercept_[0]/fb.coef_[0][0])
-# print (inter_beha[hh])
-
-# kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
-# #print (np.sum(kernel))
-# convo=np.convolve(beha_ctx_ch[hh],kernel,mode='same')
-
-# plt.scatter(xx,beha_ctx_ch[hh],color='blue',s=1)
-# plt.scatter(xx,convo,color='green',s=1)
-# plt.plot(xx[t_back:],func(xx[t_back:],fb.coef_[0][0],fb.intercept_[0]),color='black')
-# plt.axvline(0,color='black',linestyle='--')
-# plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-# plt.ylim([-0.1,1.1])
-# plt.show()
