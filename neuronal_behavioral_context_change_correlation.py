@@ -9,6 +9,7 @@ import pandas
 import pickle as pkl
 from scipy.stats import sem
 from scipy.stats import pearsonr
+from scipy.stats import spearmanr
 from numpy.random import permutation
 import miscellaneous
 from sklearn.decomposition import PCA
@@ -82,8 +83,8 @@ def func2(x,a,b,c):
     return b*y
 
 def func3(x,a,b,c,d):
-    y=1.0/(1+np.exp(-a*x+c))
-    return b*y+d
+    y=1.0/(1+np.exp(-a*x+d))
+    return b*y+c
 
 def func4(x,a,b):
     return a*x+b
@@ -101,48 +102,51 @@ def intercept2(a,b,c):
     return (np.log(b/0.5-1)-c)/(-a)
 
 def intercept3(a,b,c,d):
-    return (np.log(b/(0.5-d)-1)-c)/(-a)
+    return (np.log(b/(0.5-c)-1)-d)/(-a)
 
 def intercept4(a,b):
     return (0.5-b)/a
 
-def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev):
-    p0=(0.1,0.5,0.1)
+def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method):
+    #p0=(0.15,0.5,0.2,0.1)
+    p0=(0.15,0.5,0.2)
     #p0=(0.1,1,0.1)
 
     kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
     #print (np.sum(kernel))
     convo=np.convolve(yy,kernel,mode='same')
     
-    popt,pcov=curve_fit(func1,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,p0=p0)
-    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev)#,p0=p0)
-    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
-    inter=intercept1(popt[0],popt[1],popt[2])
+    popt,pcov=curve_fit(func1,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev)#,p0=p0)#,method=method)
+    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,p0=p0,method=method)
+    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])#,popt[3])
+    inter=intercept1(popt[0],popt[1],popt[2])#,popt[3])
     print (popt)
     print (pcov)
     print (inter)
-    plt.scatter(xx,yy,color='blue',s=1)
-    plt.scatter(xx,convo,color='green',s=1)
-    plt.plot(xx[t_back:],fit_func,color='black')
-    plt.axvline(0,color='black',linestyle='--')
-    plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    plt.ylim([-0.1,1.1])
-    plt.show()
+    # plt.scatter(xx,yy,color='blue',s=1)
+    # plt.scatter(xx,convo,color='green',s=1)
+    # plt.plot(xx[t_back:],fit_func,color='black')
+    # plt.axvline(0,color='black',linestyle='--')
+    # plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    # plt.ylim([-0.1,1.1])
+    # plt.show()
     return fit_func,inter
   
 #################################################
 
-monkey='Galileo'
-t_back=50
-t_forw=50
+# Galileo: t_back 25, t_forw 75, time window 400ms
+monkey='Niels'
+t_back=20
+t_forw=90
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 
 thres=0
 reg=1e0
 maxfev=100000
+method='dogbox'
 
 xx=np.arange(t_back+t_forw)-t_back
 
@@ -160,6 +164,7 @@ if monkey=='Galileo':
     #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
     files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
+    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
 
 abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
 files_pre=np.array(os.listdir(abs_path))
@@ -168,10 +173,10 @@ files_all=np.array(files_pre[order])
 print (files_all)
 
 beha_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
-fit_beha=nan*np.zeros((len(files_groups),t_forw))
+fit_beha=nan*np.zeros((len(files_groups),t_back+t_forw))
 inter_beha=nan*np.zeros((len(files_groups)))
 neu_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
-fit_neu=nan*np.zeros((len(files_groups),t_forw))
+fit_neu=nan*np.zeros((len(files_groups),t_back+t_forw))
 inter_neu=nan*np.zeros((len(files_groups)))
 
 for hh in range(len(files_groups)):
@@ -225,7 +230,7 @@ for hh in range(len(files_groups)):
                 except:
                     #None
                     print ('Error Behavior Forward ',h,j)
-            #xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
+            xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
 
         ####################################################3
         # Neuronal
@@ -238,44 +243,125 @@ for hh in range(len(files_groups)):
                 try:
                     ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
                 except:
-                    print ('error aqui')
+                    None
+                    #print ('error aqui')
             ind_del=np.array(ind_del)
             ind_train=np.delete(ind_train,ind_del)
 
-        print (len(context),len(ind_train))
-
+        print (len(context),len(ind_train),np.mean(context[ind_train]))
+        
         # Fit classifier
         cl=LogisticRegression(C=1/reg,class_weight='balanced')
         cl.fit(firing_rate[ind_train],context[ind_train])
+        #print ('norm ',np.linalg.norm(cl.coef_[0]))
 
         for o in range(len(ind_ch)):
             oo+=1
             for j in range(t_back):
                 try:
-                    #neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
-                    neu_ctx_pre[oo,j]=cl.score(firing_rate[(ind_ch[o]-t_back+j)].reshape(1,-1),context[ind_ch[o]-t_back+j].reshape(1,-1))
+                    neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
+                    #neu_ctx_pre[oo,j]=cl.score(firing_rate[(ind_ch[o]-t_back+j)].reshape(1,-1),context[ind_ch[o]-t_back+j].reshape(1,-1))
                 except:
                     None
-                    print ('Error Neuro Back ',o,j)
+                    #print ('Error Neuro Back ',o,j)
             for j in range(t_forw):
                 try:
-                    #neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]+j])
-                    neu_ctx_pre[oo,t_back+j]=cl.score(firing_rate[(ind_ch[o]+j)].reshape(1,-1),context[ind_ch[o]+j].reshape(1,-1))
+                    neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]+j):(ind_ch[o]+j+1)])==context[ind_ch[o]+j])
+                    #neu_ctx_pre[oo,t_back+j]=cl.score(firing_rate[(ind_ch[o]+j)].reshape(1,-1),context[ind_ch[o]+j].reshape(1,-1))
                 except:
                     None
-                    print ('Error Neuro Forward ',o,j) 
+                    #print ('Error Neuro Forward ',o,j) 
                     
     beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
     neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
- 
-    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev)
-    fit_beha[hh]=aa[0]
+
+    popt,pcov=curve_fit(func1,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=(0.15,0.5,0.2),method=method)
+    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
+    print ('Beha2 ',intercept1(popt[0],popt[1],popt[2]))
+           
+    popt,pcov=curve_fit(func1,xx_forw_pre[:,t_back:].ravel(),neu_ctx_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=(0.15,0.5,0.2),method=method)
+    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
+    print ('Neu2 ',intercept1(popt[0],popt[1],popt[2]))
+    
+    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method)
+    fit_beha[hh,t_back:]=aa[0]
+    fit_beha[hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
     inter_beha[hh]=aa[1]
 
-    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev)
-    fit_neu[hh]=aa[0]
+    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method)
+    fit_neu[hh,t_back:]=aa[0]
+    fit_neu[hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
     inter_neu[hh]=aa[1]
 
     print ('Beha ',inter_beha[hh])
     print ('Neu ',inter_neu[hh])
+
+##################################
+beha_ch_m=np.mean(beha_ctx_ch,axis=0)
+beha_ch_sem=sem(beha_ctx_ch,axis=0)
+neu_ch_m=np.mean(neu_ctx_ch,axis=0)
+neu_ch_sem=sem(neu_ctx_ch,axis=0)
+
+fit_beha_m=np.nanmean(fit_beha,axis=0)
+fit_beha_sem=sem(fit_beha,axis=0,nan_policy='omit')
+fit_neu_m=np.nanmean(fit_neu,axis=0)
+fit_neu_sem=sem(fit_neu,axis=0,nan_policy='omit')
+
+# Plot Behavior
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.axvline(0,color='black',linestyle='--')
+ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+ax.scatter(xx,beha_ch_m,color='green',s=1)
+ax.plot(xx,fit_beha_m,color='green')
+ax.fill_between(xx,fit_beha_m-fit_beha_sem,fit_beha_m+fit_beha_sem,color='green',alpha=0.5)
+ax.set_ylim([0,1])
+ax.set_xlabel('Trials after context change')
+ax.set_ylabel('Prob. (Choice == Context)')
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+
+##########################
+
+# Plot Neuro
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.axvline(0,color='black',linestyle='--')
+ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+ax.scatter(xx,neu_ch_m,color='blue',s=1)
+ax.plot(xx,fit_neu_m,color='blue')
+ax.fill_between(xx,fit_neu_m-fit_neu_sem,fit_neu_m+fit_neu_sem,color='blue',alpha=0.5)
+ax.set_ylim([0,1])
+ax.set_xlabel('Trials after context change')
+ax.set_ylabel('Prob. (Choice == Context)')
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+
+# Plot decrease Behavior and Neuronal theresholds
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+#ax.plot(np.arange(len(inter_beha)),np.zeros(len(inter_beha)),color='black',linestyle='--')
+ax.plot(np.arange(len(inter_beha)),inter_beha,color='green',label='Behavioral')
+ax.plot(np.arange(len(inter_beha)),inter_neu,color='blue',label='Neuronal')
+ax.set_xlabel('Sessions')
+ax.set_ylabel('Threshold')
+plt.legend(loc='best')
+plt.xticks([0,5,10])
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+
+# Plot correlation
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+for i in range(len(inter_beha)):
+    ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
+ax.set_xlabel('Threshold Behavioral')
+ax.set_ylabel('Threshold Neuronal')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+
+
+
     
