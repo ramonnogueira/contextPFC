@@ -107,22 +107,17 @@ def intercept3(a,b,c,d):
 def intercept4(a,b):
     return (0.5-b)/a
 
-def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method):
-    #p0=(0.15,0.5,0.2,0.1)
-    p0=(0.15,0.5,0.2)
-    #p0=(0.1,1,0.1)
-
+def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
-    #print (np.sum(kernel))
     convo=np.convolve(yy,kernel,mode='same')
     
-    popt,pcov=curve_fit(func1,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev)#,p0=p0)#,method=method)
-    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,p0=p0,method=method)
-    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])#,popt[3])
-    inter=intercept1(popt[0],popt[1],popt[2])#,popt[3])
-    print (popt)
+    popt,pcov=curve_fit(func2,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])#,popt[3])
+    inter=intercept2(popt[0],popt[1],popt[2])#,popt[3])
+    print ('Fit ',popt)
     print (pcov)
-    print (inter)
+    #print (inter)
     # plt.scatter(xx,yy,color='blue',s=1)
     # plt.scatter(xx,convo,color='green',s=1)
     # plt.plot(xx[t_back:],fit_func,color='black')
@@ -134,32 +129,37 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method):
   
 #################################################
 
-# Galileo: t_back 25, t_forw 75, time window 400ms
-monkey='Niels'
+# Function 2 for both. Bounds and p0 are important. 
+# Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
+# Galileo: t_back 20, t_forw 80, time window 400ms. No kernel. Groups of 3 sessions
+
+monkey='Galileo'
 t_back=20
-t_forw=90
+t_forw=80
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,400,400,400])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 
 thres=0
 reg=1e0
 maxfev=100000
 method='dogbox'
+#bounds=([0,0,-1,-100],[10,1,1,100])
+#p0=(0.05,0.5,0.2,1)
+bounds=([0,0,0],[1,1,10])
+p0=(0.05,0.5,1)
 
 xx=np.arange(t_back+t_forw)-t_back
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 if monkey=='Niels':
-    #group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
     #files_groups=[[0,4],[4,8],[8,12]]
     #files_groups=[[0,3],[3,6],[6,9],[9,12]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
     files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
 
 if monkey=='Galileo':
-    #group_coh=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) 
     #files_groups=[[0,10],[10,20],[20,30]]
     #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
     files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
@@ -206,7 +206,7 @@ for hh in range(len(files_groups)):
         ind_ch=np.where(abs(ctx_ch)==1)[0]
         indch_ct10=np.where(ctx_ch==-1)[0]
         indch_ct01=np.where(ctx_ch==1)[0]
-        print (ind_ch,len(choice))
+        #print (ind_ch,len(choice))
 
         firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
         firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
@@ -222,14 +222,14 @@ for hh in range(len(files_groups)):
                 try:
                     beha_pre[gg,j]=(choice[ind_ch[h]-t_back+j]==context[ind_ch[h]-t_back+j])
                 except:
-                    #None
-                    print ('Error Behavior Back ',h,j)
+                    None
+                    #print ('Error Behavior Back ',h,j)
             for j in range(t_forw):
                 try:
                     beha_pre[gg,t_back+j]=(choice[ind_ch[h]+j]==context[ind_ch[h]+j])
                 except:
-                    #None
-                    print ('Error Behavior Forward ',h,j)
+                    None
+                    #print ('Error Behavior Forward ',h,j)
             xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
 
         ####################################################3
@@ -275,20 +275,20 @@ for hh in range(len(files_groups)):
     beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
     neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
 
-    popt,pcov=curve_fit(func1,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=(0.15,0.5,0.2),method=method)
-    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
-    print ('Beha2 ',intercept1(popt[0],popt[1],popt[2]))
+    popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
+    fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
+    print ('Beha2 ',intercept2(popt[0],popt[1],popt[2]))
            
-    popt,pcov=curve_fit(func1,xx_forw_pre[:,t_back:].ravel(),neu_ctx_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=(0.15,0.5,0.2),method=method)
-    fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
-    print ('Neu2 ',intercept1(popt[0],popt[1],popt[2]))
+    popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),neu_ctx_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
+    fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
+    print ('Neu2 ',intercept2(popt[0],popt[1],popt[2]))
     
-    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method)
+    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     fit_beha[hh,t_back:]=aa[0]
     fit_beha[hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
     inter_beha[hh]=aa[1]
 
-    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method)
+    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     fit_neu[hh,t_back:]=aa[0]
     fit_neu[hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
     inter_neu[hh]=aa[1]
@@ -343,9 +343,8 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s.p
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
-#ax.plot(np.arange(len(inter_beha)),np.zeros(len(inter_beha)),color='black',linestyle='--')
-ax.plot(np.arange(len(inter_beha)),inter_beha,color='green',label='Behavioral')
-ax.plot(np.arange(len(inter_beha)),inter_neu,color='blue',label='Neuronal')
+ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_beha[inter_beha>0],color='green',label='Behavioral')
+ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_neu[inter_beha>0],color='blue',label='Neuronal')
 ax.set_xlabel('Sessions')
 ax.set_ylabel('Threshold')
 plt.legend(loc='best')
@@ -357,7 +356,8 @@ fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
 for i in range(len(inter_beha)):
-    ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
+    if (inter_beha[i]>0) and (inter_neu[i]>0):
+        ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
 ax.set_xlabel('Threshold Behavioral')
 ax.set_ylabel('Threshold Neuronal')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
