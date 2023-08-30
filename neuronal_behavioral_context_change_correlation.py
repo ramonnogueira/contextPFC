@@ -112,7 +112,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     convo=np.convolve(yy,kernel,mode='same')
     
     popt,pcov=curve_fit(func2,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    #popt,pcov=curve_fit(func1,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    #popt,pcov=curve_fit(func2,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])#,popt[3])
     inter=intercept2(popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
@@ -131,15 +131,15 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 
 # Function 2 for both. Bounds and p0 are important. 
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
-# Galileo: t_back 20, t_forw 80, time window 400ms. No kernel. Groups of 3 sessions
+# Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkey='Niels'
 t_back=20
 t_forw=80
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,400,400,400])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 
 thres=0
 reg=1e0
@@ -318,7 +318,7 @@ ax.plot(xx,fit_beha_m,color='green')
 ax.fill_between(xx,fit_beha_m-fit_beha_sem,fit_beha_m+fit_beha_sem,color='green',alpha=0.5)
 ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice == Context)')
+ax.set_ylabel('Prob. (Choice = Context)')
 plt.legend(loc='best')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
@@ -335,7 +335,7 @@ ax.plot(xx,fit_neu_m,color='blue')
 ax.fill_between(xx,fit_neu_m-fit_neu_sem,fit_neu_m+fit_neu_sem,color='blue',alpha=0.5)
 ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice == Context)')
+ax.set_ylabel('Decoding Perf. Context ')
 plt.legend(loc='best')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
