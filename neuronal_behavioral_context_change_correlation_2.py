@@ -148,9 +148,9 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Niels'
+monkey='Galileo'
 t_back=20
-t_forw=80
+t_forw=100
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
@@ -187,7 +187,7 @@ order=order_files(files_pre)
 files_all=np.array(files_pre[order])
 print (files_all)
 
-beha_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
+beha_ctx_ch=nan*np.zeros((2,len(files_groups),t_back+t_forw))
 fit_beha=nan*np.zeros((len(files_groups),t_back+t_forw))
 inter_beha=nan*np.zeros((len(files_groups)))
 neu_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
@@ -218,11 +218,11 @@ for hh in range(len(files_groups)):
         context_pre=beha['context']
         ctx_ch=(context_pre[1:]-context_pre[0:-1])
         context=context_pre[1:]
-        ind_ch=np.where(abs(ctx_ch)==1)[0]
-        indch_ct10=np.where(ctx_ch==-1)[0]
-        indch_ct01=np.where(ctx_ch==1)[0]
+        ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
+        #indch_ct10=np.where(ctx_ch==-1)[0]
+        #indch_ct01=np.where(ctx_ch==1)[0]
         #print (ind_ch,len(choice))
-        ind_ch=calculate_ind_ch_corr(ind_ch,reward)
+        ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
 
         firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
         firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
@@ -234,19 +234,27 @@ for hh in range(len(files_groups)):
         for h in range(len(ind_ch)):
             gg+=1
             ich=stimulus[ind_ch[h]]
-            #ich2=(ich1+1)%2
+            ich2=(ich+1)%2
             for j in range(t_back):
-                #try:
-                beha_pre[ich,gg,j]=(choice[ind_ch[h]-t_back+j]==context[ind_ch[h]-t_back+j])
-                #except:
-                #    None
-                #print ('Error Behavior Back ',h,j)
+                indj=(ind_ch[h]-t_back+j)
+                try:
+                    if stimulus[indj]==ich:
+                        beha_pre[0,gg,j]=(choice[indj]==context[indj])
+                    if stimulus[indj]==ich2:
+                        beha_pre[1,gg,j]=(choice[indj]==context[indj])
+                except:
+                    None
+                #    print ('Error Behavior Back ',h,j)
             for j in range(t_forw):
-                #try:
-                beha_pre[ich,gg,t_back+j]=(choice[ind_ch[h]+j]==context[ind_ch[h]+j])
-                #except:
-                #    None
-                #print ('Error Behavior Forward ',h,j)
+                indj=(ind_ch[h]+j)
+                try:
+                    if stimulus[indj]==ich:
+                        beha_pre[0,gg,t_back+j]=(choice[indj]==context[indj])
+                    if stimulus[indj]==ich2:
+                        beha_pre[1,gg,t_back+j]=(choice[indj]==context[indj])
+                except:
+                    None
+                #    print ('Error Behavior Forward ',h,j)
             #xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)        
 
 #         ####################################################3
@@ -289,8 +297,8 @@ for hh in range(len(files_groups)):
 #                     None
 #                     #print ('Error Neuro Forward ',o,j) 
                     
-#     beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
-#     neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
+    beha_ctx_ch[:,hh]=np.nanmean(beha_pre,axis=1)
+    #neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
 
 #     popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
 #     fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
