@@ -189,7 +189,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     inter=intercept2(popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
-    #print (inter)
+    print (inter,fit_func[1])
     # plt.scatter(xx,yy,color='blue',s=1)
     # plt.scatter(xx,convo,color='green',s=1)
     # plt.plot(xx[t_back:],fit_func,color='black')
@@ -205,7 +205,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Niels'
+monkey='Galileo'
 t_back=20
 t_forw=100
 sig_kernel=1 # not smaller than 1
@@ -389,15 +389,14 @@ for hh in range(len(files_groups)):
     # fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
     # print ('Neu2 ',intercept2(popt[0],popt[1],popt[2]))
     
-    # aa0=fit_plot(xx,beha_ctx_ch[0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-    # aa1=fit_plot(xx,beha_ctx_ch[1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-    # fit_beha[0,hh,t_back:]=aa0[0]
-    # fit_beha[1,hh,t_back:]=aa1[0]
-    # #fit_beha[hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
-    # inter_beha[0,hh]=aa0[1]
-    # inter_beha[1,hh]=aa1[1]
-    # y0_beha[0,hh]=aa0[0][0]
-    # y0_beha[1,hh]=aa1[0][0]
+    aa0=fit_plot(xx,beha_ctx_ch[0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    aa1=fit_plot(xx,beha_ctx_ch[1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    fit_beha[0,hh,t_back:]=aa0[0]
+    fit_beha[1,hh,t_back:]=aa1[0]
+    inter_beha[0,hh]=aa0[1]
+    inter_beha[1,hh]=aa1[1]
+    y0_beha[0,hh]=aa0[0][1]
+    y0_beha[1,hh]=aa1[0][1]
 
     # aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     # fit_neu[hh,t_back:]=aa[0]
