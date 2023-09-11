@@ -128,7 +128,7 @@ def calculate_ind_ch_corr(ind_ch,reward):
 # - context change from 1 to 0 correct stimulus 0
 # - context change from 1 to 0 correct stimulus 1 
 def calculate_ind_ch_corr2(ind_ch01,ind_ch10,reward,stimulus):
-    n_forw=10
+    n_forw=7
 
     # Context change from 0 to 1
     ind_ch01_s0=[]
@@ -205,9 +205,9 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkey='Niels'
 t_back=20
-t_forw=100
+t_forw=80
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
@@ -406,10 +406,10 @@ for hh in range(len(files_groups)):
 #     print ('Beha ',inter_beha[hh])
 #     print ('Neu ',inter_neu[hh])
 
-# aa=np.nanmean(beha_ctx_ch,axis=1)
-# plt.plot(aa[0],color='blue')
-# plt.plot(aa[1],color='green')
-# plt.show()
+aa=np.nanmean(beha_ctx_ch,axis=1)
+plt.plot(aa[0],color='blue')
+plt.plot(aa[1],color='green')
+plt.show()
 
 # aa=np.nanmean(beha_ctx_ch,axis=1)
 
