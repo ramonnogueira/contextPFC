@@ -182,8 +182,9 @@ def func_eval(index,t_back,t_forw,stimulus,choice,context):
 def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
     convo=np.convolve(yy,kernel,mode='same')
-    
-    popt,pcov=curve_fit(func2,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+
+    # Cuidado con el +1!
+    popt,pcov=curve_fit(func2,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     #popt,pcov=curve_fit(func2,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])#,popt[3])
     inter=intercept2(popt[0],popt[1],popt[2])#,popt[3])
@@ -205,7 +206,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Niels'
+monkey='Galileo'
 t_back=20
 t_forw=80
 sig_kernel=1 # not smaller than 1
@@ -250,9 +251,16 @@ fit_beha=nan*np.zeros((2,len(files_groups),t_back+t_forw))
 inter_beha=nan*np.zeros((2,len(files_groups)))
 y0_beha=nan*np.zeros((2,len(files_groups)))
 
+fit_beha2=nan*np.zeros((2,2,len(files_groups),t_back+t_forw))
+inter_beha2=nan*np.zeros((2,2,len(files_groups)))
+y0_beha2=nan*np.zeros((2,2,len(files_groups)))
+
 neu_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
 fit_neu=nan*np.zeros((len(files_groups),t_back+t_forw))
 inter_neu=nan*np.zeros((len(files_groups)))
+
+beha_te_unte=nan*np.zeros((2,len(files_groups),t_back+t_forw))
+beha_te_unte2=nan*np.zeros((2,2,len(files_groups),t_back+t_forw))
 
 for hh in range(len(files_groups)):
     xx_forw_pre=nan*np.zeros((100,(t_back+t_forw)))
@@ -261,6 +269,10 @@ for hh in range(len(files_groups)):
     beha_pre_01_1=[]
     beha_pre_10_0=[]
     beha_pre_10_1=[]
+    beha_tested_rlow=[]
+    beha_tested_rhigh=[]
+    beha_untested_rlow=[]
+    beha_untested_rhigh=[]
     neu_ctx_pre=nan*np.zeros((100,(t_back+t_forw)))
     gg=-1
     oo=-1
@@ -291,46 +303,71 @@ for hh in range(len(files_groups)):
         
         firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
         firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
+
+        print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
         
         ##################################################
         # Behavior
         # Probability of Choice = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
-        for h in range(len(ind_ch01_s0)):
-            beha_pre_01_0.append(func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,choice,context))
-        for h in range(len(ind_ch01_s1)):
-            beha_pre_01_1.append(func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,choice,context))
-        for h in range(len(ind_ch10_s0)):
-            beha_pre_10_0.append(func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,choice,context))
-        for h in range(len(ind_ch10_s1)):
-            beha_pre_10_1.append(func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,choice,context))
-                
-        ##################################################
-        # Behavior
-        # Probability of Choice
 
-        for h in range(len(ind_ch)):
-            gg+=1
-            ich=stimulus[ind_ch[h]]
-            ich2=(ich+1)%2
-            for j in range(t_back):
-                indj=(ind_ch[h]-t_back+j)
-                try:
-                    if stimulus[indj]==ich:
-                        beha_pre[0,gg,j]=(choice[indj]==context[indj])
-                    if stimulus[indj]==ich2:
-                        beha_pre[1,gg,j]=(choice[indj]==context[indj])
-                except:
-                    None
-                #    print ('Error Behavior Back ',h,j)
-            for j in range(t_forw):
-                indj=(ind_ch[h]+j)
-                try:
-                    if stimulus[indj]==ich:
-                        beha_pre[0,gg,t_back+j]=(choice[indj]==context[indj])
-                    if stimulus[indj]==ich2:
-                        beha_pre[1,gg,t_back+j]=(choice[indj]==context[indj])
-                except:
-                    None
+        # Numero 1 y 2 top
+        for h in range(len(ind_ch01_s0)):
+            cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,choice,context)
+            beha_pre_01_0.append(cc_01_0)
+            beha_tested_rlow.append(cc_01_0[0]) #1
+            beha_untested_rhigh.append(cc_01_0[1]) #2
+            #print ('1 y 2 top',cc_01_0)
+        # Numero 3 y 4 top
+        for h in range(len(ind_ch01_s1)):
+            cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,choice,context)
+            beha_pre_01_1.append(cc_01_1)
+            beha_untested_rlow.append(cc_01_1[0]) #3
+            beha_tested_rhigh.append(cc_01_1[1]) #4
+            #print ('3 y 4 top',cc_01_1)
+        # Numero 3 y 4 bottom           
+        for h in range(len(ind_ch10_s0)):
+            cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,choice,context)
+            beha_pre_10_0.append(cc_10_0)
+            beha_untested_rlow.append(cc_10_0[1]) #3
+            beha_tested_rhigh.append(cc_10_0[0]) #4
+            #print ('4 y 3 bottom',cc_10_1)       
+        # Numero 1 y 2 bottom           
+        for h in range(len(ind_ch10_s1)):
+            cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,choice,context)
+            beha_pre_10_1.append(cc_10_1)
+            beha_tested_rlow.append(cc_10_1[1]) #1
+            beha_untested_rhigh.append(cc_10_1[0]) #2
+            #print ('2 y 1 bottom',cc_10_1)
+
+        print (len(beha_tested_rlow),len(beha_untested_rhigh),len(beha_untested_rlow),len(beha_tested_rhigh))
+          
+        # ##################################################
+        # # Behavior
+        # # Probability of Choice
+
+        # for h in range(len(ind_ch)):
+        #     gg+=1
+        #     ich=stimulus[ind_ch[h]]
+        #     ich2=(ich+1)%2
+        #     for j in range(t_back):
+        #         indj=(ind_ch[h]-t_back+j)
+        #         try:
+        #             if stimulus[indj]==ich:
+        #                 beha_pre[0,gg,j]=(choice[indj]==context[indj])
+        #             if stimulus[indj]==ich2:
+        #                 beha_pre[1,gg,j]=(choice[indj]==context[indj])
+        #         except:
+        #             None
+        #         #    print ('Error Behavior Back ',h,j)
+        #     for j in range(t_forw):
+        #         indj=(ind_ch[h]+j)
+        #         try:
+        #             if stimulus[indj]==ich:
+        #                 beha_pre[0,gg,t_back+j]=(choice[indj]==context[indj])
+        #             if stimulus[indj]==ich2:
+        #                 beha_pre[1,gg,t_back+j]=(choice[indj]==context[indj])
+        #         except:
+        #             None
             #    print ('Error Behavior Forward ',h,j)
             #xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)        
 
@@ -374,11 +411,20 @@ for hh in range(len(files_groups)):
 #                     None
 #                     #print ('Error Neuro Forward ',o,j) 
 
-    beha_ctx_ch2[0,0,hh]=np.nanmean(beha_pre_01_0,axis=0)
-    beha_ctx_ch2[0,1,hh]=np.nanmean(beha_pre_01_1,axis=0)
-    beha_ctx_ch2[1,0,hh]=np.nanmean(beha_pre_10_0,axis=0)
-    beha_ctx_ch2[1,1,hh]=np.nanmean(beha_pre_10_1,axis=0)
-    beha_ctx_ch[:,hh]=np.nanmean(beha_pre,axis=1)
+    # beha_ctx_ch2[0,0,hh]=np.nanmean(beha_pre_01_0,axis=0)
+    # beha_ctx_ch2[0,1,hh]=np.nanmean(beha_pre_01_1,axis=0)
+    # beha_ctx_ch2[1,0,hh]=np.nanmean(beha_pre_10_0,axis=0)
+    # beha_ctx_ch2[1,1,hh]=np.nanmean(beha_pre_10_1,axis=0)
+    # beha_ctx_ch[:,hh]=np.nanmean(beha_pre,axis=1)
+
+    #beha_te_unte[0,hh]=np.nanmean(np.array([np.nanmean(beha_tested_rlow,axis=0),np.nanmean(beha_tested_rhigh,axis=0)]),axis=0)
+    #beha_te_unte[1,hh]=np.nanmean(np.array([np.nanmean(beha_untested_rlow,axis=0),np.nanmean(beha_untested_rhigh,axis=0)]),axis=0)
+
+    beha_te_unte2[0,0,hh]=np.nanmean(beha_tested_rlow,axis=0)
+    beha_te_unte2[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
+    beha_te_unte2[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
+    beha_te_unte2[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
+
     #neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
 
     # popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
@@ -389,14 +435,34 @@ for hh in range(len(files_groups)):
     # fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
     # print ('Neu2 ',intercept2(popt[0],popt[1],popt[2]))
     
-    aa0=fit_plot(xx,beha_ctx_ch[0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-    aa1=fit_plot(xx,beha_ctx_ch[1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-    fit_beha[0,hh,t_back:]=aa0[0]
-    fit_beha[1,hh,t_back:]=aa1[0]
-    inter_beha[0,hh]=aa0[1]
-    inter_beha[1,hh]=aa1[1]
-    y0_beha[0,hh]=aa0[0][1]
-    y0_beha[1,hh]=aa1[0][1]
+    # aa0=fit_plot(xx,beha_te_unte[0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    # aa1=fit_plot(xx,beha_te_unte[1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    # fit_beha[0,hh,t_back:]=aa0[0]
+    # fit_beha[1,hh,t_back:]=aa1[0]
+    # inter_beha[0,hh]=aa0[1]
+    # inter_beha[1,hh]=aa1[1]
+    # y0_beha[0,hh]=aa0[0][1]
+    # y0_beha[1,hh]=aa1[0][1]
+
+    aa00=fit_plot(xx,beha_te_unte2[0,0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    aa01=fit_plot(xx,beha_te_unte2[0,1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    aa10=fit_plot(xx,beha_te_unte2[1,0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    aa11=fit_plot(xx,beha_te_unte2[1,1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+    
+    fit_beha2[0,0,hh,t_back:]=aa00[0]
+    fit_beha2[0,1,hh,t_back:]=aa01[0]
+    fit_beha2[1,0,hh,t_back:]=aa10[0]
+    fit_beha2[1,1,hh,t_back:]=aa11[0]
+    
+    inter_beha2[0,0,hh]=aa00[1]
+    inter_beha2[0,1,hh]=aa01[1]
+    inter_beha2[1,0,hh]=aa10[1]
+    inter_beha2[1,1,hh]=aa11[1]
+    
+    y0_beha2[0,0,hh]=aa00[0][1]
+    y0_beha2[0,1,hh]=aa01[0][1]
+    y0_beha2[1,0,hh]=aa10[0][1]
+    y0_beha2[1,1,hh]=aa11[0][1]
 
     # aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     # fit_neu[hh,t_back:]=aa[0]
@@ -406,10 +472,6 @@ for hh in range(len(files_groups)):
 #     print ('Beha ',inter_beha[hh])
 #     print ('Neu ',inter_neu[hh])
 
-aa=np.nanmean(beha_ctx_ch,axis=1)
-plt.plot(aa[0],color='blue')
-plt.plot(aa[1],color='green')
-plt.show()
 
 # aa=np.nanmean(beha_ctx_ch,axis=1)
 
@@ -424,30 +486,34 @@ plt.show()
 
 
 # ##################################
-# beha_ch_m=np.mean(beha_ctx_ch,axis=0)
-# beha_ch_sem=sem(beha_ctx_ch,axis=0)
-# neu_ch_m=np.mean(neu_ctx_ch,axis=0)
-# neu_ch_sem=sem(neu_ctx_ch,axis=0)
+beha_ch_m=np.nanmean(beha_te_unte,axis=1)
+beha_ch_sem=sem(beha_te_unte,axis=1,nan_policy='omit')
+#neu_ch_m=np.mean(neu_ctx_ch,axis=0)
+#neu_ch_sem=sem(neu_ctx_ch,axis=0)
 
-# fit_beha_m=np.nanmean(fit_beha,axis=0)
-# fit_beha_sem=sem(fit_beha,axis=0,nan_policy='omit')
-# fit_neu_m=np.nanmean(fit_neu,axis=0)
-# fit_neu_sem=sem(fit_neu,axis=0,nan_policy='omit')
+fit_beha_m=np.nanmean(fit_beha,axis=1)
+fit_beha_sem=sem(fit_beha,axis=1,nan_policy='omit')
+#fit_neu_m=np.nanmean(fit_neu,axis=0)
+#fit_neu_sem=sem(fit_neu,axis=0,nan_policy='omit')
 
-# # Plot Behavior
-# fig=plt.figure(figsize=(2.3,2))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
-# ax.axvline(0,color='black',linestyle='--')
-# ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-# ax.scatter(xx,beha_ch_m,color='green',s=1)
-# ax.plot(xx,fit_beha_m,color='green')
-# ax.fill_between(xx,fit_beha_m-fit_beha_sem,fit_beha_m+fit_beha_sem,color='green',alpha=0.5)
-# ax.set_ylim([0,1])
-# ax.set_xlabel('Trials after context change')
-# ax.set_ylabel('Prob. (Choice = Context)')
-# plt.legend(loc='best')
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
+# Plot Behavior
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.axvline(0,color='black',linestyle='--')
+ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+
+ax.scatter(xx,beha_ch_m[0],color='green',s=1)
+ax.scatter(xx,beha_ch_m[1],color='blue',s=1)
+ax.plot(xx,fit_beha_m[0],color='green')
+ax.plot(xx,fit_beha_m[1],color='blue')
+ax.fill_between(xx,fit_beha_m[0]-fit_beha_sem[0],fit_beha_m[0]+fit_beha_sem[0],color='green',alpha=0.5)
+ax.fill_between(xx,fit_beha_m[1]-fit_beha_sem[1],fit_beha_m[1]+fit_beha_sem[1],color='blue',alpha=0.5)
+ax.set_ylim([0,1])
+ax.set_xlabel('Trials after context change')
+ax.set_ylabel('Prob. (Choice = Context)')
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 # ##########################
 
