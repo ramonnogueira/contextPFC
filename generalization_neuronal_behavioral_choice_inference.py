@@ -238,7 +238,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Niels'
+monkey='Galileo'
 t_back=20
 t_forw=80
 sig_kernel=1 # not smaller than 1

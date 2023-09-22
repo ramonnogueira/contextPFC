@@ -154,7 +154,7 @@ t_forw=80
 sig_kernel=1 # not smaller than 1
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,300,300,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 
 thres=0
 reg=1e0
