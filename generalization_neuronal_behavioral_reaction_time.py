@@ -131,7 +131,7 @@ def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
 # Niels: t_back 20, t_forw 80, dic_time (-200,400,200,200)ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, dic_time (-200,600,200,200)ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkey='Niels'
 t_back=20
 t_forw=80
 sig_kernel=1 # not smaller than 1
@@ -139,7 +139,7 @@ sig_kernel=1 # not smaller than 1
 time_extra=50
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([-200,600,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use
+dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 tt=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -200,8 +200,9 @@ for hh in range(len(files_groups)):
         context_pre=beha['context']
         ctx_ch=(context_pre[1:]-context_pre[0:-1])
         context=context_pre[1:]
-        ind_ch=np.where(abs(ctx_ch)==1)[0]
-        #ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward)
+        #ind_ch=np.where(abs(ctx_ch)==1)[0]#Careful!
+        ind_ch_pre=np.where(abs(ctx_ch)==1)[0]
+        ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward)
         #indch_ct10=np.where(ctx_ch==-1)[0]
         #indch_ct01=np.where(ctx_ch==1)[0]
         #print (ind_ch,len(choice))
