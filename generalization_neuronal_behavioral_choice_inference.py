@@ -238,7 +238,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkey='Niels'
 t_back=20
 t_forw=80
 sig_kernel=1 # not smaller than 1
@@ -310,7 +310,7 @@ for hh in range(len(files_groups)):
         rt=beha['reaction_time'][1:]
         context_pre=beha['context']
         ctx_ch=(context_pre[1:]-context_pre[0:-1])
-        context=context_pre[1:]
+        context=context_pre[1:] #FIX THIS. WE NEED A VARIABLE "SUBJECTIVE CONTEXT"
         ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
         #ind_ch=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
         indch_ct01_pre=np.where(ctx_ch==1)[0]
@@ -394,9 +394,13 @@ for hh in range(len(files_groups)):
     aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     fit_beha[0,0,hh,(t_back+1):]=aa00[0]
+    fit_beha[0,0,hh,0:t_back]=np.mean(beha_te_unte[0,0,hh,0:t_back])
     fit_beha[0,1,hh,(t_back+1):]=aa01[0]
+    fit_beha[0,1,hh,0:t_back]=np.mean(beha_te_unte[0,1,hh,0:t_back])
     fit_beha[1,0,hh,(t_back+1):]=aa10[0]
+    fit_beha[1,0,hh,0:t_back]=np.mean(beha_te_unte[1,0,hh,0:t_back])
     fit_beha[1,1,hh,(t_back+1):]=aa11[0]
+    fit_beha[1,1,hh,0:t_back]=np.mean(beha_te_unte[1,1,hh,0:t_back])
     inter_beha[0,0,hh]=aa00[1]
     inter_beha[0,1,hh]=aa01[1]
     inter_beha[1,0,hh]=aa10[1]
@@ -416,9 +420,13 @@ for hh in range(len(files_groups)):
     aa10=fit_plot(xx,neuro_te_unte[1,0,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     aa11=fit_plot(xx,neuro_te_unte[1,1,hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
     fit_neuro[0,0,hh,(t_back+1):]=aa00[0]
+    fit_neuro[0,0,hh,0:t_back]=np.mean(neuro_te_unte[0,0,hh,0:t_back])
     fit_neuro[0,1,hh,(t_back+1):]=aa01[0]
+    fit_neuro[0,1,hh,0:t_back]=np.mean(neuro_te_unte[0,1,hh,0:t_back])
     fit_neuro[1,0,hh,(t_back+1):]=aa10[0]
+    fit_neuro[1,0,hh,0:t_back]=np.mean(neuro_te_unte[1,0,hh,0:t_back])
     fit_neuro[1,1,hh,(t_back+1):]=aa11[0]
+    fit_neuro[1,1,hh,0:t_back]=np.mean(neuro_te_unte[1,1,hh,0:t_back])
     inter_neuro[0,0,hh]=aa00[1]
     inter_neuro[0,1,hh]=aa01[1]
     inter_neuro[1,0,hh]=aa10[1]
@@ -431,14 +439,18 @@ for hh in range(len(files_groups)):
 ####################################################
 # Behavior
 beha_m=np.nanmean(beha_te_unte,axis=2)
+beha_std=np.nanstd(beha_te_unte,axis=2)
 beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
 beha_fit_m=np.nanmean(fit_beha,axis=2)
+beha_fit_std=np.nanstd(fit_beha,axis=2)
 beha_fit_sem=sem(fit_beha,axis=2,nan_policy='omit')
+
+print ('Beha fit std Low R',beha_fit_std[:,0,21])
+print ('Beha fit std High R',beha_fit_std[:,1,21])
 
 ball_pre=np.nanmean(beha_te_unte,axis=1)
 ball_m=np.nanmean(ball_pre,axis=1)
 ball_sem=sem(ball_pre,axis=1,nan_policy='omit')
-
 ball_fit_pre=np.nanmean(fit_beha,axis=1)
 ball_fit_m=np.nanmean(ball_fit_pre,axis=1)
 ball_fit_sem=sem(ball_fit_pre,axis=1,nan_policy='omit')
@@ -447,10 +459,10 @@ plt.scatter(xx,beha_m[0,0],color='green')
 plt.scatter(xx,beha_m[1,0],color='blue')
 plt.axvline(0,color='black',linestyle='--')
 plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-plt.plot(xx[t_back:],beha_fit_m[0,0,t_back:],color='green')
-plt.fill_between(xx[t_back:],beha_fit_m[0,0,t_back:]-beha_fit_sem[0,0,t_back:],beha_fit_m[0,0,t_back:]+beha_fit_sem[0,0,t_back:],color='green',alpha=0.5)
-plt.plot(xx[t_back:],beha_fit_m[1,0,t_back:],color='blue')
-plt.fill_between(xx[t_back:],beha_fit_m[1,0,t_back:]-beha_fit_sem[1,0,t_back:],beha_fit_m[1,0,t_back:]+beha_fit_sem[1,0,t_back:],color='blue',alpha=0.5)
+plt.plot(xx,beha_fit_m[0,0],color='green')
+plt.fill_between(xx,beha_fit_m[0,0]-beha_fit_sem[0,0],beha_fit_m[0,0]+beha_fit_sem[0,0],color='green',alpha=0.5)
+plt.plot(xx,beha_fit_m[1,0],color='blue')
+plt.fill_between(xx,beha_fit_m[1,0]-beha_fit_sem[1,0],beha_fit_m[1,0]+beha_fit_sem[1,0],color='blue',alpha=0.5)
 plt.ylim([0,1])
 plt.xlabel('Trials after context change')
 plt.ylabel('Prob. (Choice = Context)')
@@ -460,10 +472,10 @@ plt.scatter(xx,beha_m[0,1],color='green')
 plt.scatter(xx,beha_m[1,1],color='blue')
 plt.axvline(0,color='black',linestyle='--')
 plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-plt.plot(xx[t_back:],beha_fit_m[0,1,t_back:],color='green')
-plt.fill_between(xx[t_back:],beha_fit_m[0,1,t_back:]-beha_fit_sem[0,1,t_back:],beha_fit_m[0,1,t_back:]+beha_fit_sem[0,1,t_back:],color='green',alpha=0.5)
-plt.plot(xx[t_back:],beha_fit_m[1,1,t_back:],color='blue')
-plt.fill_between(xx[t_back:],beha_fit_m[1,1,t_back:]-beha_fit_sem[1,1,t_back:],beha_fit_m[1,1,t_back:]+beha_fit_sem[1,1,t_back:],color='blue',alpha=0.5)
+plt.plot(xx,beha_fit_m[0,1],color='green')
+plt.fill_between(xx,beha_fit_m[0,1]-beha_fit_sem[0,1],beha_fit_m[0,1]+beha_fit_sem[0,1],color='green',alpha=0.5)
+plt.plot(xx,beha_fit_m[1,1],color='blue')
+plt.fill_between(xx,beha_fit_m[1,1]-beha_fit_sem[1,1],beha_fit_m[1,1]+beha_fit_sem[1,1],color='blue',alpha=0.5)
 plt.ylim([0,1])
 plt.xlabel('Trials after context change')
 plt.ylabel('Prob. (Choice = Context)')
@@ -473,10 +485,10 @@ plt.scatter(xx,ball_m[0],color='green')
 plt.scatter(xx,ball_m[1],color='blue')
 plt.axvline(0,color='black',linestyle='--')
 plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-plt.plot(xx[t_back:],ball_fit_m[0,t_back:],color='green')
-plt.fill_between(xx[t_back:],ball_fit_m[0,t_back:]-ball_fit_sem[0,t_back:],ball_fit_m[0,t_back:]+ball_fit_sem[0,t_back:],color='green',alpha=0.5)
-plt.plot(xx[t_back:],ball_fit_m[1,t_back:],color='blue')
-plt.fill_between(xx[t_back:],ball_fit_m[1,t_back:]-ball_fit_sem[1,t_back:],ball_fit_m[1,t_back:]+ball_fit_sem[1,t_back:],color='blue',alpha=0.5)
+plt.plot(xx,ball_fit_m[0],color='green')
+plt.fill_between(xx,ball_fit_m[0]-ball_fit_sem[0],ball_fit_m[0]+ball_fit_sem[0],color='green',alpha=0.5)
+plt.plot(xx,ball_fit_m[1],color='blue')
+plt.fill_between(xx,ball_fit_m[1]-ball_fit_sem[1],ball_fit_m[1]+ball_fit_sem[1],color='blue',alpha=0.5)
 plt.ylim([0,1])
 plt.xlabel('Trials after context change')
 plt.ylabel('Prob. (Choice = Context)')
@@ -512,10 +524,10 @@ plt.scatter(xx,neu_m[0,0],color='green')
 plt.scatter(xx,neu_m[1,0],color='blue')
 plt.axvline(0,color='black',linestyle='--')
 plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-plt.plot(xx[t_back:],neu_fit_m[0,0,t_back:],color='green')
-plt.fill_between(xx[t_back:],neu_fit_m[0,0,t_back:]-neu_fit_sem[0,0,t_back:],neu_fit_m[0,0,t_back:]+neu_fit_sem[0,0,t_back:],color='green',alpha=0.5)
-plt.plot(xx[t_back:],neu_fit_m[1,0,t_back:],color='blue')
-plt.fill_between(xx[t_back:],neu_fit_m[1,0,t_back:]-neu_fit_sem[1,0,t_back:],neu_fit_m[1,0,t_back:]+neu_fit_sem[1,0,t_back:],color='blue',alpha=0.5)
+plt.plot(xx,neu_fit_m[0,0],color='green')
+plt.fill_between(xx,neu_fit_m[0,0]-neu_fit_sem[0,0],neu_fit_m[0,0]+neu_fit_sem[0,0],color='green',alpha=0.5)
+plt.plot(xx,neu_fit_m[1,0],color='blue')
+plt.fill_between(xx,neu_fit_m[1,0]-neu_fit_sem[1,0],neu_fit_m[1,0]+neu_fit_sem[1,0],color='blue',alpha=0.5)
 plt.ylim([0,1])
 plt.xlabel('Trials after context change')
 plt.ylabel('Prob. (Choice = Context)')
@@ -525,10 +537,10 @@ plt.scatter(xx,neu_m[0,1],color='green')
 plt.scatter(xx,neu_m[1,1],color='blue')
 plt.axvline(0,color='black',linestyle='--')
 plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-plt.plot(xx[t_back:],neu_fit_m[0,1,t_back:],color='green')
-plt.fill_between(xx[t_back:],neu_fit_m[0,1,t_back:]-neu_fit_sem[0,1,t_back:],neu_fit_m[0,1,t_back:]+neu_fit_sem[0,1,t_back:],color='green',alpha=0.5)
-plt.plot(xx[t_back:],neu_fit_m[1,1,t_back:],color='blue')
-plt.fill_between(xx[t_back:],neu_fit_m[1,1,t_back:]-neu_fit_sem[1,1,t_back:],neu_fit_m[1,1,t_back:]+neu_fit_sem[1,1,t_back:],color='blue',alpha=0.5)
+plt.plot(xx,neu_fit_m[0,1],color='green')
+plt.fill_between(xx,neu_fit_m[0,1]-neu_fit_sem[0,1],neu_fit_m[0,1]+neu_fit_sem[0,1],color='green',alpha=0.5)
+plt.plot(xx,neu_fit_m[1,1],color='blue')
+plt.fill_between(xx,neu_fit_m[1,1]-neu_fit_sem[1,1],neu_fit_m[1,1]+neu_fit_sem[1,1],color='blue',alpha=0.5)
 plt.ylim([0,1])
 plt.xlabel('Trials after context change')
 plt.ylabel('Prob. (Choice = Context)')
@@ -538,10 +550,10 @@ plt.scatter(xx,nall_m[0],color='green')
 plt.scatter(xx,nall_m[1],color='blue')
 plt.axvline(0,color='black',linestyle='--')
 plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-plt.plot(xx[t_back:],nall_fit_m[0,t_back:],color='green')
-plt.fill_between(xx[t_back:],nall_fit_m[0,t_back:]-nall_fit_sem[0,t_back:],nall_fit_m[0,t_back:]+nall_fit_sem[0,t_back:],color='green',alpha=0.5)
-plt.plot(xx[t_back:],nall_fit_m[1,t_back:],color='blue')
-plt.fill_between(xx[t_back:],nall_fit_m[1,t_back:]-nall_fit_sem[1,t_back:],nall_fit_m[1,t_back:]+nall_fit_sem[1,t_back:],color='blue',alpha=0.5)
+plt.plot(xx,nall_fit_m[0],color='green')
+plt.fill_between(xx,nall_fit_m[0]-nall_fit_sem[0],nall_fit_m[0]+nall_fit_sem[0],color='green',alpha=0.5)
+plt.plot(xx,nall_fit_m[1],color='blue')
+plt.fill_between(xx,nall_fit_m[1]-nall_fit_sem[1],nall_fit_m[1]+nall_fit_sem[1],color='blue',alpha=0.5)
 plt.ylim([0,1])
 plt.xlabel('Trials after context change')
 plt.ylabel('Prob. (Choice = Context)')
