@@ -337,7 +337,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Prob. (Choice = Context)')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 ##########################
 
@@ -354,7 +354,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Decoding Perf. Context ')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 # Plot decrease Behavior and Neuronal theresholds
 fig=plt.figure(figsize=(2.3,2))
@@ -366,7 +366,7 @@ ax.set_xlabel('Sessions')
 ax.set_ylabel('Threshold')
 plt.legend(loc='best')
 plt.xticks([0,5,10])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 # Plot correlation
 fig=plt.figure(figsize=(2.3,2))
@@ -377,7 +377,7 @@ for i in range(len(inter_beha)):
         ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
 ax.set_xlabel('Threshold Behavioral')
 ax.set_ylabel('Threshold Neuronal')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 
 
