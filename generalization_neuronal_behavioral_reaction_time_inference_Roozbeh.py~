@@ -121,59 +121,51 @@ def calculate_ind_ch_corr2(ind_ch01,ind_ch10,reward,stimulus):
             ind_ch10_s1.append(bb[0])
     return np.array(ind_ch01_s0,dtype=np.int16),np.array(ind_ch01_s1,dtype=np.int16),np.array(ind_ch10_s0,dtype=np.int16),np.array(ind_ch10_s1,dtype=np.int16)
 
-def func_eval_behav(index,t_back,t_forw,stimulus,context,rt):
-    pp=nan*np.zeros((2,t_forw+t_back))
-    for j in range(t_back):
-        indj=(index-t_back+j)
-        try:
-            if stimulus[indj]==0:
-                pp[0,j]=rt[indj]
-            if stimulus[indj]==1:
-                pp[1,j]=rt[indj]
-        except:
-            None
-    for j in range(t_forw):
-        indj=(index+j)
-        try:
-            if stimulus[indj]==0:
-                pp[0,j+t_back]=rt[indj]
-            if stimulus[indj]==1:
-                pp[1,j+t_back]=rt[indj]
-        except:
-            None
+def func_eval_behav(index,stimulus,rt):
+    #pp=nan*np.zeros((2,t_forw+t_back))
+    pp=nan*np.zeros(2)
+    
+    stimp=stimulus[index]
+    
+    t_back=70
+    rt_low_pre=np.mean(rt[])
+    if stimulus[index+1]==0:
+        pp[0]=rt[index+1]
+    if stimulus[index+1]==1:
+        pp[1]=rt[index+1]
     return pp
 
-def func_eval_neuro(index,t_back,t_forw,stimulus,context,fr,reg):
-    #
-    ind_del_pre=(index+(np.arange(t_back+t_forw)-t_back))
-    ind_train_pre=np.arange(len(context))
-    ind_del=ind_del_pre[ind_del_pre<=np.max(ind_train_pre)]
-    ind_train=np.delete(ind_train_pre,ind_del)
-    #
-    cl=LogisticRegression(C=1/reg,class_weight='balanced')
-    cl.fit(fr[ind_train],context[ind_train])
-    choice=cl.predict(fr)
+# def func_eval_neuro(index,t_back,t_forw,stimulus,context,fr,reg):
+#     #
+#     ind_del_pre=(index+(np.arange(t_back+t_forw)-t_back))
+#     ind_train_pre=np.arange(len(context))
+#     ind_del=ind_del_pre[ind_del_pre<=np.max(ind_train_pre)]
+#     ind_train=np.delete(ind_train_pre,ind_del)
+#     #
+#     cl=LogisticRegression(C=1/reg,class_weight='balanced')
+#     cl.fit(fr[ind_train],context[ind_train])
+#     choice=cl.predict(fr)
        
-    pp=nan*np.zeros((2,t_forw+t_back))
-    for j in range(t_back):
-        indj=(index-t_back+j)
-        try:
-            if stimulus[indj]==0:
-                pp[0,j]=(choice[indj]==context[indj])
-            if stimulus[indj]==1:
-                pp[1,j]=(choice[indj]==context[indj])
-        except:
-            None
-    for j in range(t_forw):
-        indj=(index+j)
-        try:
-            if stimulus[indj]==0:
-                pp[0,j+t_back]=(choice[indj]==context[indj])
-            if stimulus[indj]==1:
-                pp[1,j+t_back]=(choice[indj]==context[indj])            
-        except:
-            None
-    return pp
+#     pp=nan*np.zeros((2,t_forw+t_back))
+#     for j in range(t_back):
+#         indj=(index-t_back+j)
+#         try:
+#             if stimulus[indj]==0:
+#                 pp[0,j]=(choice[indj]==context[indj])
+#             if stimulus[indj]==1:
+#                 pp[1,j]=(choice[indj]==context[indj])
+#         except:
+#             None
+#     for j in range(t_forw):
+#         indj=(index+j)
+#         try:
+#             if stimulus[indj]==0:
+#                 pp[0,j+t_back]=(choice[indj]==context[indj])
+#             if stimulus[indj]==1:
+#                 pp[1,j+t_back]=(choice[indj]==context[indj])            
+#         except:
+#             None
+#     return pp
 
 def fit_plot(xx,yy,sign,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     if sign==1:
@@ -221,7 +213,7 @@ def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
 # Niels: t_back 20, t_forw 80, dic_time (-200,400,200,200)ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, dic_time (-200,600,200,200)ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkey='Niels'
 t_back=50
 t_forw=200
 sig_kernel=1 # not smaller than 1
@@ -314,27 +306,38 @@ for hh in range(len(files_groups)):
         # Behavior
         # Probability of Choice = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
 
+        # In order to get the results from Roozbeh, we need to sustract the rt of the previous low and high.
+        # For instance, to get the results for the "High Reward" column, we need to evaluate the rt for the stimuli that correspond to current high reward and sustract the rt for the same stimuli before the context switch (low reward before context switch).
+        # The same could be potentially done for choice
+        # We can also do the same for neural data
+
+        nback=30
         # Numero 1 y 2 top
         for h in range(len(ind_ch01_s0)):
-            cc_01_0=func_eval_behav(ind_ch01_s0[h],t_back,t_forw,stimulus,context,rt)
-            beha_tested_rlow.append(cc_01_0[0]) #1
+            ind_used=(np.arange(nback)-nback+ind_ch01_s0[h])
+            rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)])
+            rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)])
+            beha_tested_rlow.append(rt[ind_ch01_s0[h]]cc_01_0[0]) #1
             beha_untested_rhigh.append(cc_01_0[1]) #2
+            #cc_01_0=func_eval_behav(ind_ch01_s0[h],stimulus,rt)
+            #beha_tested_rlow.append(cc_01_0[0]) #1
+            #beha_untested_rhigh.append(cc_01_0[1]) #2
             #print ('1 y 2 top',cc_01_0)
         # Numero 3 y 4 top
         for h in range(len(ind_ch01_s1)):
-            cc_01_1=func_eval_behav(ind_ch01_s1[h],t_back,t_forw,stimulus,context,rt)
+            cc_01_1=func_eval_behav(ind_ch01_s1[h],stimulus,rt)
             beha_untested_rlow.append(cc_01_1[0]) #3
             beha_tested_rhigh.append(cc_01_1[1]) #4
             #print ('3 y 4 top',cc_01_1)
         # Numero 3 y 4 bottom           
         for h in range(len(ind_ch10_s0)):
-            cc_10_0=func_eval_behav(ind_ch10_s0[h],t_back,t_forw,stimulus,context,rt)
+            cc_10_0=func_eval_behav(ind_ch10_s0[h],stimulus,rt)
             beha_untested_rlow.append(cc_10_0[1]) #3
             beha_tested_rhigh.append(cc_10_0[0]) #4
             #print ('4 y 3 bottom',cc_10_1)       
         # Numero 1 y 2 bottom           
         for h in range(len(ind_ch10_s1)):
-            cc_10_1=func_eval_behav(ind_ch10_s1[h],t_back,t_forw,stimulus,context,rt)
+            cc_10_1=func_eval_behav(ind_ch10_s1[h],stimulus,rt)
             beha_tested_rlow.append(cc_10_1[1]) #1
             beha_untested_rhigh.append(cc_10_1[0]) #2
             #print ('2 y 1 bottom',cc_10_1)
@@ -467,11 +470,13 @@ plt.show()
 
 width=0.2
 ind_plot=21
-plt.bar(-width/2.0,beha_m[0,0,ind_plot],yerr=beha_sem[0,0,ind_plot],color='green',width=width)
-plt.bar(+width/2.0,beha_m[1,0,ind_plot],yerr=beha_sem[1,0,ind_plot],color='blue',width=width)
+plt.bar(-width/2.0,beha_m[0,0,ind_plot],yerr=beha_sem[0,0,ind_plot],color='green',width=width,label='Repeated')
+plt.bar(+width/2.0,beha_m[1,0,ind_plot],yerr=beha_sem[1,0,ind_plot],color='blue',width=width,label='Untested')
 plt.bar(1-width/2.0,beha_m[0,1,ind_plot],yerr=beha_sem[0,1,ind_plot],color='green',width=width)
 plt.bar(1+width/2.0,beha_m[1,1,ind_plot],yerr=beha_sem[1,1,ind_plot],color='blue',width=width)
 #plt.ylim([0,1])
+plt.legend(loc='best')
+plt.xticks([0,1],['Low Reward','High Reward'])
 plt.ylabel('Normalized Reaction Time')
 plt.show()
 

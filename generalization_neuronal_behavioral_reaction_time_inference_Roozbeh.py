@@ -121,19 +121,19 @@ def calculate_ind_ch_corr2(ind_ch01,ind_ch10,reward,stimulus):
             ind_ch10_s1.append(bb[0])
     return np.array(ind_ch01_s0,dtype=np.int16),np.array(ind_ch01_s1,dtype=np.int16),np.array(ind_ch10_s0,dtype=np.int16),np.array(ind_ch10_s1,dtype=np.int16)
 
-def func_eval_behav(index,stimulus,rt):
-    #pp=nan*np.zeros((2,t_forw+t_back))
-    pp=nan*np.zeros(2)
+# def func_eval_behav(index,stimulus,rt):
+#     #pp=nan*np.zeros((2,t_forw+t_back))
+#     pp=nan*np.zeros(2)
     
-    stimp=stimulus[index]
+#     stimp=stimulus[index]
     
-    t_back=70
-    rt_low_pre=np.mean(rt[])
-    if stimulus[index+1]==0:
-        pp[0]=rt[index+1]
-    if stimulus[index+1]==1:
-        pp[1]=rt[index+1]
-    return pp
+#     t_back=70
+#     rt_low_pre=np.mean(rt[])
+#     if stimulus[index+1]==0:
+#         pp[0]=rt[index+1]
+#     if stimulus[index+1]==1:
+#         pp[1]=rt[index+1]
+#     return pp
 
 # def func_eval_neuro(index,t_back,t_forw,stimulus,context,fr,reg):
 #     #
@@ -206,7 +206,22 @@ def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
         ind_nan=(rt_max<(1000*tt[i]+tw))
         fr_nan[ind_nan,:,i]=nan
     return fr_nan
- 
+
+def chrono_curve(x,Bl,Br,K,c_shift,t0l,t0r): # x[:,0] is coherence and x[:,1] is choice
+    decl=(1-x[:,1])*(Bl/(K*(x[:,0]-c_shift)))*np.tanh(K*Bl*(x[:,0]-c_shift))
+    decr=x[:,1]*(Br/(K*(x[:,0]-c_shift)))*np.tanh(K*Br*(x[:,0]-c_shift))
+    tnd=(1-x[:,1])*t0l+x[:,1]*t0r
+    return decl+decr+tnd
+
+def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
+    popt,pcov,infodict,mesg,ier=curve_fit(chrono_curve,xx[ind_fit],rt[ind_fit],maxfev=maxfev,p0=p0,method=method,full_output=True)
+    yy=chrono_curve(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])
+    #print (popt)
+    fit_chrono=nan*np.zeros(len(coh_uq))
+    for ii in range(len(coh_uq)):
+        fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
+    return fit_chrono,popt
+
 #################################################
 
 # Function 2 for both. Bounds and p0 are important.
@@ -225,16 +240,14 @@ dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 tt=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
-
 thres=0
 reg=1e0
+
 maxfev=100000
-method='dogbox'
-
-bounds=([0,0,-1],[1000,10,1])
-p0=(0.05,0.5,0.1)
-
-xx=np.arange(t_back+t_forw)-t_back
+p0=(-20,20,-0.005,0.1,500,500)
+p0l=(-20,20,-0.005,-3,500,700)
+p0r=(-20,20,-0.005,3,700,500)
+method='lm'
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 if monkey=='Niels':
@@ -278,14 +291,16 @@ for hh in range(len(files_groups)):
         # We discard first trial of session because we are interested in context changes
         stimulus=beha['stimulus'][1:]
         choice=beha['choice'][1:]
-        coherence=beha['coherence_signed'][1:]
-        coh_uq=np.unique(coherence)
+        #coherence=beha['coherence_signed'][1:]
+        coh_signed=beha['coherence_signed'][1:]
+        coh_set_signed=np.unique(coh_signed)
         reward=beha['reward'][1:]
         rt_pre=beha['reaction_time'][1:]
-        rt=norm_quant_coh(rt_pre,coherence)
+        rt=norm_quant_coh(rt_pre,coh_signed)
         context_pre=beha['context']
         ctx_ch=(context_pre[1:]-context_pre[0:-1])
         context=context_pre[1:]
+        # Indices for first trial rewarded after change
         ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
         #ind_ch=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
         indch_ct01_pre=np.where(ctx_ch==1)[0]
@@ -294,13 +309,13 @@ for hh in range(len(files_groups)):
         ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
 
         # Careful contamination saccades!
-        firing_rate_pre1=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
-        num_neu=len(firing_rate_pre1[0])
-        steps=len(firing_rate_pre1[0,0])
-        firing_rate_pre2=miscellaneous.normalize_fr(firing_rate_pre1)[1:]
-        fr_nan=np.reshape(fr_rt_nan(rt_pre,firing_rate_pre2,tt,dic_time[2],time_extra),(-1,num_neu*steps))
-        ind_nnan_bool=~np.isnan(np.sum(fr_nan,axis=1))
-        ind_nnan=np.where(ind_nnan_bool)[0]
+        # firing_rate_pre1=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+        # num_neu=len(firing_rate_pre1[0])
+        # steps=len(firing_rate_pre1[0,0])
+        # firing_rate_pre2=miscellaneous.normalize_fr(firing_rate_pre1)[1:]
+        # fr_nan=np.reshape(fr_rt_nan(rt_pre,firing_rate_pre2,tt,dic_time[2],time_extra),(-1,num_neu*steps))
+        # ind_nnan_bool=~np.isnan(np.sum(fr_nan,axis=1))
+        # ind_nnan=np.where(ind_nnan_bool)[0]
      
         ##################################################
         # Behavior
@@ -311,38 +326,89 @@ for hh in range(len(files_groups)):
         # The same could be potentially done for choice
         # We can also do the same for neural data
 
-        nback=30
-        # Numero 1 y 2 top
+        nback=100
+        xx=np.array([100*coh_signed,choice]).T
+        
+        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+        # Current high is Right and current low is Left. Previous low is Right and previous high is Left. 
         for h in range(len(ind_ch01_s0)):
-            ind_used=(np.arange(nback)-nback+ind_ch01_s0[h])
-            rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)])
-            rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)])
-            beha_tested_rlow.append(rt[ind_ch01_s0[h]]cc_01_0[0]) #1
-            beha_untested_rhigh.append(cc_01_0[1]) #2
-            #cc_01_0=func_eval_behav(ind_ch01_s0[h],stimulus,rt)
-            #beha_tested_rlow.append(cc_01_0[0]) #1
-            #beha_untested_rhigh.append(cc_01_0[1]) #2
-            #print ('1 y 2 top',cc_01_0)
-        # Numero 3 y 4 top
-        for h in range(len(ind_ch01_s1)):
-            cc_01_1=func_eval_behav(ind_ch01_s1[h],stimulus,rt)
-            beha_untested_rlow.append(cc_01_1[0]) #3
-            beha_tested_rhigh.append(cc_01_1[1]) #4
-            #print ('3 y 4 top',cc_01_1)
-        # Numero 3 y 4 bottom           
-        for h in range(len(ind_ch10_s0)):
-            cc_10_0=func_eval_behav(ind_ch10_s0[h],stimulus,rt)
-            beha_untested_rlow.append(cc_10_0[1]) #3
-            beha_tested_rhigh.append(cc_10_0[0]) #4
-            #print ('4 y 3 bottom',cc_10_1)       
-        # Numero 1 y 2 bottom           
-        for h in range(len(ind_ch10_s1)):
-            cc_10_1=func_eval_behav(ind_ch10_s1[h],stimulus,rt)
-            beha_tested_rlow.append(cc_10_1[1]) #1
-            beha_untested_rhigh.append(cc_10_1[0]) #2
-            #print ('2 y 1 bottom',cc_10_1)
+            ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
+            ind_used[ind_pre]=True
+            ind_used[np.isnan(rt)]=False
+            #popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
+            #print (popt)
+            #rt_mean=chrono_curve(xx[(ind_ch01_s0[h]+1):(ind_ch01_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+            #dev=(rt[ind_ch01_s0[h]+1]-rt_mean)
+            #if stimulus[ind_ch01_s0[h]+1]==0: 
+            #    beha_tested_rlow.append(dev)
+            #if stimulus[ind_ch01_s0[h]+1]==1:
+            #    beha_untested_rhigh.append(dev)
+            rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+            rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+            if stimulus[ind_ch01_s0[h]+1]==0: 
+               beha_tested_rlow.append(rt[ind_ch01_s0[h]+1]-rt_high_pre)
+            if stimulus[ind_ch01_s0[h]+1]==1:
+               beha_untested_rhigh.append(rt[ind_ch01_s0[h]+1]-rt_low_pre)
 
-        #print (len(beha_tested_rlow),len(beha_untested_rhigh),len(beha_untested_rlow),len(beha_tested_rhigh))
+        # Current high is Right and current low is Left. Previous low is Right and previous high is Left. 
+        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+        for h in range(len(ind_ch01_s1)):
+            ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
+            ind_used[ind_pre]=True
+            ind_used[np.isnan(rt)]=False
+            # popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
+            # rt_mean=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+            # dev=(rt[ind_ch01_s1[h]+1]-rt_mean)
+            # if stimulus[ind_ch01_s1[h]+1]==0:
+            #     beha_untested_rlow.append(dev)
+            # if stimulus[ind_ch01_s1[h]+1]==1:
+            #     beha_tested_rhigh.append(dev)  
+            rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+            rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+            if stimulus[ind_ch01_s1[h]+1]==0:
+                beha_untested_rlow.append(rt[ind_ch01_s1[h]+1]-rt_high_pre)
+            if stimulus[ind_ch01_s1[h]+1]==1:
+                beha_tested_rhigh.append(rt[ind_ch01_s1[h]+1]-rt_low_pre)
+                
+        # Numero 3 y 4 bottom
+        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+        for h in range(len(ind_ch10_s0)):
+            ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
+            ind_used[ind_pre]=True
+            ind_used[np.isnan(rt)]=False
+            # popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
+            # rt_mean=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+            # dev=(rt[ind_ch10_s0[h]+1]-rt_mean)
+            # if stimulus[ind_ch10_s0[h]+1]==0: 
+            #     beha_untested_rhigh.append(dev)
+            # if stimulus[ind_ch10_s0[h]+1]==1:
+            #     beha_tested_rlow.append(dev)
+            rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+            rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+            if stimulus[ind_ch10_s0[h]+1]==0: 
+               beha_untested_rhigh.append(rt[ind_ch10_s0[h]+1]-rt_low_pre)
+            if stimulus[ind_ch10_s0[h]+1]==1:
+               beha_tested_rlow.append(rt[ind_ch10_s0[h]+1]-rt_high_pre)
+
+        # Numero 1 y 2 bottom
+        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+        for h in range(len(ind_ch10_s1)):
+            ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
+            ind_used[ind_pre]=True
+            ind_used[np.isnan(rt)]=False
+            # popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
+            # rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+            # dev=(rt[ind_ch10_s1[h]+1]-rt_mean)
+            # if stimulus[ind_ch10_s1[h]+1]==0: 
+            #     beha_tested_rhigh.append(dev)
+            # if stimulus[ind_ch10_s1[h]+1]==1:
+            #     beha_untested_rlow.append(dev)            
+            rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+            rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+            if stimulus[ind_ch10_s1[h]+1]==0: 
+               beha_tested_rhigh.append(rt[ind_ch10_s1[h]+1]-rt_low_pre)
+            if stimulus[ind_ch10_s1[h]+1]==1:
+               beha_untested_rlow.append(rt[ind_ch10_s1[h]+1]-rt_high_pre)
 
         # ##################################################
         # # Neuro
@@ -433,27 +499,27 @@ beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
 # ball_fit_m=np.nanmean(ball_fit_pre,axis=1)
 # ball_fit_sem=sem(ball_fit_pre,axis=1,nan_policy='omit')
 
-plt.scatter(xx,beha_m[0,0],color='green')
-plt.scatter(xx,beha_m[1,0],color='blue')
-plt.axvline(0,color='black',linestyle='--')
+# plt.scatter(xx,beha_m[0,0],color='green')
+# plt.scatter(xx,beha_m[1,0],color='blue')
+# plt.axvline(0,color='black',linestyle='--')
 # plt.plot(xx[t_back:],beha_fit_m[0,0,t_back:],color='green')
 # plt.fill_between(xx[t_back:],beha_fit_m[0,0,t_back:]-beha_fit_sem[0,0,t_back:],beha_fit_m[0,0,t_back:]+beha_fit_sem[0,0,t_back:],color='green',alpha=0.5)
 # plt.plot(xx[t_back:],beha_fit_m[1,0,t_back:],color='blue')
 # plt.fill_between(xx[t_back:],beha_fit_m[1,0,t_back:]-beha_fit_sem[1,0,t_back:],beha_fit_m[1,0,t_back:]+beha_fit_sem[1,0,t_back:],color='blue',alpha=0.5)
-plt.xlabel('Trials after context change')
-plt.ylabel('Normalized Reaction Time')
-plt.show()
+# plt.xlabel('Trials after context change')
+# plt.ylabel('Normalized Reaction Time')
+# plt.show()
 
-plt.scatter(xx,beha_m[0,1],color='green')
-plt.scatter(xx,beha_m[1,1],color='blue')
-plt.axvline(0,color='black',linestyle='--')
+# plt.scatter(xx,beha_m[0,1],color='green')
+# plt.scatter(xx,beha_m[1,1],color='blue')
+# plt.axvline(0,color='black',linestyle='--')
 # plt.plot(xx[t_back:],beha_fit_m[0,1,t_back:],color='green')
 # plt.fill_between(xx[t_back:],beha_fit_m[0,1,t_back:]-beha_fit_sem[0,1,t_back:],beha_fit_m[0,1,t_back:]+beha_fit_sem[0,1,t_back:],color='green',alpha=0.5)
 # plt.plot(xx[t_back:],beha_fit_m[1,1,t_back:],color='blue')
 # plt.fill_between(xx[t_back:],beha_fit_m[1,1,t_back:]-beha_fit_sem[1,1,t_back:],beha_fit_m[1,1,t_back:]+beha_fit_sem[1,1,t_back:],color='blue',alpha=0.5)
-plt.xlabel('Trials after context change')
-plt.ylabel('Normalized Reaction Time')
-plt.show()
+# plt.xlabel('Trials after context change')
+# plt.ylabel('Normalized Reaction Time')
+# plt.show()
 
 # plt.scatter(xx,ball_m[0],color='green')
 # plt.scatter(xx,ball_m[1],color='blue')
@@ -470,13 +536,13 @@ plt.show()
 
 width=0.2
 ind_plot=21
-plt.bar(-width/2.0,beha_m[0,0,ind_plot],yerr=beha_sem[0,0,ind_plot],color='green',width=width,label='Repeated')
-plt.bar(+width/2.0,beha_m[1,0,ind_plot],yerr=beha_sem[1,0,ind_plot],color='blue',width=width,label='Untested')
-plt.bar(1-width/2.0,beha_m[0,1,ind_plot],yerr=beha_sem[0,1,ind_plot],color='green',width=width)
-plt.bar(1+width/2.0,beha_m[1,1,ind_plot],yerr=beha_sem[1,1,ind_plot],color='blue',width=width)
+plt.bar(1-width/2.0,beha_m[0,0,ind_plot],yerr=beha_sem[0,0,ind_plot],color='green',width=width,label='Repeated')
+plt.bar(1+width/2.0,beha_m[1,0,ind_plot],yerr=beha_sem[1,0,ind_plot],color='blue',width=width,label='Untested')
+plt.bar(-width/2.0,beha_m[0,1,ind_plot],yerr=beha_sem[0,1,ind_plot],color='green',width=width)
+plt.bar(+width/2.0,beha_m[1,1,ind_plot],yerr=beha_sem[1,1,ind_plot],color='blue',width=width)
 #plt.ylim([0,1])
 plt.legend(loc='best')
-plt.xticks([0,1],['Low Reward','High Reward'])
+plt.xticks([0,1],['High Reward','Low Reward'])
 plt.ylabel('Normalized Reaction Time')
 plt.show()
 
