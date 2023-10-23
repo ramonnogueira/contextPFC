@@ -172,17 +172,18 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
     if sign==1:
         popt,pcov=curve_fit(func_p,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+        fit_func=func_p(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
     if sign==-1:
         popt,pcov=curve_fit(func_n,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+        fit_func=func_n(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
-    # plt.scatter(xx,yy,color='blue',s=1)
-    # plt.plot(xx[(t_back+1):],fit_func,color='black')
-    # plt.axvline(0,color='black',linestyle='--')
-    # plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    # plt.ylim([-0.1,1.1])
-    # plt.show()
+    plt.scatter(xx,yy,color='blue',s=1)
+    plt.plot(xx[(t_back+1):],fit_func,color='black')
+    plt.axvline(0,color='black',linestyle='--')
+    plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    plt.ylim([-0.1,1.1])
+    plt.show()
     return fit_func
   
 #################################################
@@ -191,7 +192,7 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Niels'
+monkey='Galileo'
 t_back=20
 t_forw=80
 delta_type='fit'

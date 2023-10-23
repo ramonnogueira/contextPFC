@@ -163,14 +163,14 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
-    # plt.scatter(xx,yy,color='blue',s=1)
+    # plt.scatter(xx,yy,color='blue',s=5)
     # plt.plot(xx[(t_back+1):],fit_func,color='black')
     # plt.axvline(0,color='black',linestyle='--')
     # plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
     # plt.ylim([-0.1,1.1])
     # plt.show()
     return fit_func
-  
+
 #################################################
 
 # Function 2 for both. Bounds and p0 are important. 
@@ -183,7 +183,7 @@ t_forw=80
 delta_type='fit'
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) 
+dic_time=np.array([400,0,400,400])# time pre, time post, bin size, step size (time pre always positive) 
 
 thres=0
 reg=1e0
@@ -319,18 +319,22 @@ for hh in range(len(files_groups)):
     beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
     beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
     beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
+    print (beha_te_unte[0,0,hh])
     aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+    print (beha_te_unte[0,1,hh])
     aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+    print (beha_te_unte[1,0,hh])
     aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+    print (beha_te_unte[1,1,hh])
     aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
     fit_beha[0,0,hh,(t_back+1):]=aa00
-    fit_beha[0,0,hh,0:t_back]=np.mean(beha_te_unte[0,0,hh,0:t_back])
+    fit_beha[0,0,hh,0:t_back]=np.nanmean(beha_te_unte[0,0,hh,0:t_back])
     fit_beha[0,1,hh,(t_back+1):]=aa01
-    fit_beha[0,1,hh,0:t_back]=np.mean(beha_te_unte[0,1,hh,0:t_back])
+    fit_beha[0,1,hh,0:t_back]=np.nanmean(beha_te_unte[0,1,hh,0:t_back])
     fit_beha[1,0,hh,(t_back+1):]=aa10
-    fit_beha[1,0,hh,0:t_back]=np.mean(beha_te_unte[1,0,hh,0:t_back])
+    fit_beha[1,0,hh,0:t_back]=np.nanmean(beha_te_unte[1,0,hh,0:t_back])
     fit_beha[1,1,hh,(t_back+1):]=aa11
-    fit_beha[1,1,hh,0:t_back]=np.mean(beha_te_unte[1,1,hh,0:t_back])
+    fit_beha[1,1,hh,0:t_back]=np.nanmean(beha_te_unte[1,1,hh,0:t_back])
     y0_beha[0,0,hh]=aa00[0]
     y0_beha[0,1,hh]=aa01[0]
     y0_beha[1,0,hh]=aa10[0]
@@ -346,13 +350,13 @@ for hh in range(len(files_groups)):
     aa10=fit_plot(xx,neuro_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
     aa11=fit_plot(xx,neuro_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
     fit_neuro[0,0,hh,(t_back+1):]=aa00
-    fit_neuro[0,0,hh,0:t_back]=np.mean(neuro_te_unte[0,0,hh,0:t_back])
+    fit_neuro[0,0,hh,0:t_back]=np.nanmean(neuro_te_unte[0,0,hh,0:t_back])
     fit_neuro[0,1,hh,(t_back+1):]=aa01
-    fit_neuro[0,1,hh,0:t_back]=np.mean(neuro_te_unte[0,1,hh,0:t_back])
+    fit_neuro[0,1,hh,0:t_back]=np.nanmean(neuro_te_unte[0,1,hh,0:t_back])
     fit_neuro[1,0,hh,(t_back+1):]=aa10
-    fit_neuro[1,0,hh,0:t_back]=np.mean(neuro_te_unte[1,0,hh,0:t_back])
+    fit_neuro[1,0,hh,0:t_back]=np.nanmean(neuro_te_unte[1,0,hh,0:t_back])
     fit_neuro[1,1,hh,(t_back+1):]=aa11
-    fit_neuro[1,1,hh,0:t_back]=np.mean(neuro_te_unte[1,1,hh,0:t_back])
+    fit_neuro[1,1,hh,0:t_back]=np.nanmean(neuro_te_unte[1,1,hh,0:t_back])
     y0_neuro[0,0,hh]=aa00[0]
     y0_neuro[0,1,hh]=aa01[0]
     y0_neuro[1,0,hh]=aa10[0]
