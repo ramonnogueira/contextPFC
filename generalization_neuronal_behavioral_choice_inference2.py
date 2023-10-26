@@ -183,14 +183,14 @@ t_forw=80
 delta_type='fit'
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([400,0,400,400])# time pre, time post, bin size, step size (time pre always positive) 
+dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) 
 
 thres=0
-reg=1e0
+reg=1e-3
 maxfev=100000
-method='trf'
+method='dogbox'
 bounds=([0,0,-0.5],[10,1,0.5])
-p0=(0.05,0.5,0.5)
+p0=(0.05,0.5,0.01)
 
 xx=np.arange(t_back+t_forw)-t_back
 
@@ -319,13 +319,13 @@ for hh in range(len(files_groups)):
     beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
     beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
     beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
-    print (beha_te_unte[0,0,hh])
+    #print (beha_te_unte[0,0,hh])
     aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-    print (beha_te_unte[0,1,hh])
+    #print (beha_te_unte[0,1,hh])
     aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-    print (beha_te_unte[1,0,hh])
+    #print (beha_te_unte[1,0,hh])
     aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-    print (beha_te_unte[1,1,hh])
+    #print (beha_te_unte[1,1,hh])
     aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
     fit_beha[0,0,hh,(t_back+1):]=aa00
     fit_beha[0,0,hh,0:t_back]=np.nanmean(beha_te_unte[0,0,hh,0:t_back])
@@ -375,6 +375,7 @@ if delta_type=='fit':
     delta_beha=(y0_beha-np.nanmean(beha_te_unte[:,:,:,0:t_back],axis=3))
 delta_beha_m=np.nanmean(delta_beha,axis=2)
 delta_beha_sem=sem(delta_beha,axis=2,nan_policy='omit')
+
 
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
@@ -488,6 +489,7 @@ plt.xticks([0,1],['Previos Ctx','New Ctx'])
 plt.legend(loc='best')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
+#########################################
 # Main Figure both neuro and Behavior
 delta_behaf=np.reshape(delta_beha,(2,-1))
 delta_behaf_m=np.nanmean(delta_behaf,axis=1)

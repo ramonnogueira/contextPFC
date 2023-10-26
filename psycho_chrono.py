@@ -72,10 +72,10 @@ def log_curve(x,a,c):
     num=1+np.exp(-a*x+c)
     return 1/num
 
-def chrono_curve(x,b0,b1,b2,t0l,t0r): # x[:,0] is coherence and x[:,1] is choice
-    return (b0/(x[:,0]+b2))*np.tanh(b1*(x[:,0]+b2))+(1-x[:,1])*t0l+x[:,1]*t0r#(1-x[:,1])*t0r+x[:,1]*t0l#
+# def chrono_curve(x,b0,b1,b2,t0l,t0r): # x[:,0] is coherence and x[:,1] is choice
+#     return (b0/(x[:,0]+b2))*np.tanh(b1*(x[:,0]+b2))+(1-x[:,1])*t0l+x[:,1]*t0r#(1-x[:,1])*t0r+x[:,1]*t0l#
 
-def chrono_curve2(x,Bl,Br,K,c_shift,t0l,t0r): # x[:,0] is coherence and x[:,1] is choice
+def chrono_curve(x,Bl,Br,K,c_shift,t0l,t0r): # x[:,0] is coherence and x[:,1] is choice
     decl=(1-x[:,1])*(Bl/(K*(x[:,0]-c_shift)))*np.tanh(K*Bl*(x[:,0]-c_shift))
     decr=x[:,1]*(Br/(K*(x[:,0]-c_shift)))*np.tanh(K*Br*(x[:,0]-c_shift))
     tnd=(1-x[:,1])*t0l+x[:,1]*t0r
@@ -91,21 +91,21 @@ def chrono_curve2(x,Bl,Br,K,c_shift,t0l,t0r): # x[:,0] is coherence and x[:,1] i
 #         fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
 #     return fit_chrono
 
+# def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
+#     popt,pcov,infodict,mesg,ier=curve_fit(chrono_curve,xx[ind_fit],rt[ind_fit],maxfev=maxfev,p0=p0,method=method,full_output=True)
+#     yy=chrono_curve(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4])
+#     #print (popt)
+#     print ('Chrono1 LLH ',1-np.mean(infodict['fvec']**2)/np.var(rt[ind_fit]))
+#     fit_chrono=nan*np.zeros(len(coh_uq))
+#     for ii in range(len(coh_uq)):
+#         fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
+#     return fit_chrono
+
 def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
     popt,pcov,infodict,mesg,ier=curve_fit(chrono_curve,xx[ind_fit],rt[ind_fit],maxfev=maxfev,p0=p0,method=method,full_output=True)
-    yy=chrono_curve(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4])
+    yy=chrono_curve(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])
     #print (popt)
-    print ('Chrono1 LLH ',1-np.mean(infodict['fvec']**2)/np.var(rt[ind_fit]))
-    fit_chrono=nan*np.zeros(len(coh_uq))
-    for ii in range(len(coh_uq)):
-        fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
-    return fit_chrono
-
-def func_fit_chrono2(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
-    popt,pcov,infodict,mesg,ier=curve_fit(chrono_curve2,xx[ind_fit],rt[ind_fit],maxfev=maxfev,p0=p0,method=method,full_output=True)
-    yy=chrono_curve2(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])
-    #print (popt)
-    print ('Chrono 2 LLH ',1-np.mean(infodict['fvec']**2)/np.var(rt[ind_fit]))
+    #print ('Chrono 2 LLH ',1-np.mean(infodict['fvec']**2)/np.var(rt[ind_fit]))
     fit_chrono=nan*np.zeros(len(coh_uq))
     for ii in range(len(coh_uq)):
         fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
@@ -113,7 +113,7 @@ def func_fit_chrono2(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
 
 #################################################
 
-monkey='Niels'
+monkey='Galileo'
 phase='late'
 
 maxfev=100000
@@ -126,12 +126,12 @@ p02=(-20,20,-0.005,3,700,500)
 #p0_log=(7,0.07,1,6,6)
 method='lm'
 
-#abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/%s/%s/'%(phase,monkey) 
-#files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
-abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
-files_pre=np.array(os.listdir(abs_path))
-order=order_files(files_pre)
-files=np.array(files_pre[order])
+abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/%s/%s/'%(phase,monkey) 
+files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
+# abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
+# files_pre=np.array(os.listdir(abs_path))
+# order=order_files(files_pre)
+# files=np.array(files_pre[order])
 print (files)
 
 if monkey=='Niels':
@@ -222,20 +222,20 @@ for kk in range(len(files)):
     # Fit Chronometric
     xx=np.array([100*coh_signed,choice]).T
     ind_fit0=(~np.isnan(rt))*(abs(coh_signed)<0.75)
-    func_fit_chrono(ind_fit0,xx,rt,coh_signed,coh_set_signed,maxfev,p100,method)
-    ff0=func_fit_chrono2(ind_fit0,xx,rt,coh_signed,coh_set_signed,maxfev,p00,method)
+    #func_fit_chrono(ind_fit0,xx,rt,coh_signed,coh_set_signed,maxfev,p100,method)
+    ff0=func_fit_chrono(ind_fit0,xx,rt,coh_signed,coh_set_signed,maxfev,p00,method)
     fit_chrono[kk,:,0]=ff0[0]
     params[kk,:,0]=ff0[1]
     
     ind_fit1=(context==0)*(~np.isnan(rt))*(abs(coh_signed)<0.75)
-    func_fit_chrono(ind_fit1,xx,rt,coh_signed,coh_set_signed,maxfev,p101,method)
-    ff1=func_fit_chrono2(ind_fit1,xx,rt,coh_signed,coh_set_signed,maxfev,p01,method)
+    #func_fit_chrono(ind_fit1,xx,rt,coh_signed,coh_set_signed,maxfev,p101,method)
+    ff1=func_fit_chrono(ind_fit1,xx,rt,coh_signed,coh_set_signed,maxfev,p01,method)
     fit_chrono[kk,:,1]=ff1[0]
     params[kk,:,1]=ff1[1]
 
     ind_fit2=(context==1)*(~np.isnan(rt))*(abs(coh_signed)<0.75)
-    func_fit_chrono(ind_fit2,xx,rt,coh_signed,coh_set_signed,maxfev,p102,method)
-    ff2=func_fit_chrono2(ind_fit2,xx,rt,coh_signed,coh_set_signed,maxfev,p02,method)
+    #func_fit_chrono(ind_fit2,xx,rt,coh_signed,coh_set_signed,maxfev,p102,method)
+    ff2=func_fit_chrono(ind_fit2,xx,rt,coh_signed,coh_set_signed,maxfev,p02,method)
     fit_chrono[kk,:,2]=ff2[0]
     params[kk,:,2]=ff2[1]
    

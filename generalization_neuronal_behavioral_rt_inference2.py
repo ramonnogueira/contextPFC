@@ -70,12 +70,10 @@ def order_files(x):
 
 # Best for behavior
 def func_p(x,a,b,c):
-    y=1.0/(1+np.exp(-a*x))
-    return b*y+c
+    return np.exp(-a*x)*b+c
 
 def func_n(x,a,b,c):
-    y=1.0/(1+np.exp(-a*x))
-    return -b*y+c
+    return -np.exp(-a*x)*b+c
 
 def norm_quant_coh(quant,coherence):
     coh_uq=np.unique(coherence)
@@ -153,6 +151,9 @@ def func_eval(index,t_back,t_forw,stimulus,rt):#,new_ctx):
             None
     return pp
 
+def proj_dist(wei,wei0,fr):
+    return abs(np.dot(fr,wei.T)+wei0)
+
 # Extract indices for training classifier (remove the one for testing from the entire dataset) and fit the classifier
 def ret_ind_train(coherence,ind_ch,t_back,t_forw):      
     ind_train=np.arange(len(coherence))
@@ -169,21 +170,29 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
         ind_train=np.delete(ind_train,ind_del)
     return ind_train
 
+def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
+    fr_nan=firing_rate.copy()
+    rt_max=(reaction_time-time_extra)
+    for i in range(len(tt)):
+        ind_nan=(rt_max<(1000*tt[i]+tw))
+        fr_nan[ind_nan,:,i]=nan
+    return fr_nan
+
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
     if sign==1:
         popt,pcov=curve_fit(func_p,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-        fit_func=func_p(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+        fit_func=func_p(xx[(t_back+1):],popt[0],popt[1],popt[2])
     if sign==-1:
         popt,pcov=curve_fit(func_n,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-        fit_func=func_n(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+        fit_func=func_n(xx[(t_back+1):],popt[0],popt[1],popt[2])
     print ('Fit ',popt)
     print (pcov)
-    plt.scatter(xx,yy,color='blue',s=1)
-    plt.plot(xx[(t_back+1):],fit_func,color='black')
-    plt.axvline(0,color='black',linestyle='--')
-    plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    plt.ylim([-0.1,1.1])
-    plt.show()
+    # plt.scatter(xx,yy,color='blue',s=1)
+    # plt.plot(xx[(t_back+1):],fit_func,color='black')
+    # plt.axvline(0,color='black',linestyle='--')
+    # plt.plot(xx,0*np.ones(len(xx)),color='black',linestyle='--')
+    # plt.ylim([-3,3])
+    # plt.show()
     return fit_func
   
 #################################################
@@ -193,19 +202,23 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
 monkey='Galileo'
-t_back=20
-t_forw=80
-delta_type='fit'
+t_back=30
+t_forw=90
+delta_type='raw'
+
+time_extra=50
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) 
+dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use
+steps=int((dic_time[0]+dic_time[1])/dic_time[3])
+tt=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 thres=0
 reg=1e0
 maxfev=100000
 method='dogbox'
-bounds=([0,0,-0.5],[10,1,0.5])
-p0=(0.05,0.5,0.5)
+bounds=([0,0,-1],[1000,10,1])
+p0=(0.05,0.5,0.1)
 
 xx=np.arange(t_back+t_forw)-t_back
 
@@ -269,72 +282,78 @@ for hh in range(len(files_groups)):
         indch_ct10_pre=np.where(ctx_ch==-1)[0]
         ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
         
-        firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
-        firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
-        print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
+        # Careful contamination saccades!
+        firing_rate_pre1=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+        print (np.shape(firing_rate_pre1))
+        num_neu=len(firing_rate_pre1[0])
+        steps=len(firing_rate_pre1[0,0])
+        firing_rate_pre2=miscellaneous.normalize_fr(firing_rate_pre1)[1:]
+        fr_nan=np.reshape(fr_rt_nan(rt_pre,firing_rate_pre2,tt,dic_time[2],time_extra),(-1,num_neu*steps))
+        ind_nnan_bool=~np.isnan(np.sum(fr_nan,axis=1))
+        ind_nnan=np.where(ind_nnan_bool)[0]
         
         ##################################################
         # Behavior
         # Numero 1 y 2 top
         for h in range(len(ind_ch01_s0)):
-            cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,rt)#,new_ctx='right')
+            cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,rt)
             beha_tested_rlow.append(cc_01_0[0]) #1
             beha_untested_rhigh.append(cc_01_0[1]) #2
         # Numero 3 y 4 top
         for h in range(len(ind_ch01_s1)):
-            cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,rt)#,new_ctx='right')
+            cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,rt)
             beha_untested_rlow.append(cc_01_1[0]) #3
             beha_tested_rhigh.append(cc_01_1[1]) #4
         # Numero 3 y 4 bottom           
-        # for h in range(len(ind_ch10_s0)):
-        #     cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,choice,new_ctx='left')
-        #     beha_untested_rlow.append(cc_10_0[1]) #3 
-        #     beha_tested_rhigh.append(cc_10_0[0]) #4 
-        # # Numero 1 y 2 bottom           
-        # for h in range(len(ind_ch10_s1)):
-        #     cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,choice,new_ctx='left')
-        #     beha_tested_rlow.append(cc_10_1[1]) #1
-        #     beha_untested_rhigh.append(cc_10_1[0]) #2
+        for h in range(len(ind_ch10_s0)):
+            cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,rt)
+            beha_untested_rlow.append(cc_10_0[1]) #3 
+            beha_tested_rhigh.append(cc_10_0[0]) #4 
+        # Numero 1 y 2 bottom           
+        for h in range(len(ind_ch10_s1)):
+            cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,rt)
+            beha_tested_rlow.append(cc_10_1[1]) #1
+            beha_untested_rhigh.append(cc_10_1[0]) #2
 
-        # ##################################################
-        # # Neuro
-        # # Probability of Choice of classifier = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
+        ##################################################
+        # Neuro
         # ind_train=ret_ind_train(coherence,ind_ch,t_back,t_forw)
         # cl=LogisticRegression(C=1/reg,class_weight='balanced')
-        # cl.fit(firing_rate[ind_train],context[ind_train])
-        # choice_cl=cl.predict(firing_rate)
+        # cl.fit(fr_nan[np.intersect1d(ind_train,ind_nnan)],choice[np.intersect1d(ind_train,ind_nnan)])
+        # distances=norm_quant_coh(proj_dist(cl.coef_[0],cl.intercept_[0],fr_nan),coherence)
+        # print ('Perc. not discarded ',np.sum(ind_nnan_bool)/len(ind_nnan_bool),np.sum(~np.isnan(distances))/len(distances))
 
         # # Numero 1 y 2 top
         # for h in range(len(ind_ch01_s0)):
-        #     cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,choice_cl,new_ctx='right')
+        #     cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,distances)#choice_cl,new_ctx='right')
         #     neuro_tested_rlow.append(cc_01_0[0]) #1
         #     neuro_untested_rhigh.append(cc_01_0[1]) #2
         # # Numero 3 y 4 top
         # for h in range(len(ind_ch01_s1)):
-        #     cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,choice_cl,new_ctx='right')
+        #     cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,distances)#choice_cl,new_ctx='right')
         #     neuro_untested_rlow.append(cc_01_1[0]) #3
         #     neuro_tested_rhigh.append(cc_01_1[1]) #4
         # # Numero 3 y 4 bottom           
         # for h in range(len(ind_ch10_s0)):
-        #     cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,choice_cl,new_ctx='left')
+        #     cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,distances)#choice_cl,new_ctx='left')
         #     neuro_untested_rlow.append(cc_10_0[1]) #3
         #     neuro_tested_rhigh.append(cc_10_0[0]) #4
         # # Numero 1 y 2 bottom           
         # for h in range(len(ind_ch10_s1)):
-        #     cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,choice_cl,new_ctx='left')
+        #     cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,distances)#choice_cl,new_ctx='left')
         #     neuro_tested_rlow.append(cc_10_1[1]) #1
         #     neuro_untested_rhigh.append(cc_10_1[0]) #2
-        # ############################################
+        ############################################
 
     # Behavior
     beha_te_unte[0,0,hh]=np.nanmean(beha_tested_rlow,axis=0)
     beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
     beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
     beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
-    aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=1)
-    aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=-1)
-    aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=1)
-    aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=-1)
+    aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=-1)
+    aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=1)
+    aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=-1)
+    aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=1)
     fit_beha[0,0,hh,(t_back+1):]=aa00
     fit_beha[0,0,hh,0:t_back]=np.nanmean(beha_te_unte[0,0,hh,0:t_back])
     fit_beha[0,1,hh,(t_back+1):]=aa01
@@ -348,27 +367,27 @@ for hh in range(len(files_groups)):
     y0_beha[1,0,hh]=aa10[0]
     y0_beha[1,1,hh]=aa11[0]
 
-#     # Neuro
-#     neuro_te_unte[0,0,hh]=np.nanmean(neuro_tested_rlow,axis=0)
-#     neuro_te_unte[0,1,hh]=np.nanmean(neuro_tested_rhigh,axis=0)
-#     neuro_te_unte[1,0,hh]=np.nanmean(neuro_untested_rlow,axis=0)
-#     neuro_te_unte[1,1,hh]=np.nanmean(neuro_untested_rhigh,axis=0)
-#     aa00=fit_plot(xx,neuro_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-#     aa01=fit_plot(xx,neuro_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-#     aa10=fit_plot(xx,neuro_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-#     aa11=fit_plot(xx,neuro_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-#     fit_neuro[0,0,hh,(t_back+1):]=aa00
-#     fit_neuro[0,0,hh,0:t_back]=np.nanmean(neuro_te_unte[0,0,hh,0:t_back])
-#     fit_neuro[0,1,hh,(t_back+1):]=aa01
-#     fit_neuro[0,1,hh,0:t_back]=np.nanmean(neuro_te_unte[0,1,hh,0:t_back])
-#     fit_neuro[1,0,hh,(t_back+1):]=aa10
-#     fit_neuro[1,0,hh,0:t_back]=np.nanmean(neuro_te_unte[1,0,hh,0:t_back])
-#     fit_neuro[1,1,hh,(t_back+1):]=aa11
-#     fit_neuro[1,1,hh,0:t_back]=np.nanmean(neuro_te_unte[1,1,hh,0:t_back])
-#     y0_neuro[0,0,hh]=aa00[0]
-#     y0_neuro[0,1,hh]=aa01[0]
-#     y0_neuro[1,0,hh]=aa10[0]
-#     y0_neuro[1,1,hh]=aa11[0]
+    # Neuro
+    # neuro_te_unte[0,0,hh]=np.nanmean(neuro_tested_rlow,axis=0)
+    # neuro_te_unte[0,1,hh]=np.nanmean(neuro_tested_rhigh,axis=0)
+    # neuro_te_unte[1,0,hh]=np.nanmean(neuro_untested_rlow,axis=0)
+    # neuro_te_unte[1,1,hh]=np.nanmean(neuro_untested_rhigh,axis=0)
+    # aa00=fit_plot(xx,neuro_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=-1)
+    # aa01=fit_plot(xx,neuro_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=1)
+    # aa10=fit_plot(xx,neuro_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=-1)
+    # aa11=fit_plot(xx,neuro_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds,sign=1)
+    # fit_neuro[0,0,hh,(t_back+1):]=aa00
+    # fit_neuro[0,0,hh,0:t_back]=np.nanmean(neuro_te_unte[0,0,hh,0:t_back])
+    # fit_neuro[0,1,hh,(t_back+1):]=aa01
+    # fit_neuro[0,1,hh,0:t_back]=np.nanmean(neuro_te_unte[0,1,hh,0:t_back])
+    # fit_neuro[1,0,hh,(t_back+1):]=aa10
+    # fit_neuro[1,0,hh,0:t_back]=np.nanmean(neuro_te_unte[1,0,hh,0:t_back])
+    # fit_neuro[1,1,hh,(t_back+1):]=aa11
+    # fit_neuro[1,1,hh,0:t_back]=np.nanmean(neuro_te_unte[1,1,hh,0:t_back])
+    # y0_neuro[0,0,hh]=aa00[0]
+    # y0_neuro[0,1,hh]=aa01[0]
+    # y0_neuro[1,0,hh]=aa10[0]
+    # y0_neuro[1,1,hh]=aa11[0]
 
 # ####################################################
 # # Behavior
@@ -394,11 +413,11 @@ ax.plot(xx,beha_fit_m[0,0],color='green',label='Tested')
 ax.fill_between(xx,beha_fit_m[0,0]-beha_fit_sem[0,0],beha_fit_m[0,0]+beha_fit_sem[0,0],color='green',alpha=0.5)
 ax.plot(xx,beha_fit_m[1,0],color='blue',label='Untested')
 ax.fill_between(xx,beha_fit_m[1,0]-beha_fit_sem[1,0],beha_fit_m[1,0]+beha_fit_sem[1,0],color='blue',alpha=0.5)
-#ax.set_ylim([-0.05,1.05])
+ax.set_ylim([-1.2,1.2])
 ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice = New Ctx)')
+ax.set_ylabel('Normalized RT')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s_lowR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/beha_rt_inference2_%s_%s_lowR_stim.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
@@ -411,31 +430,30 @@ ax.plot(xx,beha_fit_m[0,1],color='green',label='Tested')
 ax.fill_between(xx,beha_fit_m[0,1]-beha_fit_sem[0,1],beha_fit_m[0,1]+beha_fit_sem[0,1],color='green',alpha=0.5)
 ax.plot(xx,beha_fit_m[1,1],color='blue',label='Untested')
 ax.fill_between(xx,beha_fit_m[1,1]-beha_fit_sem[1,1],beha_fit_m[1,1]+beha_fit_sem[1,1],color='blue',alpha=0.5)
-#ax.set_ylim([-0.05,1.05])
+ax.set_ylim([-1.2,1.2])
 ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice = New Ctx)')
+ax.set_ylabel('Normalized RT')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s_highR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/beha_rt_inference2_%s_%s_highR_stim.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
-# width=0.3
-# fig=plt.figure(figsize=(2.3,2))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
-# ax.bar(-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
-# ax.bar(+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
-# ax.bar(1-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
-# ax.bar(1+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
-# #ax.set_ylim([0,1])
-# #ax.set_ylabel('Prob. (Choice = New Ctx)$|_{\mbox{Trial 1 after change}}$ \n - Prob.(Choice = New Ctx)$|_{\mbox{Old Ctx}}$')
-# ax.set_ylabel('$\Delta$Prob. (Choice = New Ctx)')
-# ax.set_xlabel('Stimulus')
-# plt.xticks([0,1],['Previos Ctx','New Ctx'])
-# plt.legend(loc='best')
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+width=0.3
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.bar(-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
+ax.bar(+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
+ax.bar(1-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
+ax.bar(1+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
+#ax.set_ylim([0,1])
+ax.set_ylabel('$\Delta$Normalized RT')
+ax.set_xlabel('Stimulus')
+plt.xticks([0,1],['Previos Ctx','New Ctx'])
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
 
-# ######################################################
-# # Neuro
+######################################################
+# Neuro
 
 # neu_m=np.nanmean(neuro_te_unte,axis=2)
 # neu_sem=sem(neuro_te_unte,axis=2,nan_policy='omit')
@@ -454,15 +472,15 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s_highR.pd
 # ax.scatter(xx,neu_m[0,0],color='green',s=3)
 # ax.scatter(xx,neu_m[1,0],color='blue',s=3)
 # ax.axvline(0,color='black',linestyle='--')
-# ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+# ax.plot(xx,0*np.ones(len(xx)),color='black',linestyle='--')
 # ax.plot(xx,neu_fit_m[0,0],color='green')
 # ax.fill_between(xx,neu_fit_m[0,0]-neu_fit_sem[0,0],neu_fit_m[0,0]+neu_fit_sem[0,0],color='green',alpha=0.5)
 # ax.plot(xx,neu_fit_m[1,0],color='blue')
 # ax.fill_between(xx,neu_fit_m[1,0]-neu_fit_sem[1,0],neu_fit_m[1,0]+neu_fit_sem[1,0],color='blue',alpha=0.5)
-# ax.set_ylim([-0.05,1.05])
+# #ax.set_ylim([-0.05,1.05])
 # ax.set_xlabel('Trials after context change')
-# ax.set_ylabel('Prob. (Choice = New Ctx)')
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_lowR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+# #ax.set_ylabel('Prob. (Choice = New Ctx)')
+# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_rt_inference2_%s_%s_lowR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
 # fig=plt.figure(figsize=(2.3,2))
 # ax=fig.add_subplot(111)
@@ -470,15 +488,15 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s_highR.pd
 # ax.scatter(xx,neu_m[0,1],color='green',s=3)
 # ax.scatter(xx,neu_m[1,1],color='blue',s=3)
 # ax.axvline(0,color='black',linestyle='--')
-# ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+# ax.plot(xx,0*np.ones(len(xx)),color='black',linestyle='--')
 # ax.plot(xx,neu_fit_m[0,1],color='green')
 # ax.fill_between(xx,neu_fit_m[0,1]-neu_fit_sem[0,1],neu_fit_m[0,1]+neu_fit_sem[0,1],color='green',alpha=0.5)
 # ax.plot(xx,neu_fit_m[1,1],color='blue')
 # ax.fill_between(xx,neu_fit_m[1,1]-neu_fit_sem[1,1],neu_fit_m[1,1]+neu_fit_sem[1,1],color='blue',alpha=0.5)
-# ax.set_ylim([-0.05,1.05])
+# #ax.set_ylim([-0.05,1.05])
 # ax.set_xlabel('Trials after context change')
-# ax.set_ylabel('Prob. (Choice = New Ctx)')
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_highR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+# #ax.set_ylabel('Prob. (Choice = New Ctx)')
+# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_rt_inference2_%s_%s_highR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
 # width=0.3
 # fig=plt.figure(figsize=(2.3,2))
@@ -493,7 +511,7 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s_highR.pd
 # ax.set_xlabel('Stimulus')
 # plt.xticks([0,1],['Previos Ctx','New Ctx'])
 # plt.legend(loc='best')
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_rt_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
 
 # # Main Figure both neuro and Behavior
 # delta_behaf=np.reshape(delta_beha,(2,-1))
