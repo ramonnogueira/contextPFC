@@ -158,7 +158,6 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
     return ind_train
 
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
-    # Cuidado con el +1!
     popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
@@ -177,34 +176,37 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkey='Niels'
 t_back=20
 t_forw=80
 delta_type='fit'
+eaf=1
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) 
+dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive) 
 
 thres=0
 reg=1e-3
 maxfev=100000
 method='dogbox'
 bounds=([0,0,-0.5],[10,1,0.5])
+p0_low=(0.05,0.5,-0.3)
+p0_high=(0.05,0.5,0.3)
 p0=(0.05,0.5,0.01)
 
 xx=np.arange(t_back+t_forw)-t_back
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 if monkey=='Niels':
-    #files_groups=[[0,4],[4,8],[8,12]]
+    files_groups=[[0,4],[4,8],[8,12]]
     #files_groups=[[0,3],[3,6],[6,9],[9,12]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
-    files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
+    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
 
 if monkey=='Galileo':
-    #files_groups=[[0,10],[10,20],[20,30]]
+    files_groups=[[0,10],[10,20],[20,30]]
     #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
-    files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
+    #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
     #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
 
@@ -319,14 +321,10 @@ for hh in range(len(files_groups)):
     beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
     beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
     beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
-    #print (beha_te_unte[0,0,hh])
-    aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-    #print (beha_te_unte[0,1,hh])
-    aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-    #print (beha_te_unte[1,0,hh])
-    aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-    #print (beha_te_unte[1,1,hh])
-    aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+    aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0_low,bounds=bounds)
+    aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0_high,bounds=bounds)
+    aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0_low,bounds=bounds)
+    aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0_high,bounds=bounds)
     fit_beha[0,0,hh,(t_back+1):]=aa00
     fit_beha[0,0,hh,0:t_back]=np.nanmean(beha_te_unte[0,0,hh,0:t_back])
     fit_beha[0,1,hh,(t_back+1):]=aa01
@@ -364,157 +362,209 @@ for hh in range(len(files_groups)):
 
 ####################################################
 # Behavior
-beha_m=np.nanmean(beha_te_unte,axis=2)
-beha_std=np.nanstd(beha_te_unte,axis=2)
-beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
-beha_fit_m=np.nanmean(fit_beha,axis=2)
-beha_fit_sem=sem(fit_beha,axis=2,nan_policy='omit')
+
 if delta_type=='raw':
     delta_beha=(beha_te_unte[:,:,:,t_back+1]-np.nanmean(beha_te_unte[:,:,:,0:t_back],axis=3))
-if delta_type=='fit':
-    delta_beha=(y0_beha-np.nanmean(beha_te_unte[:,:,:,0:t_back],axis=3))
-delta_beha_m=np.nanmean(delta_beha,axis=2)
-delta_beha_sem=sem(delta_beha,axis=2,nan_policy='omit')
-
-
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.scatter(xx,beha_m[0,0],color='green',s=3)
-ax.scatter(xx,beha_m[1,0],color='blue',s=3)
-ax.axvline(0,color='black',linestyle='--')
-ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-ax.plot(xx,beha_fit_m[0,0],color='green',label='Tested')
-ax.fill_between(xx,beha_fit_m[0,0]-beha_fit_sem[0,0],beha_fit_m[0,0]+beha_fit_sem[0,0],color='green',alpha=0.5)
-ax.plot(xx,beha_fit_m[1,0],color='blue',label='Untested')
-ax.fill_between(xx,beha_fit_m[1,0]-beha_fit_sem[1,0],beha_fit_m[1,0]+beha_fit_sem[1,0],color='blue',alpha=0.5)
-ax.set_ylim([-0.05,1.05])
-ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice = New Ctx)')
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s_lowR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
-
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.scatter(xx,beha_m[0,1],color='green',s=3)
-ax.scatter(xx,beha_m[1,1],color='blue',s=3)
-ax.axvline(0,color='black',linestyle='--')
-ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-ax.plot(xx,beha_fit_m[0,1],color='green',label='Tested')
-ax.fill_between(xx,beha_fit_m[0,1]-beha_fit_sem[0,1],beha_fit_m[0,1]+beha_fit_sem[0,1],color='green',alpha=0.5)
-ax.plot(xx,beha_fit_m[1,1],color='blue',label='Untested')
-ax.fill_between(xx,beha_fit_m[1,1]-beha_fit_sem[1,1],beha_fit_m[1,1]+beha_fit_sem[1,1],color='blue',alpha=0.5)
-ax.set_ylim([-0.05,1.05])
-ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice = New Ctx)')
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s_highR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
-
-width=0.3
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.bar(-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
-ax.bar(+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
-ax.bar(1-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
-ax.bar(1+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
-#ax.set_ylim([0,1])
-#ax.set_ylabel('Prob. (Choice = New Ctx)$|_{\mbox{Trial 1 after change}}$ \n - Prob.(Choice = New Ctx)$|_{\mbox{Old Ctx}}$')
-ax.set_ylabel('$\Delta$Prob. (Choice = New Ctx)')
-ax.set_xlabel('Stimulus')
-plt.xticks([0,1],['Previos Ctx','New Ctx'])
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
-
-
-######################################################
-# Neuro
-
-neu_m=np.nanmean(neuro_te_unte,axis=2)
-neu_sem=sem(neuro_te_unte,axis=2,nan_policy='omit')
-neu_fit_m=np.nanmean(fit_neuro,axis=2)
-neu_fit_sem=sem(fit_neuro,axis=2,nan_policy='omit')
-if delta_type=='raw':
     delta_neuro=(neuro_te_unte[:,:,:,t_back+1]-np.nanmean(neuro_te_unte[:,:,:,0:t_back],axis=3))
 if delta_type=='fit':
+    delta_beha=(y0_beha-np.nanmean(beha_te_unte[:,:,:,0:t_back],axis=3))
     delta_neuro=(y0_neuro-np.nanmean(neuro_te_unte[:,:,:,0:t_back],axis=3))
-delta_neuro_m=np.nanmean(delta_neuro,axis=2)
-delta_neuro_sem=sem(delta_neuro,axis=2,nan_policy='omit')
 
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.scatter(xx,neu_m[0,0],color='green',s=3)
-ax.scatter(xx,neu_m[1,0],color='blue',s=3)
-ax.axvline(0,color='black',linestyle='--')
-ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-ax.plot(xx,neu_fit_m[0,0],color='green')
-ax.fill_between(xx,neu_fit_m[0,0]-neu_fit_sem[0,0],neu_fit_m[0,0]+neu_fit_sem[0,0],color='green',alpha=0.5)
-ax.plot(xx,neu_fit_m[1,0],color='blue')
-ax.fill_between(xx,neu_fit_m[1,0]-neu_fit_sem[1,0],neu_fit_m[1,0]+neu_fit_sem[1,0],color='blue',alpha=0.5)
-ax.set_ylim([-0.05,1.05])
-ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice = New Ctx)')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_lowR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+sess_vec=['all','early','mid','late']
+for i in range(len(sess_vec)):
+    if sess_vec[i]=='all':
+        beha_m=np.nanmean(beha_te_unte,axis=2)
+        beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
+        beha_fit_m=np.nanmean(fit_beha,axis=2)
+        beha_fit_sem=sem(fit_beha,axis=2,nan_policy='omit')
+        delta_beha_m=np.nanmean(delta_beha,axis=2)
+        delta_beha_sem=sem(delta_beha,axis=2,nan_policy='omit')
+        neu_m=np.nanmean(neuro_te_unte,axis=2)
+        neu_sem=sem(neuro_te_unte,axis=2,nan_policy='omit')
+        neu_fit_m=np.nanmean(fit_neuro,axis=2)
+        neu_fit_sem=sem(fit_neuro,axis=2,nan_policy='omit')
+        delta_neuro_m=np.nanmean(delta_neuro,axis=2)
+        delta_neuro_sem=sem(delta_neuro,axis=2,nan_policy='omit')
+    if sess_vec[i]=='early':
+        beha_m=np.nanmean(beha_te_unte[:,:,0:eaf],axis=2)
+        beha_sem=sem(beha_te_unte[:,:,0:eaf],axis=2,nan_policy='omit')
+        beha_fit_m=np.nanmean(fit_beha[:,:,0:eaf],axis=2)
+        beha_fit_sem=sem(fit_beha[:,:,0:eaf],axis=2,nan_policy='omit')
+        delta_beha_m=np.nanmean(delta_beha[:,:,0:eaf],axis=2)
+        delta_beha_sem=sem(delta_beha[:,:,0:eaf],axis=2,nan_policy='omit')
+        neu_m=np.nanmean(neuro_te_unte[:,:,0:eaf],axis=2)
+        neu_sem=sem(neuro_te_unte[:,:,0:eaf],axis=2,nan_policy='omit')
+        neu_fit_m=np.nanmean(fit_neuro[:,:,0:eaf],axis=2)
+        neu_fit_sem=sem(fit_neuro[:,:,0:eaf],axis=2,nan_policy='omit')
+        delta_neuro_m=np.nanmean(delta_neuro[:,:,0:eaf],axis=2)
+        delta_neuro_sem=sem(delta_neuro[:,:,0:eaf],axis=2,nan_policy='omit')
+    if sess_vec[i]=='mid':
+        beha_m=np.nanmean(beha_te_unte[:,:,eaf:-eaf],axis=2)
+        beha_sem=sem(beha_te_unte[:,:,eaf:-eaf],axis=2,nan_policy='omit')
+        beha_fit_m=np.nanmean(fit_beha[:,:,eaf:-eaf],axis=2)
+        beha_fit_sem=sem(fit_beha[:,:,eaf:-eaf],axis=2,nan_policy='omit')
+        delta_beha_m=np.nanmean(delta_beha[:,:,eaf:-eaf],axis=2)
+        delta_beha_sem=sem(delta_beha[:,:,eaf:-eaf],axis=2,nan_policy='omit')
+        neu_m=np.nanmean(neuro_te_unte[:,:,eaf:-eaf],axis=2)
+        neu_sem=sem(neuro_te_unte[:,:,eaf:-eaf],axis=2,nan_policy='omit')
+        neu_fit_m=np.nanmean(fit_neuro[:,:,eaf:-eaf],axis=2)
+        neu_fit_sem=sem(fit_neuro[:,:,eaf:-eaf],axis=2,nan_policy='omit')
+        delta_neuro_m=np.nanmean(delta_neuro[:,:,eaf:-eaf],axis=2)
+        delta_neuro_sem=sem(delta_neuro[:,:,eaf:-eaf],axis=2,nan_policy='omit')
+    if sess_vec[i]=='late':
+        beha_m=np.nanmean(beha_te_unte[:,:,-eaf:],axis=2)
+        beha_sem=sem(beha_te_unte[:,:,-eaf:],axis=2,nan_policy='omit')
+        beha_fit_m=np.nanmean(fit_beha[:,:,-eaf:],axis=2)
+        beha_fit_sem=sem(fit_beha[:,:,-eaf:],axis=2,nan_policy='omit')
+        delta_beha_m=np.nanmean(delta_beha[:,:,-eaf:],axis=2)
+        delta_beha_sem=sem(delta_beha[:,:,-eaf:],axis=2,nan_policy='omit')
+        neu_m=np.nanmean(neuro_te_unte[:,:,-eaf:],axis=2)
+        neu_sem=sem(neuro_te_unte[:,:,-eaf:],axis=2,nan_policy='omit')
+        neu_fit_m=np.nanmean(fit_neuro[:,:,-eaf:],axis=2)
+        neu_fit_sem=sem(fit_neuro[:,:,-eaf:],axis=2,nan_policy='omit')
+        delta_neuro_m=np.nanmean(delta_neuro[:,:,-eaf:],axis=2)
+        delta_neuro_sem=sem(delta_neuro[:,:,-eaf:],axis=2,nan_policy='omit')
 
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.scatter(xx,neu_m[0,1],color='green',s=3)
-ax.scatter(xx,neu_m[1,1],color='blue',s=3)
-ax.axvline(0,color='black',linestyle='--')
-ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-ax.plot(xx,neu_fit_m[0,1],color='green')
-ax.fill_between(xx,neu_fit_m[0,1]-neu_fit_sem[0,1],neu_fit_m[0,1]+neu_fit_sem[0,1],color='green',alpha=0.5)
-ax.plot(xx,neu_fit_m[1,1],color='blue')
-ax.fill_between(xx,neu_fit_m[1,1]-neu_fit_sem[1,1],neu_fit_m[1,1]+neu_fit_sem[1,1],color='blue',alpha=0.5)
-ax.set_ylim([-0.05,1.05])
-ax.set_xlabel('Trials after context change')
-ax.set_ylabel('Prob. (Choice = New Ctx)')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_highR.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,beha_m[0,0],color='green',s=3)
+    ax.scatter(xx,beha_m[1,0],color='blue',s=3)
+    ax.axvline(0,color='black',linestyle='--')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.plot(xx,beha_fit_m[0,0],color='green',label='Tested')
+    ax.fill_between(xx,beha_fit_m[0,0]-beha_fit_sem[0,0],beha_fit_m[0,0]+beha_fit_sem[0,0],color='green',alpha=0.5)
+    ax.plot(xx,beha_fit_m[1,0],color='blue',label='Untested')
+    ax.fill_between(xx,beha_fit_m[1,0]-beha_fit_sem[1,0],beha_fit_m[1,0]+beha_fit_sem[1,0],color='blue',alpha=0.5)
+    ax.set_ylim([-0.05,1.05])
+    ax.set_xlabel('Trials after context change')
+    ax.set_ylabel('Prob. (Choice = New Ctx)')
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s_%s_lowR.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
 
-width=0.3
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.bar(-width/2.0,delta_neuro_m[0,0],yerr=delta_neuro_sem[0,0],color='green',width=width,label='Tested')
-ax.bar(+width/2.0,delta_neuro_m[1,0],yerr=delta_neuro_sem[1,0],color='blue',width=width,label='Untested')
-ax.bar(1-width/2.0,delta_neuro_m[0,1],yerr=delta_neuro_sem[0,1],color='green',width=width)
-ax.bar(1+width/2.0,delta_neuro_m[1,1],yerr=delta_neuro_sem[1,1],color='blue',width=width)
-#ax.set_ylim([0,1])
-ax.set_ylabel('$\Delta$Prob. (Choice = New Ctx)')
-ax.set_xlabel('Stimulus')
-plt.xticks([0,1],['Previos Ctx','New Ctx'])
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,beha_m[0,1],color='green',s=3)
+    ax.scatter(xx,beha_m[1,1],color='blue',s=3)
+    ax.axvline(0,color='black',linestyle='--')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.plot(xx,beha_fit_m[0,1],color='green',label='Tested')
+    ax.fill_between(xx,beha_fit_m[0,1]-beha_fit_sem[0,1],beha_fit_m[0,1]+beha_fit_sem[0,1],color='green',alpha=0.5)
+    ax.plot(xx,beha_fit_m[1,1],color='blue',label='Untested')
+    ax.fill_between(xx,beha_fit_m[1,1]-beha_fit_sem[1,1],beha_fit_m[1,1]+beha_fit_sem[1,1],color='blue',alpha=0.5)
+    ax.set_ylim([-0.05,1.05])
+    ax.set_xlabel('Trials after context change')
+    ax.set_ylabel('Prob. (Choice = New Ctx)')
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s_%s_highR.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
+
+    width=0.3
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.bar(-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
+    ax.bar(+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
+    ax.bar(1-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
+    ax.bar(1+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
+    #ax.set_ylim([0,1])
+    #ax.set_ylabel('Prob. (Choice = New Ctx)$|_{\mbox{Trial 1 after change}}$ \n - Prob.(Choice = New Ctx)$|_{\mbox{Old Ctx}}$')
+    ax.set_ylabel('$\Delta$Prob. (Choice = New Ctx)')
+    ax.set_xlabel('Stimulus')
+    plt.xticks([0,1],['Previos Ctx','New Ctx'])
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_inference2_%s_%s_%s.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
+
+    ######################################################
+    # Neuro
+
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,neu_m[0,0],color='green',s=3)
+    ax.scatter(xx,neu_m[1,0],color='blue',s=3)
+    ax.axvline(0,color='black',linestyle='--')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.plot(xx,neu_fit_m[0,0],color='green')
+    ax.fill_between(xx,neu_fit_m[0,0]-neu_fit_sem[0,0],neu_fit_m[0,0]+neu_fit_sem[0,0],color='green',alpha=0.5)
+    ax.plot(xx,neu_fit_m[1,0],color='blue')
+    ax.fill_between(xx,neu_fit_m[1,0]-neu_fit_sem[1,0],neu_fit_m[1,0]+neu_fit_sem[1,0],color='blue',alpha=0.5)
+    ax.set_ylim([-0.05,1.05])
+    ax.set_xlabel('Trials after context change')
+    ax.set_ylabel('Prob. (Choice = New Ctx)')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_%s_lowR.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
+
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,neu_m[0,1],color='green',s=3)
+    ax.scatter(xx,neu_m[1,1],color='blue',s=3)
+    ax.axvline(0,color='black',linestyle='--')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.plot(xx,neu_fit_m[0,1],color='green')
+    ax.fill_between(xx,neu_fit_m[0,1]-neu_fit_sem[0,1],neu_fit_m[0,1]+neu_fit_sem[0,1],color='green',alpha=0.5)
+    ax.plot(xx,neu_fit_m[1,1],color='blue')
+    ax.fill_between(xx,neu_fit_m[1,1]-neu_fit_sem[1,1],neu_fit_m[1,1]+neu_fit_sem[1,1],color='blue',alpha=0.5)
+    ax.set_ylim([-0.05,1.05])
+    ax.set_xlabel('Trials after context change')
+    ax.set_ylabel('Prob. (Choice = New Ctx)')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_%s_highR.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
+
+    width=0.3
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.bar(-width/2.0,delta_neuro_m[0,0],yerr=delta_neuro_sem[0,0],color='green',width=width,label='Tested')
+    ax.bar(+width/2.0,delta_neuro_m[1,0],yerr=delta_neuro_sem[1,0],color='blue',width=width,label='Untested')
+    ax.bar(1-width/2.0,delta_neuro_m[0,1],yerr=delta_neuro_sem[0,1],color='green',width=width)
+    ax.bar(1+width/2.0,delta_neuro_m[1,1],yerr=delta_neuro_sem[1,1],color='blue',width=width)
+    #ax.set_ylim([0,1])
+    ax.set_ylabel('$\Delta$Prob. (Choice = New Ctx)')
+    ax.set_xlabel('Stimulus')
+    plt.xticks([0,1],['Previos Ctx','New Ctx'])
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/neuro_inference2_%s_%s_%s.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
 
 #########################################
 # Main Figure both neuro and Behavior
-delta_behaf=np.reshape(delta_beha,(2,-1))
-delta_behaf_m=np.nanmean(delta_behaf,axis=1)
-delta_behaf_sem=sem(delta_behaf,axis=1,nan_policy='omit')
-print ('Delta Behavior')
-print ('Tested ',scipy.stats.wilcoxon(delta_behaf[0]))
-print ('Untested ',scipy.stats.wilcoxon(delta_behaf[1]))
-print ('Tested - Untested ',scipy.stats.wilcoxon(delta_behaf[1]-delta_behaf[0]))
-delta_neurof=np.reshape(delta_neuro,(2,-1))
-delta_neurof_m=np.nanmean(delta_neurof,axis=1)
-delta_neurof_sem=sem(delta_neurof,axis=1,nan_policy='omit')
-print ('Delta Neuro')
-print ('Tested ',scipy.stats.wilcoxon(delta_neurof[0]))
-print ('Untested ',scipy.stats.wilcoxon(delta_neurof[1]))
-print ('Tested - Untested ',scipy.stats.wilcoxon(delta_neurof[1]-delta_neurof[0]))
+for i in range(len(sess_vec)):
+    print ('Session ',sess_vec[i])
+    if sess_vec[i]=='all':
+        delta_behaf=np.reshape(delta_beha,(2,-1))
+        delta_neurof=np.reshape(delta_neuro,(2,-1))
+    if sess_vec[i]=='early':
+       delta_behaf=np.reshape(delta_beha[:,:,0:eaf],(2,-1))
+       delta_neurof=np.reshape(delta_neuro[:,:,0:eaf],(2,-1))
+    if sess_vec[i]=='mid':
+       delta_behaf=np.reshape(delta_beha[:,:,eaf:-eaf],(2,-1))
+       delta_neurof=np.reshape(delta_neuro[:,:,eaf:-eaf],(2,-1))
+    if sess_vec[i]=='late':
+       delta_behaf=np.reshape(delta_beha[:,:,-eaf:],(2,-1))
+       delta_neurof=np.reshape(delta_neuro[:,:,-eaf:],(2,-1))
 
-width=0.3
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.bar(-width/2.0,delta_behaf_m[0],yerr=delta_behaf_sem[0],color='green',width=width,label='Tested')
-ax.bar(+width/2.0,delta_behaf_m[1],yerr=delta_behaf_sem[1],color='blue',width=width,label='Untested')
-ax.bar(1-width/2.0,delta_neurof_m[0],yerr=delta_neurof_sem[0],color='green',width=width)
-ax.bar(1+width/2.0,delta_neurof_m[1],yerr=delta_neurof_sem[1],color='blue',width=width)
-ax.set_ylabel('$\Delta$ Prob. (Choice = New Ctx)')
-plt.xticks([0,1],['Behavior','Neuronal'])
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/inference2_%s_%s_final.pdf'%(monkey,delta_type),dpi=500,bbox_inches='tight')
+    delta_behaf_m=np.nanmean(delta_behaf,axis=1)
+    delta_behaf_sem=sem(delta_behaf,axis=1,nan_policy='omit')
+    print ('Delta Behavior')
+    print ('Tested ',scipy.stats.wilcoxon(delta_behaf[0]))
+    print ('Untested ',scipy.stats.wilcoxon(delta_behaf[1]))
+    print ('Tested - Untested ',scipy.stats.wilcoxon(delta_behaf[1]-delta_behaf[0]))
+    delta_neurof_m=np.nanmean(delta_neurof,axis=1)
+    delta_neurof_sem=sem(delta_neurof,axis=1,nan_policy='omit')
+    print ('Delta Neuro')
+    print ('Tested ',scipy.stats.wilcoxon(delta_neurof[0]))
+    print ('Untested ',scipy.stats.wilcoxon(delta_neurof[1]))
+    print ('Tested - Untested ',scipy.stats.wilcoxon(delta_neurof[1]-delta_neurof[0]))
+
+    width=0.3
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.bar(-width/2.0,delta_behaf_m[0],yerr=delta_behaf_sem[0],color='green',width=width,label='Tested')
+    ax.bar(+width/2.0,delta_behaf_m[1],yerr=delta_behaf_sem[1],color='blue',width=width,label='Untested')
+    ax.bar(1-width/2.0,delta_neurof_m[0],yerr=delta_neurof_sem[0],color='green',width=width)
+    ax.bar(1+width/2.0,delta_neurof_m[1],yerr=delta_neurof_sem[1],color='blue',width=width)
+    ax.set_ylabel('$\Delta$ Prob. (Choice = New Ctx)')
+    plt.xticks([0,1],['Behavior','Neuronal'])
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/inference2_%s_%s_%s_final.png'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/inference2_%s_%s_%s_final.pdf'%(monkey,delta_type,sess_vec[i]),dpi=500,bbox_inches='tight')

@@ -230,18 +230,9 @@ def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
 
 monkey='Galileo'
 
-nback=80
+nback=70
 rt_fit=True
-
-time_extra=100
-
-talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size (time pre always positive)
-steps=int((dic_time[0]+dic_time[1])/dic_time[3])
-tt=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
-
-thres=0
-reg=1e0
+eaf=1
 
 maxfev=100000
 p0=(-20,20,-0.005,0.1,500,500)
@@ -251,10 +242,17 @@ method='lm'
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 if monkey=='Niels':
-    files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
+    #files_groups=[[0,4],[4,8],[8,12]]
+    #files_groups=[[0,3],[3,6],[6,9],[9,12]]
+    files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
+    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
 
 if monkey=='Galileo':
-    files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
+    files_groups=[[0,10],[10,20],[20,30]]
+    #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
+    #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
+    #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
+    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
 
 #abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey) 
 #files_all=miscellaneous.order_files(np.array(os.listdir(abs_path)))
@@ -299,10 +297,9 @@ for hh in range(len(files_groups)):
         context=context_pre[1:]
         # Indices for first trial rewarded after change
         ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
-        #ind_ch=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
+        ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
         indch_ct01_pre=np.where(ctx_ch==1)[0]
         indch_ct10_pre=np.where(ctx_ch==-1)[0]
-        ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
         ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
     
         ##################################################
@@ -398,16 +395,16 @@ for hh in range(len(files_groups)):
                 rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
                 dev=(rt[ind_ch10_s1[h]+1]-rt_mean)
                 if stimulus[ind_ch10_s1[h]+1]==0: 
-                    beha_tested_rhigh.append(dev)
+                    beha_untested_rhigh.append(dev)
                 if stimulus[ind_ch10_s1[h]+1]==1:
-                    beha_untested_rlow.append(dev)
+                    beha_tested_rlow.append(dev)
             if rt_fit==False:
                 rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
                 rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
                 if stimulus[ind_ch10_s1[h]+1]==0: 
-                    beha_tested_rhigh.append(rt[ind_ch10_s1[h]+1]-rt_low_pre)
+                    beha_untested_rhigh.append(rt[ind_ch10_s1[h]+1]-rt_low_pre)
                 if stimulus[ind_ch10_s1[h]+1]==1:
-                    beha_untested_rlow.append(rt[ind_ch10_s1[h]+1]-rt_high_pre)
+                    beha_tested_rlow.append(rt[ind_ch10_s1[h]+1]-rt_high_pre)
 
     # Behavior
     beha_te_unte[0,0,hh]=np.nanmean(beha_tested_rlow,axis=0)
@@ -424,11 +421,11 @@ for i in range(len(sess_vec)):
         beha_m=np.nanmean(beha_te_unte,axis=2)
         beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
     if sess_vec[i]=='early':
-        beha_m=np.nanmean(beha_te_unte[:,:,0:3],axis=2)
-        beha_sem=sem(beha_te_unte[:,:,0:3],axis=2,nan_policy='omit')
+        beha_m=np.nanmean(beha_te_unte[:,:,0:eaf],axis=2)
+        beha_sem=sem(beha_te_unte[:,:,0:eaf],axis=2,nan_policy='omit')
     if sess_vec[i]=='late':
-        beha_m=np.nanmean(beha_te_unte[:,:,-3:],axis=2)
-        beha_sem=sem(beha_te_unte[:,:,-3:],axis=2,nan_policy='omit')
+        beha_m=np.nanmean(beha_te_unte[:,:,-eaf:],axis=2)
+        beha_sem=sem(beha_te_unte[:,:,-eaf:],axis=2,nan_policy='omit')
 
     width=0.3
     fig=plt.figure(figsize=(2.3,2))
