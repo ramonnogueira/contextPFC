@@ -81,16 +81,6 @@ def chrono_curve(x,Bl,Br,K,c_shift,t0l,t0r): # x[:,0] is coherence and x[:,1] is
     tnd=(1-x[:,1])*t0l+x[:,1]*t0r
     return decl+decr+tnd
 
-
-# def func_fit_chrono_log(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
-#     popt,pcov=curve_fit(chrono_curve,xx[ind_fit],np.log(rt[ind_fit]),maxfev=maxfev,p0=p0,method=method)
-#     #print (popt)
-#     yy=np.exp(chrono_curve(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4]))
-#     fit_chrono=nan*np.zeros(len(coh_uq))
-#     for ii in range(len(coh_uq)):
-#         fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
-#     return fit_chrono
-
 # def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
 #     popt,pcov,infodict,mesg,ier=curve_fit(chrono_curve,xx[ind_fit],rt[ind_fit],maxfev=maxfev,p0=p0,method=method,full_output=True)
 #     yy=chrono_curve(xx[ind_fit],popt[0],popt[1],popt[2],popt[3],popt[4])
@@ -117,21 +107,21 @@ monkey='Galileo'
 phase='late'
 
 maxfev=100000
-p100=(4000,0.1,0.1,500,500)
-p101=(4000,0.1,-3,500,700)
-p102=(4000,0.1,3,700,500)
+#p100=(4000,0.1,0.1,500,500)
+#p101=(4000,0.1,-3,500,700)
+#p102=(4000,0.1,3,700,500)
 p00=(-20,20,-0.005,0.1,500,500)
 p01=(-20,20,-0.005,-3,500,700)
 p02=(-20,20,-0.005,3,700,500)
 #p0_log=(7,0.07,1,6,6)
 method='lm'
 
-abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/%s/%s/'%(phase,monkey) 
-files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
-# abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
-# files_pre=np.array(os.listdir(abs_path))
-# order=order_files(files_pre)
-# files=np.array(files_pre[order])
+#abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/%s/%s/'%(phase,monkey) 
+#files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
+abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
+files_pre=np.array(os.listdir(abs_path))
+order=order_files(files_pre)
+files=np.array(files_pre[order])
 print (files)
 
 if monkey=='Niels':
@@ -153,10 +143,11 @@ fit_psycho=nan*np.zeros((len(files),len(xx_coh),3))
 chrono=nan*np.zeros((len(files),len(xx_coh_pre),3))
 fit_chrono=nan*np.zeros((len(files),len(xx_coh_pre),3))
 
-params=nan*np.zeros((len(files),6,3))
+params_psy=nan*np.zeros((len(files),2,3))
+params_rt=nan*np.zeros((len(files),6,3))
     
 for kk in range(len(files)):
-    print (kk)
+    print (files[kk])
     #Load data
     data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
     beha=miscellaneous.behavior(data)
@@ -176,39 +167,26 @@ for kk in range(len(files)):
     stimulus=beha['stimulus']
     choice=beha['choice']
     rt=beha['reaction_time']
-
-    # Plot context per session
-    # rew_rat=np.array(context,dtype=np.float64)
-    # rew_rat[context==0]=0.77
-    # rew_rat[context==1]=1.3
-    # fig=plt.figure(figsize=(3.5,2))
-    # ax=fig.add_subplot(1,1,1)
-    # ax.scatter(np.arange(len(context))[context==0],rew_rat[context==0],color='green',label='Context Left',marker='s',s=0.25)
-    # ax.scatter(np.arange(len(context))[context==1],rew_rat[context==1],color='blue',label='Context Right',marker='s',s=0.25)
-    # adjust_spines(ax,['left','bottom'])
-    # ax.set_ylabel('Reward ratio (right/left)')
-    # ax.set_xlabel('Trials')
-    # ax.set_ylim([0.5,1.5])
-    # ax.set_yticks([0.5,1,1.5])
-    # plt.legend(loc='best')
-    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/context_across_trials_sess_%i_%s.pdf'%(kk,monkey),dpi=500,bbox_inches='tight')
     
     # Psychometric curve
-    # for i in range(len(coh_set_signed)):
-    #     ind_coh=np.where(coh_signed==coh_set_signed[i])[0]
-    #     ind_ct0=np.where(context[ind_coh]==0)[0]
-    #     ind_ct1=np.where(context[ind_coh]==1)[0]
-    #     psycho[kk,i,0]=np.mean(choice[ind_coh])
-    #     psycho[kk,i,1]=np.mean(choice[ind_coh][ind_ct0])
-    #     psycho[kk,i,2]=np.mean(choice[ind_coh][ind_ct1])
+    for i in range(len(coh_set_signed)):
+        ind_coh=np.where(coh_signed==coh_set_signed[i])[0]
+        ind_ct0=np.where(context[ind_coh]==0)[0]
+        ind_ct1=np.where(context[ind_coh]==1)[0]
+        psycho[kk,i,0]=np.mean(choice[ind_coh])
+        psycho[kk,i,1]=np.mean(choice[ind_coh][ind_ct0])
+        psycho[kk,i,2]=np.mean(choice[ind_coh][ind_ct1])
 
-    # # Fit Psychometric
-    # popt0,pcov0=curve_fit(log_curve,xx_coh,psycho[kk,:,0])
-    # fit_psycho[kk,:,0]=log_curve(xx_coh,popt0[0],popt0[1])
-    # popt1,pcov1=curve_fit(log_curve,xx_coh,psycho[kk,:,1])
-    # fit_psycho[kk,:,1]=log_curve(xx_coh,popt1[0],popt1[1])
-    # popt2,pcov2=curve_fit(log_curve,xx_coh,psycho[kk,:,2])
-    # fit_psycho[kk,:,2]=log_curve(xx_coh,popt2[0],popt2[1])
+    # Fit Psychometric
+    popt0,pcov0=curve_fit(log_curve,xx_coh,psycho[kk,:,0])
+    fit_psycho[kk,:,0]=log_curve(xx_coh,popt0[0],popt0[1])
+    params_psy[kk,:,0]=popt0
+    popt1,pcov1=curve_fit(log_curve,xx_coh,psycho[kk,:,1])
+    fit_psycho[kk,:,1]=log_curve(xx_coh,popt1[0],popt1[1])
+    params_psy[kk,:,1]=popt1
+    popt2,pcov2=curve_fit(log_curve,xx_coh,psycho[kk,:,2])
+    fit_psycho[kk,:,2]=log_curve(xx_coh,popt2[0],popt2[1])
+    params_psy[kk,:,2]=popt2
        
     # Compute chronometric curves
     for i in range(len(coh_set_signed)):
@@ -222,31 +200,20 @@ for kk in range(len(files)):
     # Fit Chronometric
     xx=np.array([100*coh_signed,choice]).T
     ind_fit0=(~np.isnan(rt))*(abs(coh_signed)<0.75)
-    #func_fit_chrono(ind_fit0,xx,rt,coh_signed,coh_set_signed,maxfev,p100,method)
     ff0=func_fit_chrono(ind_fit0,xx,rt,coh_signed,coh_set_signed,maxfev,p00,method)
     fit_chrono[kk,:,0]=ff0[0]
-    params[kk,:,0]=ff0[1]
+    params_rt[kk,:,0]=ff0[1]
     
     ind_fit1=(context==0)*(~np.isnan(rt))*(abs(coh_signed)<0.75)
-    #func_fit_chrono(ind_fit1,xx,rt,coh_signed,coh_set_signed,maxfev,p101,method)
     ff1=func_fit_chrono(ind_fit1,xx,rt,coh_signed,coh_set_signed,maxfev,p01,method)
     fit_chrono[kk,:,1]=ff1[0]
-    params[kk,:,1]=ff1[1]
+    params_rt[kk,:,1]=ff1[1]
 
     ind_fit2=(context==1)*(~np.isnan(rt))*(abs(coh_signed)<0.75)
-    #func_fit_chrono(ind_fit2,xx,rt,coh_signed,coh_set_signed,maxfev,p102,method)
     ff2=func_fit_chrono(ind_fit2,xx,rt,coh_signed,coh_set_signed,maxfev,p02,method)
     fit_chrono[kk,:,2]=ff2[0]
-    params[kk,:,2]=ff2[1]
+    params_rt[kk,:,2]=ff2[1]
    
-    # plt.plot(xx_coh_pre,chrono[kk,:,0],color='black')
-    # plt.plot(xx_coh_pre,fit_chrono[kk,:,0],color='black',linestyle='--')
-    # plt.plot(xx_coh_pre,chrono[kk,:,1],color='green')
-    # plt.plot(xx_coh_pre,fit_chrono[kk,:,1],color='green',linestyle='--')
-    # plt.plot(xx_coh_pre,chrono[kk,:,2],color='blue')
-    # plt.plot(xx_coh_pre,fit_chrono[kk,:,2],color='blue',linestyle='--')
-    # plt.show()
-
 #################################################################
 # Plot Psychometric
 psycho_m=np.mean(psycho,axis=0)
@@ -274,7 +241,7 @@ ax.set_ylim([-0.05,1.05])
 plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
 #plt.legend(loc='best')
 plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s.pdf'%monkey,dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s.pdf'%monkey,dpi=500,bbox_inches='tight')
 
 #########################################
 # Plot Chronometric
@@ -298,5 +265,20 @@ ax.scatter(xx_coh_pre,chrono_m[:,2],color='blue',s=3)#,alpha=0.5)
 ax.set_ylabel('Reaction Time (ms)')
 ax.set_xlabel('Evidence Right (% Coherence)')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s.pdf'%monkey,dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s.pdf'%monkey,dpi=500,bbox_inches='tight')
 
+    # Plot context per session
+    # rew_rat=np.array(context,dtype=np.float64)
+    # rew_rat[context==0]=0.77
+    # rew_rat[context==1]=1.3
+    # fig=plt.figure(figsize=(3.5,2))
+    # ax=fig.add_subplot(1,1,1)
+    # ax.scatter(np.arange(len(context))[context==0],rew_rat[context==0],color='green',label='Context Left',marker='s',s=0.25)
+    # ax.scatter(np.arange(len(context))[context==1],rew_rat[context==1],color='blue',label='Context Right',marker='s',s=0.25)
+    # adjust_spines(ax,['left','bottom'])
+    # ax.set_ylabel('Reward ratio (right/left)')
+    # ax.set_xlabel('Trials')
+    # ax.set_ylim([0.5,1.5])
+    # ax.set_yticks([0.5,1,1.5])
+    # plt.legend(loc='best')
+    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/context_across_trials_sess_%i_%s.pdf'%(kk,monkey),dpi=500,bbox_inches='tight')

@@ -170,8 +170,8 @@ bias_vec=np.linspace(-15,15,31) #Galileo
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 #talig='response_edf'
 #dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
-talig='dots_on'
-dic_time=np.array([0,800,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+talig='response_edf'
+dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -205,7 +205,8 @@ group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 #group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
 #group_coh=np.array([nan,0 ,0 ,0 ,1 ,1 ,1 ,nan,1  ,1  ,1  ,0  ,0  ,0  ,nan])
 #group_coh=np.array([nan,nan,nan,nan,nan,nan,nan,nan,0  ,0  ,0  ,1  ,1  ,1  ,nan])
-group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+#group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
 
 tpre_sacc=50
 
@@ -228,7 +229,7 @@ for k in range(len(monkeys)):
     
     for i,nn in enumerate(files_groups):
         print ('group ',i)    
-        pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files[nn[0]:nn[1]],talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False)   
+        pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files[nn[0]:nn[1]],talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False,learning=True)   
         for kk in range(steps):
             print (kk)
             # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
@@ -299,6 +300,7 @@ for k in range(len(monkeys)):
         ax.set_ylabel('Decoding Performance')
         plt.legend(loc='best')
         fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_%s_learning_time_%i.pdf'%(talig,monkeys[k],t),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_%s_learning_time_%i.png'%(talig,monkeys[k],t),dpi=500,bbox_inches='tight')
  
     # Plot Shifted CCGP
     ccgp_orig_m=np.mean(ccgp_all[:,:,:,15],axis=(2,4))
@@ -328,12 +330,13 @@ for k in range(len(monkeys)):
         ax.fill_between(np.arange(len(files_groups)),shccgp_m[:,t,0]-shccgp_std[:,t,0],shccgp_m[:,t,0]+shccgp_std[:,t,0],color='blue',alpha=0.5)
         ax.plot(np.arange(len(files_groups)),shccgp_m[:,t,1],color='brown',label='Sh-CCGP Context')
         ax.fill_between(np.arange(len(files_groups)),shccgp_m[:,t,1]-shccgp_std[:,t,1],shccgp_m[:,t,1]+shccgp_std[:,t,1],color='brown',alpha=0.5)
-        ax.plot(xx,0.5*np.ones(len(files_groups)),color='black',linestyle='--')
+        ax.plot(np.arange(len(files_groups)),0.5*np.ones(len(files_groups)),color='black',linestyle='--')
         ax.set_ylim([0.4,1])
         ax.set_xlabel('Learning Phase')
         ax.set_ylabel('Decoding Performance')
         plt.legend(loc='best')
         fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_%s_learning_time_%i.pdf'%(talig,monkeys[k],t),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_%s_learning_time_%i.png'%(talig,monkeys[k],t),dpi=500,bbox_inches='tight')
 
 
         # for t in range(steps):
