@@ -171,7 +171,7 @@ bias_vec=np.linspace(-15,15,31) #Galileo
 #talig='response_edf'
 #dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 talig='response_edf'
-dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
+dic_time=np.array([700,-100,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
@@ -190,8 +190,8 @@ n_coh=15
 #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
 
 # Galileo
-files_groups=[[0,10],[10,20],[20,30]]
-#files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
+#files_groups=[[0,10],[10,20],[20,30]]
+files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
 #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])

@@ -168,23 +168,28 @@ p0=(0.05,0.5,1)
 xx=np.arange(t_back+t_forw)-t_back
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
-if monkey=='Niels':
+#if monkey=='Niels':
     #files_groups=[[0,4],[4,8],[8,12]]
     #files_groups=[[0,3],[3,6],[6,9],[9,12]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
-    files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
+    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
+    
 
-if monkey=='Galileo':
+#if monkey=='Galileo':
     #files_groups=[[0,10],[10,20],[20,30]]
     #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
-    files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
+    #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
     #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
 
-abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
-files_pre=np.array(os.listdir(abs_path))
-order=order_files(files_pre)
-files_all=np.array(files_pre[order])
+files_groups=[[0,1],[1,2],[2,3]] # No learning
+
+# abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
+# files_pre=np.array(os.listdir(abs_path))
+# order=order_files(files_pre)
+# files_all=np.array(files_pre[order])
+abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey) 
+files_all=os.listdir(abs_path)
 print (files_all)
 
 beha_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
@@ -225,7 +230,8 @@ for hh in range(len(files_groups)):
         indch_ct01=np.where(ctx_ch==1)[0]
         #print (ind_ch,len(choice))
 
-        firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+        firing_rate_pre=miscellaneous.getRasters(data,talig,dic_time,index_nonan,threshold=thres)
+        #firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
         firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
         
         ##################################################
@@ -337,7 +343,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Prob. (Choice = Context)')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 ##########################
 
@@ -354,7 +360,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Decoding Perf. Context ')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 # Plot decrease Behavior and Neuronal theresholds
 fig=plt.figure(figsize=(2.3,2))
@@ -366,7 +372,7 @@ ax.set_xlabel('Sessions')
 ax.set_ylabel('Threshold')
 plt.legend(loc='best')
 plt.xticks([0,5,10])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 # Plot correlation
 fig=plt.figure(figsize=(2.3,2))
@@ -377,7 +383,7 @@ for i in range(len(inter_beha)):
         ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
 ax.set_xlabel('Threshold Behavioral')
 ax.set_ylabel('Threshold Neuronal')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_pre.pdf'%(monkey),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
 
 
