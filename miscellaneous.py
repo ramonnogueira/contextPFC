@@ -76,6 +76,7 @@ def trans_rew(x):
         rew[i]=x[i]
     return rew
 
+# It works with both sorted and unsorted data
 def getRasters(data,aligned,dic_time,index_nonan,threshold):
     pre_time=dic_time[0]
     post_time=dic_time[1]
@@ -110,6 +111,7 @@ def getRasters(data,aligned,dic_time,index_nonan,threshold):
     fr_mat=fr_mat_pre[:,good_fr]
     return fr_mat
 
+# If used with sorted data it'll produce an error
 def getRasters_unsorted(data,aligned,dic_time,index_nonan,threshold):
     pre_time=dic_time[0]
     post_time=dic_time[1]

@@ -75,7 +75,7 @@ def func2(x,a,b,c):
     #return -np.exp(-a*x+b)+c
     return -np.exp(-a*x)*b+c
 
-def fit_plot(xx,yy,sign,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
+def fit_plot(xx,yy,sign,t_back,t_forw,maxfev,method,bounds,p0):
     if sign==1:
         popt,pcov=curve_fit(func1,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
         fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
@@ -134,9 +134,9 @@ def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
 monkeys=['Niels','Galileo']
 t_back=20
 t_forw=80
-sig_kernel=1 # not smaller than 1
+#sig_kernel=1 # not smaller than 1
 
-time_extra=50
+#time_extra=50
 
 # talig='dots_on' #'response_edf' #dots_on
 # dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use

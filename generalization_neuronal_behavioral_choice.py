@@ -148,14 +148,9 @@ def calculate_ind_ch_corr(ind_ch,reward):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
-t_back=20
-t_forw=80
-sig_kernel=1 # not smaller than 1
+monkeys=['Niels','Galileo']
 
 talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
-
 thres=0
 reg=1e0
 maxfev=100000
@@ -165,170 +160,259 @@ method='dogbox'
 bounds=([0,0,0],[1,1,10])
 p0=(0.05,0.5,1)
 
+t_back=20
+t_forw=80
+sig_kernel=1 # not smaller than 1
 xx=np.arange(t_back+t_forw)-t_back
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
-#if monkey=='Niels':
+
+beha_ctx_ch_all=nan*np.zeros((9,t_back+t_forw))
+fit_beha_all=nan*np.zeros((9,t_back+t_forw))
+inter_beha_all=nan*np.zeros((9))
+neu_ctx_ch_all=nan*np.zeros((9,t_back+t_forw))
+fit_neu_all=nan*np.zeros((9,t_back+t_forw))
+inter_neu_all=nan*np.zeros((9))
+
+for k in range(len(monkeys)):
+   
+    if monkeys[k]=='Niels':
+        dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive)
+        files_groups=[[8,9],[9,10],[10,11],[11,12]]
     #files_groups=[[0,4],[4,8],[8,12]]
     #files_groups=[[0,3],[3,6],[6,9],[9,12]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
     #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
     
-
-#if monkey=='Galileo':
+    if monkeys[k]=='Galileo':
+        dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive)
+        files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
     #files_groups=[[0,10],[10,20],[20,30]]
     #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
     #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
     #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
     #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
 
-files_groups=[[0,1],[1,2],[2,3]] # No learning
+    #files_groups=[[0,1],[1,2],[2,3]] # No learning
 
-# abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
-# files_pre=np.array(os.listdir(abs_path))
-# order=order_files(files_pre)
-# files_all=np.array(files_pre[order])
-abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey) 
-files_all=os.listdir(abs_path)
-print (files_all)
+    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    files_pre=np.array(os.listdir(abs_path))
+    order=order_files(files_pre)
+    files_all=np.array(files_pre[order])
+    # abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k]) 
+    # files_all=os.listdir(abs_path)
+    print (files_all)
 
-beha_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
-fit_beha=nan*np.zeros((len(files_groups),t_back+t_forw))
-inter_beha=nan*np.zeros((len(files_groups)))
-neu_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
-fit_neu=nan*np.zeros((len(files_groups),t_back+t_forw))
-inter_neu=nan*np.zeros((len(files_groups)))
-
-for hh in range(len(files_groups)):
-    xx_forw_pre=nan*np.zeros((100,(t_back+t_forw)))
-    beha_pre=nan*np.zeros((100,(t_back+t_forw)))
-    neu_ctx_pre=nan*np.zeros((100,(t_back+t_forw)))
-    gg=-1
-    oo=-1
-    files=files_all[files_groups[hh][0]:files_groups[hh][1]]
-    print (files)
-    for kk in range(len(files)):
-        print (files[kk])
-        #Load data
-        data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-        beha=miscellaneous.behavior(data)
-        index_nonan=beha['index_nonan']
-        # We discard first trial of session because we are interested in context changes
-        stimulus=beha['stimulus'][1:]
-        choice=beha['choice'][1:]
-        coherence=beha['coherence_signed'][1:]
-        coh_uq=np.unique(coherence)
-        reward=beha['reward'][1:]
-        rt=beha['reaction_time'][1:]
-        context_pre=beha['context']
-        ctx_ch=(context_pre[1:]-context_pre[0:-1])
-        context=context_pre[1:]
-        #ind_ch=np.where(abs(ctx_ch)==1)[0]
-        ind_ch_pre=np.where(abs(ctx_ch)==1)[0] #Careful!
-        ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
-        indch_ct10=np.where(ctx_ch==-1)[0]
-        indch_ct01=np.where(ctx_ch==1)[0]
-        #print (ind_ch,len(choice))
-
-        firing_rate_pre=miscellaneous.getRasters(data,talig,dic_time,index_nonan,threshold=thres)
-        #firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
-        firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
+    beha_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
+    fit_beha=nan*np.zeros((len(files_groups),t_back+t_forw))
+    inter_beha=nan*np.zeros((len(files_groups)))
+    neu_ctx_ch=nan*np.zeros((len(files_groups),t_back+t_forw))
+    fit_neu=nan*np.zeros((len(files_groups),t_back+t_forw))
+    inter_neu=nan*np.zeros((len(files_groups)))
+    for hh in range(len(files_groups)):
+        xx_forw_pre=nan*np.zeros((100,(t_back+t_forw)))
+        beha_pre=nan*np.zeros((100,(t_back+t_forw)))
+        neu_ctx_pre=nan*np.zeros((100,(t_back+t_forw)))
+        gg=-1
+        oo=-1
+        files=files_all[files_groups[hh][0]:files_groups[hh][1]]
+        print (files)
+        for kk in range(len(files)):
+            print (files[kk])
+            #Load data
+            data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
+            beha=miscellaneous.behavior(data)
+            index_nonan=beha['index_nonan']
+            # We discard first trial of session because we are interested in context changes
+            stimulus=beha['stimulus'][1:]
+            choice=beha['choice'][1:]
+            coherence=beha['coherence_signed'][1:]
+            coh_uq=np.unique(coherence)
+            reward=beha['reward'][1:]
+            rt=beha['reaction_time'][1:]
+            context_pre=beha['context']
+            ctx_ch=(context_pre[1:]-context_pre[0:-1])
+            context=context_pre[1:]
+            #ind_ch=np.where(abs(ctx_ch)==1)[0]
+            ind_ch_pre=np.where(abs(ctx_ch)==1)[0] #Careful!
+            ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
+            indch_ct10=np.where(ctx_ch==-1)[0]
+            indch_ct01=np.where(ctx_ch==1)[0]
+            #print (ind_ch,len(choice))
+            
+            #firing_rate_pre=miscellaneous.getRasters(data,talig,dic_time,index_nonan,threshold=thres)
+            firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+            firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
         
-        ##################################################
-        # Behavior
-        # Probability of Choice
+            ##################################################
+            # Behavior
+            # Probability of Choice
 
-        for h in range(len(ind_ch)):
-            gg+=1
-            #print (gg)
-            for j in range(t_back):
-                try:
-                    beha_pre[gg,j]=(choice[ind_ch[h]-t_back+j]==context[ind_ch[h]-t_back+j])
-                except:
-                    None
-                    #print ('Error Behavior Back ',h,j)
-            for j in range(t_forw):
-                try:
-                    beha_pre[gg,t_back+j]=(choice[ind_ch[h]+j]==context[ind_ch[h]+j])
-                except:
-                    None
-                    #print ('Error Behavior Forward ',h,j)
-            xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
+            for h in range(len(ind_ch)):
+                gg+=1
+                #print (gg)
+                for j in range(t_back):
+                    try:
+                        beha_pre[gg,j]=(choice[ind_ch[h]-t_back+j]==context[ind_ch[h]-t_back+j])
+                    except:
+                        None
+                        #print ('Error Behavior Back ',h,j)
+                for j in range(t_forw):
+                    try:
+                        beha_pre[gg,t_back+j]=(choice[ind_ch[h]+j]==context[ind_ch[h]+j])
+                    except:
+                        None
+                        #print ('Error Behavior Forward ',h,j)
+                xx_forw_pre[gg]=(np.arange(t_forw+t_back)-t_back)
 
-        ####################################################3
-        # Neuronal
-        # Extract indices for training classifier (remove the one for testing from the entire dataset)
-        ind_train=np.arange(len(coherence))
-        for p in range(len(ind_ch)):
-            ind_t=np.arange(t_back+t_forw)-t_back+ind_ch[p]
-            ind_del=[]
-            for pp in range(len(ind_t)):
-                try:
-                    ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
-                except:
-                    None
-                    #print ('error aqui')
-            ind_del=np.array(ind_del)
-            ind_train=np.delete(ind_train,ind_del)
+            ####################################################3
+            # Neuronal
+            # Extract indices for training classifier (remove the one for testing from the entire dataset)
+            ind_train=np.arange(len(coherence))
+            for p in range(len(ind_ch)):
+                ind_t=np.arange(t_back+t_forw)-t_back+ind_ch[p]
+                ind_del=[]
+                for pp in range(len(ind_t)):
+                    try:
+                        ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
+                    except:
+                        None
+                        #print ('error aqui')
+                ind_del=np.array(ind_del)
+                ind_train=np.delete(ind_train,ind_del)
 
-        print (len(context),len(ind_train),np.mean(context[ind_train]))
+            print (len(context),len(ind_train),np.mean(context[ind_train]))
         
-        # Fit classifier
-        cl=LogisticRegression(C=1/reg,class_weight='balanced')
-        cl.fit(firing_rate[ind_train],context[ind_train])
-        #print ('norm ',np.linalg.norm(cl.coef_[0]))
+            # Fit classifier
+            cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            cl.fit(firing_rate[ind_train],context[ind_train])
+            #print ('norm ',np.linalg.norm(cl.coef_[0]))
 
-        for o in range(len(ind_ch)):
-            oo+=1
-            for j in range(t_back):
-                try:
-                    neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
-                    #neu_ctx_pre[oo,j]=cl.score(firing_rate[(ind_ch[o]-t_back+j)].reshape(1,-1),context[ind_ch[o]-t_back+j].reshape(1,-1))
-                except:
-                    None
-                    #print ('Error Neuro Back ',o,j)
-            for j in range(t_forw):
-                try:
-                    neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]+j):(ind_ch[o]+j+1)])==context[ind_ch[o]+j])
-                    #neu_ctx_pre[oo,t_back+j]=cl.score(firing_rate[(ind_ch[o]+j)].reshape(1,-1),context[ind_ch[o]+j].reshape(1,-1))
-                except:
-                    None
-                    #print ('Error Neuro Forward ',o,j) 
+            for o in range(len(ind_ch)):
+                oo+=1
+                for j in range(t_back):
+                    try:
+                        neu_ctx_pre[oo,j]=(cl.predict(firing_rate[(ind_ch[o]-t_back+j):(ind_ch[o]-t_back+j+1)])==context[ind_ch[o]-t_back+j])
+                        #neu_ctx_pre[oo,j]=cl.score(firing_rate[(ind_ch[o]-t_back+j)].reshape(1,-1),context[ind_ch[o]-t_back+j].reshape(1,-1))
+                    except:
+                        None
+                        #print ('Error Neuro Back ',o,j)
+                for j in range(t_forw):
+                    try:
+                        neu_ctx_pre[oo,t_back+j]=(cl.predict(firing_rate[(ind_ch[o]+j):(ind_ch[o]+j+1)])==context[ind_ch[o]+j])
+                        #neu_ctx_pre[oo,t_back+j]=cl.score(firing_rate[(ind_ch[o]+j)].reshape(1,-1),context[ind_ch[o]+j].reshape(1,-1))
+                    except:
+                        None
+                        #print ('Error Neuro Forward ',o,j) 
                     
-    beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
-    neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
+        beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
+        beha_ctx_ch_all[3*k+hh]=np.nanmean(beha_pre,axis=0)
+        neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
+        neu_ctx_ch_all[3*k+hh]=np.nanmean(neu_ctx_pre,axis=0)
 
-    popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
-    fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
-    print ('Beha2 ',intercept2(popt[0],popt[1],popt[2]))
+        popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
+        fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
+        print ('Beha2 ',intercept2(popt[0],popt[1],popt[2]))
            
-    popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),neu_ctx_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
-    fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
-    print ('Neu2 ',intercept2(popt[0],popt[1],popt[2]))
+        popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),neu_ctx_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
+        fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
+        print ('Neu2 ',intercept2(popt[0],popt[1],popt[2]))
     
-    aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-    fit_beha[hh,t_back:]=aa[0]
-    fit_beha[hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
-    inter_beha[hh]=aa[1]
+        aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+        fit_beha[hh,t_back:]=aa[0]
+        fit_beha_all[3*k+hh,t_back:]=aa[0]
+        fit_beha[hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
+        fit_beha_all[3*k+hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
+        inter_beha[hh]=aa[1]
+        inter_beha_all[3*k+hh]=aa[1]
 
-    aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-    fit_neu[hh,t_back:]=aa[0]
-    fit_neu[hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
-    inter_neu[hh]=aa[1]
+        aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
+        fit_neu[hh,t_back:]=aa[0]
+        fit_neu_all[3*k+hh,t_back:]=aa[0]
+        fit_neu[hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
+        fit_neu_all[3*k+hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
+        inter_neu[hh]=aa[1]
+        inter_neu_all[3*k+hh]=aa[1]
 
-    print ('Beha ',inter_beha[hh])
-    print ('Neu ',inter_neu[hh])
+        print ('Beha ',inter_beha[hh])
+        print ('Neu ',inter_neu[hh])
+
+    ##################################
+    beha_ch_m=np.nanmean(beha_ctx_ch,axis=0)
+    beha_ch_sem=sem(beha_ctx_ch,axis=0,nan_policy='omit')
+    neu_ch_m=np.nanmean(neu_ctx_ch,axis=0)
+    neu_ch_sem=sem(neu_ctx_ch,axis=0,nan_policy='omit')
+    
+    fit_beha_m=np.nanmean(fit_beha,axis=0)
+    fit_beha_sem=sem(fit_beha,axis=0,nan_policy='omit')
+    fit_neu_m=np.nanmean(fit_neu,axis=0)
+    fit_neu_sem=sem(fit_neu,axis=0,nan_policy='omit')
+
+    # Plot Behavior
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.axvline(0,color='black',linestyle='--')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.scatter(xx,beha_ch_m,color='green',s=1)
+    ax.plot(xx,fit_beha_m,color='green')
+    ax.fill_between(xx,fit_beha_m-fit_beha_sem,fit_beha_m+fit_beha_sem,color='green',alpha=0.5)
+    ax.set_ylim([0,1])
+    ax.set_xlabel('Trials after context change')
+    ax.set_ylabel('Prob. (Choice = Context)')
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+
+    ##########################
+
+    # Plot Neuro
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.axvline(0,color='black',linestyle='--')
+    ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    ax.scatter(xx,neu_ch_m,color='blue',s=1)
+    ax.plot(xx,fit_neu_m,color='blue')
+    ax.fill_between(xx,fit_neu_m-fit_neu_sem,fit_neu_m+fit_neu_sem,color='blue',alpha=0.5)
+    ax.set_ylim([0,1])
+    ax.set_xlabel('Trials after context change')
+    ax.set_ylabel('Decoding Perf. Context ')
+    plt.legend(loc='best')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    
+    # Plot decrease Behavior and Neuronal theresholds
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_beha[inter_beha>0],color='green',label='Behavioral')
+    ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_neu[inter_beha>0],color='blue',label='Neuronal')
+    ax.set_xlabel('Sessions')
+    ax.set_ylabel('Threshold')
+    plt.legend(loc='best')
+    plt.xticks([0,5,10])
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+
+    # Plot correlation
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    for i in range(len(inter_beha)):
+        if (inter_beha[i]>0) and (inter_neu[i]>0):
+            ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
+    ax.set_xlabel('Threshold Behavioral')
+    ax.set_ylabel('Threshold Neuronal')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
 ##################################
-beha_ch_m=np.mean(beha_ctx_ch,axis=0)
-beha_ch_sem=sem(beha_ctx_ch,axis=0)
-neu_ch_m=np.mean(neu_ctx_ch,axis=0)
-neu_ch_sem=sem(neu_ctx_ch,axis=0)
+beha_ch_m=np.nanmean(beha_ctx_ch_all,axis=0)
+beha_ch_sem=sem(beha_ctx_ch_all,axis=0,nan_policy='omit')
+neu_ch_m=np.nanmean(neu_ctx_ch_all,axis=0)
+neu_ch_sem=sem(neu_ctx_ch_all,axis=0,nan_policy='omit')
 
-fit_beha_m=np.nanmean(fit_beha,axis=0)
-fit_beha_sem=sem(fit_beha,axis=0,nan_policy='omit')
-fit_neu_m=np.nanmean(fit_neu,axis=0)
-fit_neu_sem=sem(fit_neu,axis=0,nan_policy='omit')
+fit_beha_m=np.nanmean(fit_beha_all,axis=0)
+fit_beha_sem=sem(fit_beha_all,axis=0,nan_policy='omit')
+fit_neu_m=np.nanmean(fit_neu_all,axis=0)
+fit_neu_sem=sem(fit_neu_all,axis=0,nan_policy='omit')
 
 # Plot Behavior
 fig=plt.figure(figsize=(2.3,2))
@@ -342,8 +426,8 @@ ax.fill_between(xx,fit_beha_m-fit_beha_sem,fit_beha_m+fit_beha_sem,color='green'
 ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Prob. (Choice = Context)')
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
+#plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_both_aft_corr_pre_2.pdf',dpi=500,bbox_inches='tight')
 
 ##########################
 
@@ -359,31 +443,8 @@ ax.fill_between(xx,fit_neu_m-fit_neu_sem,fit_neu_m+fit_neu_sem,color='blue',alph
 ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Decoding Perf. Context ')
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
-
-# Plot decrease Behavior and Neuronal theresholds
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_beha[inter_beha>0],color='green',label='Behavioral')
-ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_neu[inter_beha>0],color='blue',label='Neuronal')
-ax.set_xlabel('Sessions')
-ax.set_ylabel('Threshold')
-plt.legend(loc='best')
-plt.xticks([0,5,10])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
-
-# Plot correlation
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-for i in range(len(inter_beha)):
-    if (inter_beha[i]>0) and (inter_neu[i]>0):
-        ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
-ax.set_xlabel('Threshold Behavioral')
-ax.set_ylabel('Threshold Neuronal')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkey),dpi=500,bbox_inches='tight')
+#plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_both_aft_corr_pre_2.pdf',dpi=500,bbox_inches='tight')
 
 
 
