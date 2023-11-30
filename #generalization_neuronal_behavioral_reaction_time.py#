@@ -75,7 +75,7 @@ def func2(x,a,b,c):
     #return -np.exp(-a*x+b)+c
     return -np.exp(-a*x)*b+c
 
-def fit_plot(xx,yy,sign,t_back,t_forw,maxfev,method,bounds,p0):
+def fit_plot(xx,yy,sign,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     if sign==1:
         popt,pcov=curve_fit(func1,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
         fit_func=func1(xx[t_back:],popt[0],popt[1],popt[2])
@@ -134,14 +134,9 @@ def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
 monkeys=['Niels','Galileo']
 t_back=20
 t_forw=80
-#sig_kernel=1 # not smaller than 1
+sig_kernel=1 # not smaller than 1
 
 #time_extra=50
-
-# talig='dots_on' #'response_edf' #dots_on
-# dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use
-# steps=int((dic_time[0]+dic_time[1])/dic_time[3])
-# tt=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 thres=0
 reg=1e0
@@ -149,12 +144,17 @@ maxfev=100000
 method='dogbox'
 
 bounds=([0,0,-1],[1000,10,1])
+#bounds=([-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf])
 p0=(0.05,0.5,0.1)
 
 xx=np.arange(t_back+t_forw)-t_back
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
+beha_ctx_ch_all=nan*np.zeros((2,9,t_back+t_forw))
+fit_beha_all=nan*np.zeros((2,9,t_back+t_forw))
+inter_beha_all=nan*np.zeros((2,9))
+uu=-1
 for k in range(len(monkeys)):
 
     if monkeys[k]=='Niels':
@@ -162,6 +162,7 @@ for k in range(len(monkeys)):
 
     if monkeys[k]=='Galileo':
         files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
+        #files_groups=[[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
     
     abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
@@ -172,12 +173,9 @@ for k in range(len(monkeys)):
     beha_ctx_ch=nan*np.zeros((2,len(files_groups),t_back+t_forw))
     fit_beha=nan*np.zeros((2,len(files_groups),t_back+t_forw))
     inter_beha=nan*np.zeros((2,len(files_groups)))
-    #
-    # neu_ctx_ch=nan*np.zeros((2,len(files_groups),t_back+t_forw))
-    # fit_neu=nan*np.zeros((2,len(files_groups),t_back+t_forw))
-    # inter_neu=nan*np.zeros((2,len(files_groups)))
     
     for hh in range(len(files_groups)):
+        uu+=1
         xx_forw_pre=nan*np.zeros((100,(t_back+t_forw)))
         beha_pre=nan*np.zeros((2,100,(t_back+t_forw)))
         neu_pre=nan*np.zeros((2,100,(t_back+t_forw)))
@@ -209,16 +207,6 @@ for k in range(len(monkeys)):
             #indch_ct01=np.where(ctx_ch==1)[0]
             #print (ind_ch,len(choice))
 
-            # # Careful contamination saccades!
-            # firing_rate_pre1=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
-            # print (np.shape(firing_rate_pre1))
-            # num_neu=len(firing_rate_pre1[0])
-            # steps=len(firing_rate_pre1[0,0])
-            # firing_rate_pre2=miscellaneous.normalize_fr(firing_rate_pre1)[1:]
-            # fr_nan=np.reshape(fr_rt_nan(rt_pre,firing_rate_pre2,tt,dic_time[2],time_extra),(-1,num_neu*steps))
-            # ind_nnan_bool=~np.isnan(np.sum(fr_nan,axis=1))
-            # ind_nnan=np.where(ind_nnan_bool)[0]
-        
             ##################################################
             # Behavior
             # Probability of Choice
@@ -245,86 +233,33 @@ for k in range(len(monkeys)):
                     except:
                         None
 
-            # ####################################################3
-            # # Neuronal
-            # # Extract indices for training classifier (remove the one for testing from the entire dataset)
-            # ind_train=np.arange(len(coherence))
-            # for p in range(len(ind_ch)):
-            #     ind_t=np.arange(t_back+t_forw)-t_back+ind_ch[p]
-            #     ind_del=[]
-            #     for pp in range(len(ind_t)):
-            #         try:
-            #             ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
-            #         except:
-            #             None
-            #             #print ('error aqui')
-            #     ind_del=np.array(ind_del)
-            #     ind_train=np.delete(ind_train,ind_del)
-        
-            # # Fit classifier
-            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
-            # cl.fit(fr_nan[np.intersect1d(ind_train,ind_nnan)],choice[np.intersect1d(ind_train,ind_nnan)])
-            # distances=norm_quant_coh(proj_dist(cl.coef_[0],cl.intercept_[0],fr_nan),coherence)
-            # print ('Perc. not discarded ',np.sum(ind_nnan_bool)/len(ind_nnan_bool),np.sum(~np.isnan(distances))/len(distances))
-            
-            # for h in range(len(ind_ch)):
-            #     oo+=1
-            #     for j in range(t_back):
-            #         ind=(ind_ch[h]-t_back+j)
-            #         try:
-            #             if context[ind]==stimulus[ind]:
-            #                 neu_pre[0,oo,j]=distances[ind]
-            #             if context[ind]!=stimulus[ind]:
-            #                 neu_pre[1,oo,j]=distances[ind]
-            #         except:
-            #             None
-            
-            #     for j in range(t_forw):
-            #         ind=(ind_ch[h]+j)
-            #         try:
-            #             if context[ind]==stimulus[ind]:
-            #                 neu_pre[0,oo,t_back+j]=distances[ind]
-            #             if context[ind]!=stimulus[ind]:
-            #                 neu_pre[1,oo,t_back+j]=distances[ind]
-            #         except:
-            #             None
-                    
         beha_ctx_ch[:,hh]=np.nanmean(beha_pre,axis=1)
-        #neu_ctx_ch[:,hh]=np.nanmean(neu_pre,axis=1)
+        beha_ctx_ch_all[:,uu]=np.nanmean(beha_pre,axis=1)
 
         # Behavior
         aa0=fit_plot(xx,beha_ctx_ch[0,hh],1,t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
         fit_beha[0,hh,t_back:]=aa0[0]
         fit_beha[0,hh,0:t_back]=np.mean(beha_ctx_ch[0,hh,0:t_back])
         inter_beha[0,hh]=aa0[1]
+        fit_beha_all[0,uu,t_back:]=aa0[0]
+        fit_beha_all[0,uu,0:t_back]=np.mean(beha_ctx_ch[0,hh,0:t_back])
+        inter_beha_all[0,uu]=aa0[1]
 
         aa1=fit_plot(xx,beha_ctx_ch[1,hh],-1,t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
         fit_beha[1,hh,t_back:]=aa1[0]
         fit_beha[1,hh,0:t_back]=np.mean(beha_ctx_ch[1,hh,0:t_back])
         inter_beha[1,hh]=aa1[1]
+        fit_beha_all[1,uu,t_back:]=aa1[0]
+        fit_beha_all[1,uu,0:t_back]=np.mean(beha_ctx_ch[1,hh,0:t_back])
+        inter_beha_all[1,uu]=aa1[1]
         
-        # # Neuro
-        # aa0=fit_plot(xx,neu_ctx_ch[0,hh],-1,t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-        # fit_neu[0,hh,t_back:]=aa0[0]
-        # fit_neu[0,hh,0:t_back]=np.mean(neu_ctx_ch[0,hh,0:t_back])
-        # inter_neu[0,hh]=aa0[1]
-        
-        # aa1=fit_plot(xx,neu_ctx_ch[1,hh],1,t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
-        # fit_neu[1,hh,t_back:]=aa1[0]
-        # fit_neu[1,hh,0:t_back]=np.mean(neu_ctx_ch[1,hh,0:t_back])
-        # inter_neu[1,hh]=aa1[1]
-
     ##################################
     beha_ch_m=np.nanmean(beha_ctx_ch,axis=1)
     beha_ch_sem=sem(beha_ctx_ch,axis=1,nan_policy='omit')
-    #neu_ch_m=np.nanmean(neu_ctx_ch,axis=1)
-    #neu_ch_sem=sem(neu_ctx_ch,axis=1,nan_policy='omit')
-
+   
     fit_beha_m=np.nanmean(fit_beha,axis=1)
     fit_beha_sem=sem(fit_beha,axis=1,nan_policy='omit')
-    #fit_neu_m=np.nanmean(fit_neu,axis=1)
-    #fit_neu_sem=sem(fit_neu,axis=1,nan_policy='omit')
-
+   
     # Plot Behavior
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
@@ -342,22 +277,29 @@ for k in range(len(monkeys)):
     ax.set_ylabel('Normalized Reaction Time')
     #plt.legend(loc='best')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/reaction_time_context_beha_%s.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
-    
-    # # Plot Neuron
-    # fig=plt.figure(figsize=(2.3,2))
-    # ax=fig.add_subplot(111)
-    # miscellaneous.adjust_spines(ax,['left','bottom'])
-    # ax.axvline(0,color='black',linestyle='--')
-    # #ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    # ax.scatter(xx,neu_ch_m[0],color='green',s=1)
-    # ax.plot(xx,fit_neu_m[0],color='green',label='Stim.& Ctx congruent')
-    # ax.fill_between(xx,fit_neu_m[0]-fit_neu_sem[0],fit_neu_m[0]+fit_neu_sem[0],color='green',alpha=0.5)
-    # ax.scatter(xx,neu_ch_m[1],color='blue',s=1)
-    # ax.plot(xx,fit_neu_m[1],color='blue',label='Stim. & Ctx incongruent')
-    # ax.fill_between(xx,fit_neu_m[1]-fit_neu_sem[1],fit_neu_m[1]+fit_neu_sem[1],color='blue',alpha=0.5)
-    # #ax.set_ylim([0,1])
-    # ax.set_xlabel('Trials after context change')
-    # ax.set_ylabel('Norm. Dist. Class.')
-    # #plt.legend(loc='best')
-    # fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/reaction_time_context_neu_%s.png'%(monkey),dpi=500,bbox_inches='tight')
 
+##################################
+beha_ch_all_m=np.nanmean(beha_ctx_ch_all,axis=1)
+beha_ch_all_sem=sem(beha_ctx_ch_all,axis=1,nan_policy='omit')
+fit_beha_all_m=np.nanmean(fit_beha_all,axis=1)
+fit_beha_all_sem=sem(fit_beha_all,axis=1,nan_policy='omit')
+
+# Plot Behavior
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.axvline(0,color='black',linestyle='--')
+#ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+ax.scatter(xx,beha_ch_all_m[0],color='green',s=1)
+ax.plot(xx,fit_beha_all_m[0],color='green',label='Stim.& Ctx congruent')
+ax.fill_between(xx,fit_beha_all_m[0]-fit_beha_all_sem[0],fit_beha_all_m[0]+fit_beha_all_sem[0],color='green',alpha=0.5)
+ax.scatter(xx,beha_ch_all_m[1],color='blue',s=1)
+ax.plot(xx,fit_beha_all_m[1],color='blue',label='Stim. & Ctx incongruent')
+ax.fill_between(xx,fit_beha_all_m[1]-fit_beha_all_sem[1],fit_beha_all_m[1]+fit_beha_all_sem[1],color='blue',alpha=0.5)
+#ax.set_ylim([0,1])
+ax.set_xlabel('Trials after context change')
+ax.set_ylabel('Normalized Reaction Time')
+#plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/reaction_time_context_beha_both.pdf',dpi=500,bbox_inches='tight')
+    
+   

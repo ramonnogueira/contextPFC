@@ -209,6 +209,7 @@ for k in range(len(monkeys)):
         dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive) 
         #files_groups=[[22,24],[24,26],[26,28],[28,30]]
         files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]] # with 5 it works pretty well
+        #files_groups=[[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
         
     abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))

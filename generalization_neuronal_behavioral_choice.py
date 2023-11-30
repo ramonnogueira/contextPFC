@@ -174,27 +174,16 @@ neu_ctx_ch_all=nan*np.zeros((9,t_back+t_forw))
 fit_neu_all=nan*np.zeros((9,t_back+t_forw))
 inter_neu_all=nan*np.zeros((9))
 
+uu=-1
 for k in range(len(monkeys)):
-   
+    
     if monkeys[k]=='Niels':
         dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive)
         files_groups=[[8,9],[9,10],[10,11],[11,12]]
-    #files_groups=[[0,4],[4,8],[8,12]]
-    #files_groups=[[0,3],[3,6],[6,9],[9,12]]
-    #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
-    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
-    
     if monkeys[k]=='Galileo':
         dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive)
         files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
-    #files_groups=[[0,10],[10,20],[20,30]]
-    #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
-    #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
-    #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
-    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
-
-    #files_groups=[[0,1],[1,2],[2,3]] # No learning
-
+  
     abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
     order=order_files(files_pre)
@@ -210,6 +199,7 @@ for k in range(len(monkeys)):
     fit_neu=nan*np.zeros((len(files_groups),t_back+t_forw))
     inter_neu=nan*np.zeros((len(files_groups)))
     for hh in range(len(files_groups)):
+        uu+=1
         xx_forw_pre=nan*np.zeros((100,(t_back+t_forw)))
         beha_pre=nan*np.zeros((100,(t_back+t_forw)))
         neu_ctx_pre=nan*np.zeros((100,(t_back+t_forw)))
@@ -238,9 +228,9 @@ for k in range(len(monkeys)):
             ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
             indch_ct10=np.where(ctx_ch==-1)[0]
             indch_ct01=np.where(ctx_ch==1)[0]
-            #print (ind_ch,len(choice))
+            print (ind_ch,len(choice))
+            print ('NUM CHANGES ',len(ind_ch))
             
-            #firing_rate_pre=miscellaneous.getRasters(data,talig,dic_time,index_nonan,threshold=thres)
             firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
             firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
         
@@ -306,9 +296,9 @@ for k in range(len(monkeys)):
                         #print ('Error Neuro Forward ',o,j) 
                     
         beha_ctx_ch[hh]=np.nanmean(beha_pre,axis=0)
-        beha_ctx_ch_all[3*k+hh]=np.nanmean(beha_pre,axis=0)
+        beha_ctx_ch_all[uu]=np.nanmean(beha_pre,axis=0)
         neu_ctx_ch[hh]=np.nanmean(neu_ctx_pre,axis=0)
-        neu_ctx_ch_all[3*k+hh]=np.nanmean(neu_ctx_pre,axis=0)
+        neu_ctx_ch_all[uu]=np.nanmean(neu_ctx_pre,axis=0)
 
         popt,pcov=curve_fit(func2,xx_forw_pre[:,t_back:].ravel(),beha_pre[:,t_back:].ravel(),nan_policy='omit',maxfev=maxfev,p0=p0,method=method,bounds=bounds)
         fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
@@ -320,19 +310,19 @@ for k in range(len(monkeys)):
     
         aa=fit_plot(xx,beha_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
         fit_beha[hh,t_back:]=aa[0]
-        fit_beha_all[3*k+hh,t_back:]=aa[0]
+        fit_beha_all[uu,t_back:]=aa[0]
         fit_beha[hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
-        fit_beha_all[3*k+hh,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
+        fit_beha_all[uu,0:t_back]=np.mean(beha_ctx_ch[hh,0:t_back])
         inter_beha[hh]=aa[1]
-        inter_beha_all[3*k+hh]=aa[1]
+        inter_beha_all[uu]=aa[1]
 
         aa=fit_plot(xx,neu_ctx_ch[hh],t_back,t_forw,sig_kernel,maxfev,method=method,p0=p0,bounds=bounds)
         fit_neu[hh,t_back:]=aa[0]
-        fit_neu_all[3*k+hh,t_back:]=aa[0]
+        fit_neu_all[uu,t_back:]=aa[0]
         fit_neu[hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
-        fit_neu_all[3*k+hh,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
+        fit_neu_all[uu,0:t_back]=np.mean(neu_ctx_ch[hh,0:t_back])
         inter_neu[hh]=aa[1]
-        inter_neu_all[3*k+hh]=aa[1]
+        inter_neu_all[uu]=aa[1]
 
         print ('Beha ',inter_beha[hh])
         print ('Neu ',inter_neu[hh])
@@ -361,7 +351,7 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Trials after context change')
     ax.set_ylabel('Prob. (Choice = Context)')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_def.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
     ##########################
 
@@ -378,7 +368,7 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Trials after context change')
     ax.set_ylabel('Decoding Perf. Context ')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_def.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
     
     # Plot decrease Behavior and Neuronal theresholds
     fig=plt.figure(figsize=(2.3,2))
@@ -390,7 +380,7 @@ for k in range(len(monkeys)):
     ax.set_ylabel('Threshold')
     plt.legend(loc='best')
     plt.xticks([0,5,10])
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_def.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
     # Plot correlation
     fig=plt.figure(figsize=(2.3,2))
@@ -401,7 +391,7 @@ for k in range(len(monkeys)):
             ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
     ax.set_xlabel('Threshold Behavioral')
     ax.set_ylabel('Threshold Neuronal')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_pre_2.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_def.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
 ##################################
 beha_ch_m=np.nanmean(beha_ctx_ch_all,axis=0)
@@ -427,7 +417,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Prob. (Choice = Context)')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_both_aft_corr_pre_2.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_both_aft_corr_def.pdf',dpi=500,bbox_inches='tight')
 
 ##########################
 
@@ -444,7 +434,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Decoding Perf. Context ')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_both_aft_corr_pre_2.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_both_aft_corr_def.pdf',dpi=500,bbox_inches='tight')
 
 
 
