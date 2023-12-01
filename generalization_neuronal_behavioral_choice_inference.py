@@ -170,6 +170,13 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     # plt.show()
     return fit_func
 
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
+
 #################################################
 
 # Function 2 for both. Bounds and p0 are important. 
@@ -255,14 +262,15 @@ for k in range(len(monkeys)):
             coh_uq=np.unique(coherence)
             reward=beha['reward'][1:]
             rt=beha['reaction_time'][1:]
-            context_pre=beha['context']
-            ctx_ch=(context_pre[1:]-context_pre[0:-1])
-            context=context_pre[1:] #FIX THIS. WE NEED A VARIABLE "SUBJECTIVE CONTEXT"
+            context_prepre=beha['context']
+            ctx_ch=(context_prepre[1:]-context_prepre[0:-1])
+            context_pre=context_prepre[1:] 
             ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
             #ind_ch=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
             indch_ct01_pre=np.where(ctx_ch==1)[0]
             indch_ct10_pre=np.where(ctx_ch==-1)[0]
             ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
+            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
             ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
 
             firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)

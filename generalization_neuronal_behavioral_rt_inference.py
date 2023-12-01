@@ -194,7 +194,14 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
     # plt.ylim([-3,3])
     # plt.show()
     return fit_func
-  
+
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
+
 #################################################
 
 # Function 2 for both. Bounds and p0 are important. 
@@ -202,27 +209,18 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
 monkeys=['Niels','Galileo']
-t_back=30
-t_forw=90
+t_back=20
+t_forw=80
 delta_type='fit'
 
-time_extra=50
-
-talig='dots_on' #'response_edf' #dots_on
-dic_time=np.array([-200,400,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use
-steps=int((dic_time[0]+dic_time[1])/dic_time[3])
-tt=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
-
-thres=0
-reg=1e0
+#reg=1e0
 maxfev=100000
 method='dogbox'
 bounds=([0,0,-1],[1000,10,1])
-p0=(0.05,0.5,0.1)
+#bounds=([-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf])
+p0=(0.01,0.5,0.01)
 
 xx=np.arange(t_back+t_forw)-t_back
-
-group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
 fit_beha_all=nan*np.zeros((2,2,9,t_back+t_forw))
 y0_beha_all=nan*np.zeros((2,2,9))
@@ -233,7 +231,8 @@ for k in range(len(monkeys)):
     if monkeys[k]=='Niels':
         files_groups=[[8,9],[9,10],[10,11],[11,12]]
     if monkeys[k]=='Galileo':
-        files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
+        #files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
+        files_groups=[[20,23],[23,26],[26,28],[28,30]]
         #files_groups=[[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
    
     abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
@@ -275,25 +274,16 @@ for k in range(len(monkeys)):
             reward=beha['reward'][1:]
             rt_pre=beha['reaction_time'][1:]
             rt=norm_quant_coh(rt_pre,coherence)
-            context_pre=beha['context']
-            ctx_ch=(context_pre[1:]-context_pre[0:-1])
-            context=context_pre[1:] #FIX THIS. WE NEED A VARIABLE "SUBJECTIVE CONTEXT"
+            context_prepre=beha['context']
+            ctx_ch=(context_prepre[1:]-context_prepre[0:-1])
+            context_pre=context_prepre[1:] 
             ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
             ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
+            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # CAREFUL! this is subjective context
             indch_ct01_pre=np.where(ctx_ch==1)[0]
             indch_ct10_pre=np.where(ctx_ch==-1)[0]
             ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
-        
-            # # Careful contamination saccades!
-            # firing_rate_pre1=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
-            # print (np.shape(firing_rate_pre1))
-            # num_neu=len(firing_rate_pre1[0])
-            # steps=len(firing_rate_pre1[0,0])
-            # firing_rate_pre2=miscellaneous.normalize_fr(firing_rate_pre1)[1:]
-            # fr_nan=np.reshape(fr_rt_nan(rt_pre,firing_rate_pre2,tt,dic_time[2],time_extra),(-1,num_neu*steps))
-            # ind_nnan_bool=~np.isnan(np.sum(fr_nan,axis=1))
-            # ind_nnan=np.where(ind_nnan_bool)[0]
-            
+                
             ##################################################
             # Behavior
             # Numero 1 y 2 top
@@ -408,14 +398,14 @@ for k in range(len(monkeys)):
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.bar(-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
-    ax.bar(+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
-    ax.bar(1-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
-    ax.bar(1+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
+    ax.bar(1-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
+    ax.bar(1+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
+    ax.bar(-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
+    ax.bar(width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
     #ax.set_ylim([0,1])
     ax.set_ylabel('$\Delta$Normalized RT')
     ax.set_xlabel('Stimulus')
-    plt.xticks([0,1],['Previos Ctx','New Ctx'])
+    plt.xticks([0,1],['High Reward','Low Reward'])
     plt.legend(loc='best')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_%s_%s.pdf'%(monkeys[k],delta_type),dpi=500,bbox_inches='tight')
 
@@ -437,14 +427,14 @@ width=0.3
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.bar(-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
-ax.bar(+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
-ax.bar(1-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
-ax.bar(1+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
+ax.bar(1-width/2.0,delta_beha_m[0,0],yerr=delta_beha_sem[0,0],color='green',width=width,label='Tested')
+ax.bar(1+width/2.0,delta_beha_m[1,0],yerr=delta_beha_sem[1,0],color='blue',width=width,label='Untested')
+ax.bar(-width/2.0,delta_beha_m[0,1],yerr=delta_beha_sem[0,1],color='green',width=width)
+ax.bar(+width/2.0,delta_beha_m[1,1],yerr=delta_beha_sem[1,1],color='blue',width=width)
 #ax.set_ylim([0,1])
 ax.set_ylabel('$\Delta$Normalized RT')
 ax.set_xlabel('Stimulus')
-plt.xticks([0,1],['Previos Ctx','New Ctx'])
+plt.xticks([0,1],['High Reward','Low Reward'])
 plt.legend(loc='best')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference2_both_%s.pdf'%(delta_type),dpi=500,bbox_inches='tight')
 

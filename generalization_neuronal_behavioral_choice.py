@@ -141,6 +141,13 @@ def calculate_ind_ch_corr(ind_ch,reward):
         bb=bb_pre[bb_pre>0]
         ind_ch_corr[i]=bb[0]
     return np.array(ind_ch_corr,dtype=np.int16)
+
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
   
 #################################################
 
@@ -220,14 +227,15 @@ for k in range(len(monkeys)):
             coh_uq=np.unique(coherence)
             reward=beha['reward'][1:]
             rt=beha['reaction_time'][1:]
-            context_pre=beha['context']
-            ctx_ch=(context_pre[1:]-context_pre[0:-1])
-            context=context_pre[1:]
+            context_prepre=beha['context']
+            ctx_ch=(context_prepre[1:]-context_prepre[0:-1])
+            context_pre=context_prepre[1:]
             #ind_ch=np.where(abs(ctx_ch)==1)[0]
             ind_ch_pre=np.where(abs(ctx_ch)==1)[0] #Careful!
             ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
-            indch_ct10=np.where(ctx_ch==-1)[0]
-            indch_ct01=np.where(ctx_ch==1)[0]
+            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
+            #indch_ct10=np.where(ctx_ch==-1)[0]
+            #indch_ct01=np.where(ctx_ch==1)[0]
             print (ind_ch,len(choice))
             print ('NUM CHANGES ',len(ind_ch))
             

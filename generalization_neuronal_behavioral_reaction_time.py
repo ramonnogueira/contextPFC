@@ -125,6 +125,13 @@ def fr_rt_nan(reaction_time,firing_rate,tt,tw,time_extra):
         ind_nan=(rt_max<(1000*tt[i]+tw))
         fr_nan[ind_nan,:,i]=nan
     return fr_nan
+
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
   
 #################################################
 
@@ -136,10 +143,8 @@ t_back=20
 t_forw=80
 sig_kernel=1 # not smaller than 1
 
-#time_extra=50
-
-thres=0
-reg=1e0
+#thres=0
+#reg=1e0
 maxfev=100000
 method='dogbox'
 
@@ -197,12 +202,13 @@ for k in range(len(monkeys)):
             reward=beha['reward'][1:]
             rt_pre=beha['reaction_time'][1:]
             rt=norm_quant_coh(rt_pre,coherence)
-            context_pre=beha['context']
-            ctx_ch=(context_pre[1:]-context_pre[0:-1])
-            context=context_pre[1:]
+            context_prepre=beha['context']
+            ctx_ch=(context_prepre[1:]-context_prepre[0:-1])
+            context_pre=context_prepre[1:]
             #ind_ch=np.where(abs(ctx_ch)==1)[0]#Careful!
             ind_ch_pre=np.where(abs(ctx_ch)==1)[0]
             ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward)
+            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
             #indch_ct10=np.where(ctx_ch==-1)[0]
             #indch_ct01=np.where(ctx_ch==1)[0]
             #print (ind_ch,len(choice))
@@ -265,13 +271,13 @@ for k in range(len(monkeys)):
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
     ax.axvline(0,color='black',linestyle='--')
-    #ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    ax.scatter(xx,beha_ch_m[0],color='green',s=1)
+    ax.plot(xx,0*np.ones(len(xx)),color='black',linestyle='--')
     ax.plot(xx,fit_beha_m[0],color='green',label='Stim.& Ctx congruent')
     ax.fill_between(xx,fit_beha_m[0]-fit_beha_sem[0],fit_beha_m[0]+fit_beha_sem[0],color='green',alpha=0.5)
-    ax.scatter(xx,beha_ch_m[1],color='blue',s=1)
     ax.plot(xx,fit_beha_m[1],color='blue',label='Stim. & Ctx incongruent')
     ax.fill_between(xx,fit_beha_m[1]-fit_beha_sem[1],fit_beha_m[1]+fit_beha_sem[1],color='blue',alpha=0.5)
+    ax.scatter(xx,beha_ch_m[0],color='green',s=1)
+    ax.scatter(xx,beha_ch_m[1],color='blue',s=1)
     #ax.set_ylim([0,1])
     ax.set_xlabel('Trials after context change')
     ax.set_ylabel('Normalized Reaction Time')
@@ -289,13 +295,13 @@ fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
 ax.axvline(0,color='black',linestyle='--')
-#ax.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-ax.scatter(xx,beha_ch_all_m[0],color='green',s=1)
+ax.plot(xx,0*np.ones(len(xx)),color='black',linestyle='--')
 ax.plot(xx,fit_beha_all_m[0],color='green',label='Stim.& Ctx congruent')
 ax.fill_between(xx,fit_beha_all_m[0]-fit_beha_all_sem[0],fit_beha_all_m[0]+fit_beha_all_sem[0],color='green',alpha=0.5)
-ax.scatter(xx,beha_ch_all_m[1],color='blue',s=1)
 ax.plot(xx,fit_beha_all_m[1],color='blue',label='Stim. & Ctx incongruent')
 ax.fill_between(xx,fit_beha_all_m[1]-fit_beha_all_sem[1],fit_beha_all_m[1]+fit_beha_all_sem[1],color='blue',alpha=0.5)
+ax.scatter(xx,beha_ch_all_m[1],color='blue',s=1)
+ax.scatter(xx,beha_ch_all_m[0],color='green',s=1)
 #ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Normalized Reaction Time')
