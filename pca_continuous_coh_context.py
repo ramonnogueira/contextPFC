@@ -42,38 +42,50 @@ warnings.warn = warn
 # pre-saccade: choice, context, diff?
 # post-saccade: choice, context, reward
 
-monkeys=['Galileo']
+monkeys=['Niels']
 
 # target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
 #talig='dots_on'#'targ_on','dots_on'
 #dic_time=np.array([0,800,200,200])# time pre, time post, bin size, step size
-talig='response_edf'#'targ_on','dots_on'
-dic_time=np.array([450,-50,400,400])# time pre, time post, bin size, step size
+talig='dots_on'#,'dots_on'
+dic_time=np.array([0,800,200,200])# time pre, time post, bin size, step size
 steps=int((dic_time[0]+dic_time[1])/dic_time[3])
 xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=50 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=50
 perc_tr=0.8
-thres=1
+thres=0
 reg=1
-n_coh=15
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
+#group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
+group_coh=np.array([-2 ,-2 ,-2 ,-2 ,-1 ,-1 ,-1 ,0  ,1  ,1  ,1  ,2  ,2  ,2  ,2  ])
+n_coh=len(np.unique(group_coh))
+
 tpre_sacc=50
 
 for k in range(len(monkeys)):
     print (monkeys[k])
-    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k]) 
-    files=os.listdir(abs_path)
     if monkeys[k]=='Niels':
-        col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue']
-        alph=[0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6]
+        #col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue']
+        #alph=[0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6]
+        #col=['darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','black','darkblue','darkblue','darkblue']
+        #alph=[0.6,0.3,0.1,1,0.1,0.3,0.6,0.6,0.3,0.1,1,0.1,0.3,0.6]
+        col=['darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','purple','purple','black','darkblue','darkblue']
+        alph=[0.7,0.4,1,0.4,0.7,0.7,0.4,1,0.4,0.7]
+        indf=8 # Careful!
     if monkeys[k]=='Galileo':
         col=['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue']
         alph=[0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7]
-        
-    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,True,tpre_sacc,group_ref,shuff=False,learning=False) 
+        indf=20
+    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    files_pre=np.array(os.listdir(abs_path))
+    order=miscellaneous.order_files(files_pre)
+    files=np.array(files_pre[order])[indf:]
+    print (files_pre[order])
+
+    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_coh,shuff=False,learning=True) 
     pseudo_all=pseudo['pseudo_all']
     pseudo_tr=pseudo['pseudo_tr']
     pseudo_te=pseudo['pseudo_te']
@@ -92,8 +104,8 @@ for k in range(len(monkeys)):
                 mean_coh_pre[ii,j]=np.nanmedian(pseudo_all[i,ii][ind_coh],axis=0)
         #mean_coh=np.nanmean(mean_coh_pre,axis=0)
         mean_coh=np.nanmedian(mean_coh_pre,axis=0)
-        if monkeys[k]=='Niels':
-            mean_coh=np.delete(mean_coh,[0,14,15,29],axis=0)
+        #if monkeys[k]=='Niels':
+        #    mean_coh=np.delete(mean_coh,[0,14,15,29],axis=0)
 
         ind_nan=np.where(np.isnan(np.sum(mean_coh,axis=1)))[0]
         ind_use=np.delete(np.arange(len(mean_coh)),ind_nan,axis=0)

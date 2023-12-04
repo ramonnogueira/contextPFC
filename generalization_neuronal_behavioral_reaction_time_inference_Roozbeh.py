@@ -222,17 +222,23 @@ def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
         fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
     return fit_chrono,popt
 
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
+
 #################################################
 
 # Function 2 for both. Bounds and p0 are important.
 # Niels: t_back 20, t_forw 80, dic_time (-200,400,200,200)ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, dic_time (-200,600,200,200)ms. No kernel. Groups of 3 sessions
 
-monkey='Galileo'
+monkeys=['Niels','Galileo']
 
-nback=70
+nback=30
 rt_fit=True
-eaf=1
 
 maxfev=100000
 p0=(-20,20,-0.005,0.1,500,500)
@@ -240,208 +246,220 @@ p0l=(-20,20,-0.005,-3,500,700)
 p0r=(-20,20,-0.005,3,700,500)
 method='lm'
 
-group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
-if monkey=='Niels':
-    #files_groups=[[0,4],[4,8],[8,12]]
-    #files_groups=[[0,3],[3,6],[6,9],[9,12]]
-    files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
-    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
+#group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
-if monkey=='Galileo':
-    files_groups=[[0,10],[10,20],[20,30]]
-    #files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
-    #files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
-    #files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
-    #files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14],[14,15],[15,16],[16,17],[17,18],[18,19],[19,20],[20,21],[21,22],[22,23],[23,24],[24,25],[25,26],[26,27],[27,28],[28,29],[29,30]]
+beha_te_unte_all=nan*np.zeros((2,2,9))
+uu=-1
+for k in range(len(monkeys)):
 
-#abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey) 
-#files_all=miscellaneous.order_files(np.array(os.listdir(abs_path)))
-abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
-files_pre=np.array(os.listdir(abs_path))
-order=order_files(files_pre)
-files_all=np.array(files_pre[order])
-print (files_all)
+    if monkeys[k]=='Niels':
+        files_groups=[[0,1],[1,2],[2,3],[3,4]]
+        #files_groups=[[4,5],[5,6],[6,7],[7,8]]
+        #files_groups=[[8,9],[9,10],[10,11],[11,12]]
+    if monkeys[k]=='Galileo':
+        files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10]]
+        #files_groups=[[10,12],[12,14],[14,16],[16,18],[18,20]]
+        #files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
+   
+    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    files_pre=np.array(os.listdir(abs_path))
+    order=order_files(files_pre)
+    files_all=np.array(files_pre[order])
+    print (files_all)
 
-beha_te_unte=nan*np.zeros((2,2,len(files_groups)))
-#neuro_te_unte=nan*np.zeros((2,2,len(files_groups)))
-for hh in range(len(files_groups)):
-    beha_tested_rlow=[]
-    beha_tested_rhigh=[]
-    beha_untested_rlow=[]
-    beha_untested_rhigh=[]
-    neuro_tested_rlow=[]
-    neuro_tested_rhigh=[]
-    neuro_untested_rlow=[]
-    neuro_untested_rhigh=[]
-    files=files_all[files_groups[hh][0]:files_groups[hh][1]]
-    print (files)
-    for kk in range(len(files)):
-        print (files[kk])
-        #Load data
-        data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-        beha=miscellaneous.behavior(data)
-        index_nonan=beha['index_nonan']
-        # We discard first trial of session because we are interested in context changes
-        stimulus=beha['stimulus'][1:]
-        choice=beha['choice'][1:]
-        coh_signed=beha['coherence_signed'][1:]
-        coh_set_signed=np.unique(coh_signed)
-        reward=beha['reward'][1:]
-        if rt_fit==True:
-             rt=beha['reaction_time'][1:]
-        if rt_fit==False:
-            rt_pre=beha['reaction_time'][1:]
-            rt=norm_quant_coh(rt_pre,coh_signed)
-        context_pre=beha['context']
-        ctx_ch=(context_pre[1:]-context_pre[0:-1])
-        context=context_pre[1:]
-        # Indices for first trial rewarded after change
-        ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
-        ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
-        indch_ct01_pre=np.where(ctx_ch==1)[0]
-        indch_ct10_pre=np.where(ctx_ch==-1)[0]
-        ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
+    beha_te_unte=nan*np.zeros((2,2,len(files_groups)))
+    for hh in range(len(files_groups)):
+        uu+=1
+        beha_tested_rlow=[]
+        beha_tested_rhigh=[]
+        beha_untested_rlow=[]
+        beha_untested_rhigh=[]
+        neuro_tested_rlow=[]
+        neuro_tested_rhigh=[]
+        neuro_untested_rlow=[]
+        neuro_untested_rhigh=[]
+        files=files_all[files_groups[hh][0]:files_groups[hh][1]]
+        print (files)
+        for kk in range(len(files)):
+            print (files[kk])
+            #Load data
+            data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
+            beha=miscellaneous.behavior(data)
+            index_nonan=beha['index_nonan']
+            # We discard first trial of session because we are interested in context changes
+            stimulus=beha['stimulus'][1:]
+            choice=beha['choice'][1:]
+            coh_signed=beha['coherence_signed'][1:]
+            coh_set_signed=np.unique(coh_signed)
+            reward=beha['reward'][1:]
+            if rt_fit==True:
+                rt=beha['reaction_time'][1:]
+            if rt_fit==False:
+                rt_pre=beha['reaction_time'][1:]
+                rt=norm_quant_coh(rt_pre,coh_signed)
+            context_prepre=beha['context'] 
+            ctx_ch=(context_prepre[1:]-context_prepre[0:-1])
+            context_pre=context_prepre[1:]
+            # Indices for first trial rewarded after change
+            ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
+            ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
+            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # CAREFUL! this is subjective context
+            indch_ct01_pre=np.where(ctx_ch==1)[0]
+            indch_ct10_pre=np.where(ctx_ch==-1)[0]
+            ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
     
-        ##################################################
-        # Behavior
-        # Probability of Choice = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
+            ##################################################
+            # Behavior
+            # Probability of Choice = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
+            
+            # In order to get the results from Roozbeh, we need to sustract the rt of the previous low and high.
+            # For instance, to get the results for the "High Reward" column, we need to evaluate the rt for the stimuli that correspond to current high reward and sustract the rt for the same stimuli before the context switch (low reward before context switch).
+            # The same could be potentially done for choice
+            # We can also do the same for neural data
 
-        # In order to get the results from Roozbeh, we need to sustract the rt of the previous low and high.
-        # For instance, to get the results for the "High Reward" column, we need to evaluate the rt for the stimuli that correspond to current high reward and sustract the rt for the same stimuli before the context switch (low reward before context switch).
-        # The same could be potentially done for choice
-        # We can also do the same for neural data
-
-        xx=np.array([100*coh_signed,choice]).T
+            xx=np.array([100*coh_signed,choice]).T
         
-        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-        # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
-        # rlow tested is left, rhigh untested is right
-        for h in range(len(ind_ch01_s0)):
-            ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
-            ind_used[ind_pre]=True
-            ind_used[np.isnan(rt)]=False
-            if rt_fit==True:
-                popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
-                print (popt)
-                rt_mean=chrono_curve(xx[(ind_ch01_s0[h]+1):(ind_ch01_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch01_s0[h]+1]-rt_mean)
-                if stimulus[ind_ch01_s0[h]+1]==0: 
-                    beha_tested_rlow.append(dev)
-                if stimulus[ind_ch01_s0[h]+1]==1:
-                    beha_untested_rhigh.append(dev)
-            if rt_fit==False:
-                rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right (low in previous context)
-                rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left (high in previous context)
-                if stimulus[ind_ch01_s0[h]+1]==0: 
-                    beha_tested_rlow.append(rt[ind_ch01_s0[h]+1]-rt_high_pre)
-                if stimulus[ind_ch01_s0[h]+1]==1:
-                    beha_untested_rhigh.append(rt[ind_ch01_s0[h]+1]-rt_low_pre)
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+            # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
+            # rlow tested is left, rhigh untested is right
+            for h in range(len(ind_ch01_s0)):
+                ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
+                ind_used[ind_pre]=True
+                ind_used[np.isnan(rt)]=False
+                if rt_fit==True:
+                    popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
+                    print (popt)
+                    rt_mean=chrono_curve(xx[(ind_ch01_s0[h]+1):(ind_ch01_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev=(rt[ind_ch01_s0[h]+1]-rt_mean)
+                    if stimulus[ind_ch01_s0[h]+1]==0: 
+                        beha_tested_rlow.append(dev)
+                    if stimulus[ind_ch01_s0[h]+1]==1:
+                        beha_untested_rhigh.append(dev)
+                if rt_fit==False:
+                    rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right (low in previous context)
+                    rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left (high in previous context)
+                    if stimulus[ind_ch01_s0[h]+1]==0: 
+                        beha_tested_rlow.append(rt[ind_ch01_s0[h]+1]-rt_high_pre)
+                    if stimulus[ind_ch01_s0[h]+1]==1:
+                        beha_untested_rhigh.append(rt[ind_ch01_s0[h]+1]-rt_low_pre)
 
-        # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Right.
-        # rlow untested is left, rhigh tested is right
-        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-        for h in range(len(ind_ch01_s1)):
-            ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
-            ind_used[ind_pre]=True
-            ind_used[np.isnan(rt)]=False
-            if rt_fit==True:
-                popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
-                rt_mean=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch01_s1[h]+1]-rt_mean)
-                if stimulus[ind_ch01_s1[h]+1]==0:
-                    beha_untested_rlow.append(dev)
-                if stimulus[ind_ch01_s1[h]+1]==1:
-                    beha_tested_rhigh.append(dev)
-            if rt_fit==False:
-                rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
-                rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
-                if stimulus[ind_ch01_s1[h]+1]==0:
-                    beha_untested_rlow.append(rt[ind_ch01_s1[h]+1]-rt_high_pre)
-                if stimulus[ind_ch01_s1[h]+1]==1:
-                    beha_tested_rhigh.append(rt[ind_ch01_s1[h]+1]-rt_low_pre)
+            # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Right.
+            # rlow untested is left, rhigh tested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+            for h in range(len(ind_ch01_s1)):
+                ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
+                ind_used[ind_pre]=True
+                ind_used[np.isnan(rt)]=False
+                if rt_fit==True:
+                    popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
+                    rt_mean=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev=(rt[ind_ch01_s1[h]+1]-rt_mean)
+                    if stimulus[ind_ch01_s1[h]+1]==0:
+                        beha_untested_rlow.append(dev)
+                    if stimulus[ind_ch01_s1[h]+1]==1:
+                        beha_tested_rhigh.append(dev)
+                if rt_fit==False:
+                    rt_low_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+                    rt_high_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+                    if stimulus[ind_ch01_s1[h]+1]==0:
+                        beha_untested_rlow.append(rt[ind_ch01_s1[h]+1]-rt_high_pre)
+                    if stimulus[ind_ch01_s1[h]+1]==1:
+                        beha_tested_rhigh.append(rt[ind_ch01_s1[h]+1]-rt_low_pre)
 
-        # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Left.
-        # rhigh tested is left, rlow untested is right
-        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-        for h in range(len(ind_ch10_s0)):
-            ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
-            ind_used[ind_pre]=True
-            ind_used[np.isnan(rt)]=False
-            if rt_fit==True:
-                popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
-                rt_mean=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch10_s0[h]+1]-rt_mean)
-                if stimulus[ind_ch10_s0[h]+1]==0: 
-                    beha_tested_rhigh.append(dev)
-                if stimulus[ind_ch10_s0[h]+1]==1:
-                    beha_untested_rlow.append(dev)
-            if rt_fit==False:
-                rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
-                rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
-                if stimulus[ind_ch10_s0[h]+1]==0: 
-                    beha_tested_rhigh.append(rt[ind_ch10_s0[h]+1]-rt_low_pre)
-                if stimulus[ind_ch10_s0[h]+1]==1:
-                    beha_untested_rlow.append(rt[ind_ch10_s0[h]+1]-rt_high_pre)
+            # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Left.
+            # rhigh tested is left, rlow untested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+            for h in range(len(ind_ch10_s0)):
+                ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
+                ind_used[ind_pre]=True
+                ind_used[np.isnan(rt)]=False
+                if rt_fit==True:
+                    popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
+                    rt_mean=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev=(rt[ind_ch10_s0[h]+1]-rt_mean)
+                    if stimulus[ind_ch10_s0[h]+1]==0: 
+                        beha_tested_rhigh.append(dev)
+                    if stimulus[ind_ch10_s0[h]+1]==1:
+                        beha_untested_rlow.append(dev)
+                if rt_fit==False:
+                    rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+                    rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+                    if stimulus[ind_ch10_s0[h]+1]==0: 
+                        beha_tested_rhigh.append(rt[ind_ch10_s0[h]+1]-rt_low_pre)
+                    if stimulus[ind_ch10_s0[h]+1]==1:
+                        beha_untested_rlow.append(rt[ind_ch10_s0[h]+1]-rt_high_pre)
 
-        # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Right.
-        # rhigh untested is left, rlow tested is right
-        ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-        for h in range(len(ind_ch10_s1)):
-            ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
-            ind_used[ind_pre]=True
-            ind_used[np.isnan(rt)]=False
-            if rt_fit==True:
-                popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
-                rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch10_s1[h]+1]-rt_mean)
-                if stimulus[ind_ch10_s1[h]+1]==0: 
-                    beha_untested_rhigh.append(dev)
-                if stimulus[ind_ch10_s1[h]+1]==1:
-                    beha_tested_rlow.append(dev)
-            if rt_fit==False:
-                rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
-                rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
-                if stimulus[ind_ch10_s1[h]+1]==0: 
-                    beha_untested_rhigh.append(rt[ind_ch10_s1[h]+1]-rt_low_pre)
-                if stimulus[ind_ch10_s1[h]+1]==1:
-                    beha_tested_rlow.append(rt[ind_ch10_s1[h]+1]-rt_high_pre)
+            # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Right.
+            # rhigh untested is left, rlow tested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+            for h in range(len(ind_ch10_s1)):
+                ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
+                ind_used[ind_pre]=True
+                ind_used[np.isnan(rt)]=False
+                if rt_fit==True:
+                    popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
+                    rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev=(rt[ind_ch10_s1[h]+1]-rt_mean)
+                    if stimulus[ind_ch10_s1[h]+1]==0: 
+                        beha_untested_rhigh.append(dev)
+                    if stimulus[ind_ch10_s1[h]+1]==1:
+                        beha_tested_rlow.append(dev)
+                if rt_fit==False:
+                    rt_low_pre=np.mean(rt[(ind_used)&(stimulus==0)]) # Previous Left
+                    rt_high_pre=np.mean(rt[(ind_used)&(stimulus==1)]) # Previous Right
+                    if stimulus[ind_ch10_s1[h]+1]==0: 
+                        beha_untested_rhigh.append(rt[ind_ch10_s1[h]+1]-rt_low_pre)
+                    if stimulus[ind_ch10_s1[h]+1]==1:
+                        beha_tested_rlow.append(rt[ind_ch10_s1[h]+1]-rt_high_pre)
 
-    # Behavior
-    beha_te_unte[0,0,hh]=np.nanmean(beha_tested_rlow,axis=0)
-    beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
-    beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
-    beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
+        # Behavior
+        beha_te_unte[0,0,hh]=np.nanmean(beha_tested_rlow,axis=0)
+        beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
+        beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
+        beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
+        beha_te_unte_all[0,0,uu]=np.nanmean(beha_tested_rlow,axis=0)
+        beha_te_unte_all[0,1,uu]=np.nanmean(beha_tested_rhigh,axis=0)
+        beha_te_unte_all[1,0,uu]=np.nanmean(beha_untested_rlow,axis=0)
+        beha_te_unte_all[1,1,uu]=np.nanmean(beha_untested_rhigh,axis=0)
 
-####################################################
-# Behavior
-
-sess_vec=['all','early','late']
-for i in range(len(sess_vec)):
-    if sess_vec[i]=='all':
-        beha_m=np.nanmean(beha_te_unte,axis=2)
-        beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
-    if sess_vec[i]=='early':
-        beha_m=np.nanmean(beha_te_unte[:,:,0:eaf],axis=2)
-        beha_sem=sem(beha_te_unte[:,:,0:eaf],axis=2,nan_policy='omit')
-    if sess_vec[i]=='late':
-        beha_m=np.nanmean(beha_te_unte[:,:,-eaf:],axis=2)
-        beha_sem=sem(beha_te_unte[:,:,-eaf:],axis=2,nan_policy='omit')
-
+    ####################################################
+    beha_m=np.nanmean(beha_te_unte,axis=2)
+    beha_sem=sem(beha_te_unte,axis=2,nan_policy='omit')
+   
     width=0.3
-    fig=plt.figure(figsize=(2.3,2))
+    fig=plt.figure(figsize=(1.75,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
     ax.bar(-width/2.0,beha_m[0,1],yerr=beha_sem[0,1],color='green',width=width)
     ax.bar(width/2.0,beha_m[1,1],yerr=beha_sem[1,1],color='blue',width=width)
     ax.bar(1-width/2.0,beha_m[0,0],yerr=beha_sem[0,0],color='green',width=width,label='Tested')
     ax.bar(1+width/2.0,beha_m[1,0],yerr=beha_sem[1,0],color='blue',width=width,label='Untested')
-    ax.set_ylabel('$\Delta$Normalized RT')
-    plt.xticks([0,1],['High Reward','Low Reward'])
+    ax.set_ylabel('$\Delta$Reaction Time')
+    plt.xticks([0,1],['High Rew.','Low Rew.'])
     plt.legend(loc='best')
     if rt_fit==True:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_%s_rt_fit.pdf'%(nback,sess_vec[i],monkey),dpi=500,bbox_inches='tight')
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_%s_rt_fit.png'%(nback,sess_vec[i],monkey),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_rt_fit_early.pdf'%(nback,monkeys[k]),dpi=500,bbox_inches='tight')
     if rt_fit==False:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_%s_raw.pdf'%(nback,sess_vec[i],monkey),dpi=500,bbox_inches='tight')
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_%s_raw.png'%(nback,sess_vec[i],monkey),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_raw_early.pdf'%(nback,monkeys[k]),dpi=500,bbox_inches='tight')
+
+
+####################################################
+beha_m=np.nanmean(beha_te_unte_all,axis=2)
+beha_sem=sem(beha_te_unte_all,axis=2,nan_policy='omit')
+
+width=0.3
+fig=plt.figure(figsize=(1.75,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.bar(-width/2.0,beha_m[0,1],yerr=beha_sem[0,1],color='green',width=width)
+ax.bar(width/2.0,beha_m[1,1],yerr=beha_sem[1,1],color='blue',width=width)
+ax.bar(1-width/2.0,beha_m[0,0],yerr=beha_sem[0,0],color='green',width=width,label='Tested')
+ax.bar(1+width/2.0,beha_m[1,0],yerr=beha_sem[1,0],color='blue',width=width,label='Untested')
+ax.set_ylabel('$\Delta$Reaction Time')
+plt.xticks([0,1],['High Rew.','Low Rew.'])
+plt.legend(loc='best')
+if rt_fit==True:
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_rt_fit_early.pdf'%(nback),dpi=500,bbox_inches='tight')
+if rt_fit==False:
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_raw_early.pdf'%(nback),dpi=500,bbox_inches='tight')
 

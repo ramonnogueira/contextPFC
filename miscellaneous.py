@@ -159,7 +159,7 @@ def normalize_fr(fr):
 # Choice: Left 0, Right 1.
 # Coherence: negative Left, positive  Right.
 # Context: 0 Left more rewarded, Right more rewarded 1. 
-def behavior(data,group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])):
+def behavior(data,group_coh):
     right=1
     thres_diff=0.05
     #
@@ -215,17 +215,17 @@ def behavior(data,group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3 
     dic['response_edf']=response_edf
     dic['reaction_time']=rt
     dic['change_ctx']=change_ctx
-    #
-    dic['stimulus_0']=stimulus[1:]
-    dic['choice_0']=choice[1:]
-    dic['context_0']=context[1:]
-    dic['reward_0']=reward[1:]
-    dic['difficulty_0']=difficulty[1:]
-    dic['stimulus_m1']=stimulus[0:-1]
-    dic['choice_m1']=choice[0:-1]
-    dic['context_m1']=context[0:-1]
-    dic['reward_m1']=reward[0:-1]
-    dic['difficulty_m1']=difficulty[0:-1]
+    # #
+    # dic['stimulus_0']=stimulus[1:]
+    # dic['choice_0']=choice[1:]
+    # dic['context_0']=context[1:]
+    # dic['reward_0']=reward[1:]
+    # dic['difficulty_0']=difficulty[1:]
+    # dic['stimulus_m1']=stimulus[0:-1]
+    # dic['choice_m1']=choice[0:-1]
+    # dic['context_m1']=context[0:-1]
+    # dic['reward_m1']=reward[0:-1]
+    # dic['difficulty_m1']=difficulty[0:-1]
     return dic
 
 def classifier(neural,clase,n_cv,reg):
@@ -281,13 +281,7 @@ def pseudopopulation_1(abs_path,files,quant,talig,dic_time,steps,thres,nt,n_rand
     clase[0:nt]=1    
     return pseudo_tr,pseudo_te,clase
 
-def pseudopop_coherence(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,signed):
-    if signed==True:
-        n_coh=15
-        quant='coherence_signed'
-    if signed==False:
-        n_coh=8
-        quant='coherence'
+def pseudopop_coherence(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr):
     pseudo_tr_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200)) 
     pseudo_te_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200))
     pseudo_all_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200))
@@ -406,21 +400,14 @@ def pseudopop_coherence_context(abs_path,files,talig,dic_time,steps,thres,nt,n_r
     dic['clase_ctx']=clase_ctx
     return dic
 
-def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,signed,tpre_sacc,group_coh,shuff,learning):
-    if signed==True:
-        n_coh=15
-        quant='coherence_signed'
-    if signed==False:
-        n_coh=8
-        quant='coherence'
+def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_coh,shuff,learning):
+
+    n_coh=len(np.unique(group_coh))
+    
     pseudo_all_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files)))
     pseudo_tr_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files))) 
     pseudo_te_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files)))
-
-    #context_new=nan*np.zeros((n_rand,2*n_coh*nt))
-    #stimulus_new=nan*np.zeros((n_rand,2*n_coh*nt))
-    #choice_new=nan*np.zeros((n_rand,2*n_coh*nt))
-    
+  
     neu_t=0
     time_w=dic_time[-2]
     step_t=dic_time[-1]
@@ -443,7 +430,8 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
         n_neu=len(firing_rate[0])
 
         context=beha['context'][ind_correct]
-        coherence=beha[quant][ind_correct]
+        coherence=beha['coh_resol'][ind_correct]
+        #print (coherence)
         coh_uq=np.unique(coherence)
         choice=beha['choice'][ind_correct]
         if shuff:
@@ -453,14 +441,15 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
 
         for i in range(steps):
             if talig=='dots_on':
-                max_t=(-dic_time[0]+i*step_t+time_w+tpre_sacc) # -initial + j*step_size + bin_size + 100
+                max_t=(-dic_time[0]+i*step_t+time_w+tpre_sacc) # -initial + j*step_size + bin_size + tpre_sacc
             if talig=='response_edf':
                 max_t=0
 
             for k in range(2):
                 for j in range(n_coh):
+                    ind_coh_ctx_pre=np.where((coherence==coh_uq[j])&(context==k))[0]
                     ind_coh_ctx=np.where((coherence==coh_uq[j])&(context==k)&(rt>max_t))[0]
-                    #print (i,k,j,len(ind_coh_ctx))
+                    #print (i,k,j,len(ind_coh_ctx_pre),len(ind_coh_ctx))
                     nt_coh_ctx=int(len(ind_coh_ctx)*perc_tr)
                     for ii in range(n_rand):
                         ind_coh_ctx_p=np.random.permutation(ind_coh_ctx)
@@ -668,8 +657,11 @@ def abstraction_3D(feat_decod,clase_all):
          perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
     return perf
 
-def order_files(files_pre):
-    tag_vec=[i[1:5]+'-'+i[5:7]+'-'+i[7:9] for i in files_pre]
-    dates = [datetime.datetime.strptime(ts, "%Y-%m-%d") for ts in tag_vec]
-    files=files_pre[np.argsort(dates)]
-    return files
+
+def order_files(x):
+    ord_pre=[]
+    for i in range(len(x)):
+        ord_pre.append(x[i][1:9])
+    ord_pre=np.array(ord_pre)
+    order=np.argsort(ord_pre)
+    return order

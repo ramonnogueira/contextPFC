@@ -204,7 +204,7 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0,sign):
 monkey='Galileo'
 t_back=30
 t_forw=90
-delta_type='raw'
+delta_type='fit'
 
 time_extra=50
 
