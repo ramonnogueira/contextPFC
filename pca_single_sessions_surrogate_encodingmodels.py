@@ -184,6 +184,8 @@ tpre_sacc=50 # To avoid RT-contaminated trials this should be positive
 
 # parameters that work great: tpre_sacc 50, time bin 100, reg 1e-3, lr 1e-3, surrogate from model 1hidden layer 100, per_tr > 0.25.
 
+group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]) #15
+
 col=np.array(['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue'])
 alph=np.array([0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7])
 
@@ -193,7 +195,7 @@ files=os.listdir(abs_path)
 for kk in range(len(files)):
     print (files[kk])
     data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-    beha=miscellaneous.behavior(data)
+    beha=miscellaneous.behavior(data,group_coh)
     index_nonan=beha['index_nonan']
     reward=beha['reward']
     ind_corr=np.where(reward==1)[0]
@@ -259,7 +261,7 @@ for kk in range(len(files)):
     print (np.mean(r2_vec,axis=2))
     
     # Create surrogate data
-    fr_surr=fr_surr_pre[2]
+    fr_surr=fr_surr_pre[3] # Careful!!!
     fr_surr[np.isnan(fr_surr)]=0 #Due to the ShuffleSplit sometimes a particular trial is not filled, but they are few
 
     ##########################################################

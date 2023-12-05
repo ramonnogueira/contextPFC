@@ -215,17 +215,6 @@ def behavior(data,group_coh):
     dic['response_edf']=response_edf
     dic['reaction_time']=rt
     dic['change_ctx']=change_ctx
-    # #
-    # dic['stimulus_0']=stimulus[1:]
-    # dic['choice_0']=choice[1:]
-    # dic['context_0']=context[1:]
-    # dic['reward_0']=reward[1:]
-    # dic['difficulty_0']=difficulty[1:]
-    # dic['stimulus_m1']=stimulus[0:-1]
-    # dic['choice_m1']=choice[0:-1]
-    # dic['context_m1']=context[0:-1]
-    # dic['reward_m1']=reward[0:-1]
-    # dic['difficulty_m1']=difficulty[0:-1]
     return dic
 
 def classifier(neural,clase,n_cv,reg):
@@ -401,9 +390,8 @@ def pseudopop_coherence_context(abs_path,files,talig,dic_time,steps,thres,nt,n_r
     return dic
 
 def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_coh,shuff,learning):
-
-    n_coh=len(np.unique(group_coh))
-    
+    coh_uq=np.unique(group_coh[~np.isnan(group_coh)])
+    n_coh=len(coh_uq)
     pseudo_all_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files)))
     pseudo_tr_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files))) 
     pseudo_te_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,400*len(files)))
@@ -432,7 +420,7 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
         context=beha['context'][ind_correct]
         coherence=beha['coh_resol'][ind_correct]
         #print (coherence)
-        coh_uq=np.unique(coherence)
+        #coh_uq=np.unique(coherence)
         choice=beha['choice'][ind_correct]
         if shuff:
             context=permutation(context)
