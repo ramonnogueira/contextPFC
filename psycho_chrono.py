@@ -106,26 +106,34 @@ method='lm'
 
 n_gen=1000
 
-psycho_all=nan*np.zeros((14,15,3))
-fit_psycho_all=nan*np.zeros((14,n_gen,3))
-chrono_all=nan*np.zeros((14,15,3))
-fit_chrono_all=nan*np.zeros((14,n_gen,3))
-params_psy_all=nan*np.zeros((14,2,3))
-params_rt_all=nan*np.zeros((14,6,3))
+# psycho_all=nan*np.zeros((14,15,3))
+# fit_psycho_all=nan*np.zeros((14,n_gen,3))
+# chrono_all=nan*np.zeros((14,15,3))
+# fit_chrono_all=nan*np.zeros((14,n_gen,3))
+# params_psy_all=nan*np.zeros((14,2,3))
+# params_rt_all=nan*np.zeros((14,6,3))
+psycho_all=nan*np.zeros((42,15,3))
+fit_psycho_all=nan*np.zeros((42,n_gen,3))
+chrono_all=nan*np.zeros((42,15,3))
+fit_chrono_all=nan*np.zeros((42,n_gen,3))
+params_psy_all=nan*np.zeros((42,2,3))
+params_rt_all=nan*np.zeros((42,6,3))
 
 xx_coh_all=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
+
+group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
 
 uu=-1
 for k in range(len(monkeys)):
     if monkeys[k]=='Niels':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2'])
-        fused=-4
+        fused=-12 # Careful!
         ind_uu=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14])
     if monkeys[k]=='Galileo':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
-        fused=-10
+        fused=-30 # Careful!
         ind_uu=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
     xx_fit=np.linspace(xx_coh[0],xx_coh[-1],n_gen)
 
@@ -147,7 +155,7 @@ for k in range(len(monkeys)):
         print (files[kk],uu)
         #Load data
         data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-        beha=miscellaneous.behavior(data)
+        beha=miscellaneous.behavior(data,group_coh)
         change_ctx=beha['change_ctx']
         ind_ch=np.where(change_ctx!=0)[0]
         index_nonan=beha['index_nonan']
@@ -249,7 +257,7 @@ for k in range(len(monkeys)):
     bax.set_yticks([0,0.2,0.4,0.6,0.8,1.0])
     #bax.set_xticks([-0.5,-0.2,0,0.2,0.5])
     #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s_def.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s_def.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
     
     #########################################
     # Plot Chronometric
@@ -273,7 +281,7 @@ for k in range(len(monkeys)):
     ax.set_ylabel('Reaction Time (ms)')
     ax.set_xlabel('Evidence Right (% Coherence)')
     #plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
 ############################################
 # Psycho all
@@ -307,18 +315,18 @@ bax.set_ylim([-0.05,1.05])
 bax.set_yticks([0,0.2,0.4,0.6,0.8,1.0])
 #bax.set_xticks([-0.5,-0.2,0,0.2,0.5])
 #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_both_def.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_both_def.pdf',dpi=500,bbox_inches='tight')
 
 # Chronometric All
-# chrono_all_m=np.nanmean(chrono_all,axis=0)
-# chrono_all_sem=sem(chrono_all,axis=0,nan_policy='omit')
-# fit_chrono_all_m=np.nanmean(fit_chrono_all,axis=0)
-# fit_chrono_all_sem=sem(fit_chrono_all,axis=0,nan_policy='omit')
+chrono_all_m=np.nanmean(chrono_all,axis=0)
+chrono_all_sem=sem(chrono_all,axis=0,nan_policy='omit')
+fit_chrono_all_m=np.nanmean(fit_chrono_all,axis=0)
+fit_chrono_all_sem=sem(fit_chrono_all,axis=0,nan_policy='omit')
 
-chrono_all_m=np.nanmean(np.array([np.mean(chrono_all[0:4],axis=0),np.mean(chrono_all[4:],axis=0)]),axis=0)
-chrono_all_sem=sem(np.array([np.mean(chrono_all[0:4],axis=0),np.mean(chrono_all[4:],axis=0)]),axis=0,nan_policy='omit')
-fit_chrono_all_m=np.nanmean(np.array([np.mean(fit_chrono_all[0:4],axis=0),np.mean(fit_chrono_all[4:],axis=0)]),axis=0)
-fit_chrono_all_sem=sem(np.array([np.mean(fit_chrono_all[0:4],axis=0),np.mean(fit_chrono_all[4:],axis=0)]),axis=0,nan_policy='omit')
+# chrono_all_m=np.nanmean(np.array([np.mean(chrono_all[0:4],axis=0),np.mean(chrono_all[4:],axis=0)]),axis=0)
+# chrono_all_sem=sem(np.array([np.mean(chrono_all[0:4],axis=0),np.mean(chrono_all[4:],axis=0)]),axis=0,nan_policy='omit')
+# fit_chrono_all_m=np.nanmean(np.array([np.mean(fit_chrono_all[0:4],axis=0),np.mean(fit_chrono_all[4:],axis=0)]),axis=0)
+# fit_chrono_all_sem=sem(np.array([np.mean(fit_chrono_all[0:4],axis=0),np.mean(fit_chrono_all[4:],axis=0)]),axis=0,nan_policy='omit')
 
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(1,1,1)
@@ -335,4 +343,4 @@ ax.scatter(xx_coh_all,chrono_all_m[:,2],color='blue',s=3)#,alpha=0.5)
 ax.set_ylabel('Reaction Time (ms)')
 ax.set_xlabel('Evidence Right (% Coherence)')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_both_def.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_both_def2.pdf',dpi=500,bbox_inches='tight')

@@ -174,8 +174,8 @@ def fit_plot(xx,yy,sign,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     if sign==-1:
         popt,pcov=curve_fit(func2,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
         fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])
-    print ('Fit ',popt)
-    print (pcov)
+    #print ('Fit ',popt)
+    #print (pcov)
     # plt.scatter(xx,yy,color='blue',s=1)
     # plt.plot(xx[t_back:],fit_func,color='black')
     # plt.axvline(0,color='black',linestyle='--')
@@ -236,6 +236,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Galileo: t_back 20, t_forw 80, dic_time (-200,600,200,200)ms. No kernel. Groups of 3 sessions
 
 monkeys=['Niels','Galileo']
+stage='early'
 
 nback=30
 rt_fit=True
@@ -246,20 +247,26 @@ p0l=(-20,20,-0.005,-3,500,700)
 p0r=(-20,20,-0.005,3,700,500)
 method='lm'
 
-#group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
+group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
 beha_te_unte_all=nan*np.zeros((2,2,9))
 uu=-1
 for k in range(len(monkeys)):
 
     if monkeys[k]=='Niels':
-        files_groups=[[0,1],[1,2],[2,3],[3,4]]
-        #files_groups=[[4,5],[5,6],[6,7],[7,8]]
-        #files_groups=[[8,9],[9,10],[10,11],[11,12]]
+        if stage=='early':
+            files_groups=[[0,1],[1,2],[2,3],[3,4]]
+        if stage=='mid':
+            files_groups=[[4,5],[5,6],[6,7],[7,8]]
+        if stage=='late':
+            files_groups=[[8,9],[9,10],[10,11],[11,12]]
     if monkeys[k]=='Galileo':
-        files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10]]
-        #files_groups=[[10,12],[12,14],[14,16],[16,18],[18,20]]
-        #files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
+        if stage=='early':
+            files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10]]
+        if stage=='mid':
+            files_groups=[[10,12],[12,14],[14,16],[16,18],[18,20]]
+        if stage=='late':
+            files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
    
     abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
@@ -284,7 +291,7 @@ for k in range(len(monkeys)):
             print (files[kk])
             #Load data
             data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-            beha=miscellaneous.behavior(data)
+            beha=miscellaneous.behavior(data,group_ref)
             index_nonan=beha['index_nonan']
             # We discard first trial of session because we are interested in context changes
             stimulus=beha['stimulus'][1:]
@@ -328,7 +335,7 @@ for k in range(len(monkeys)):
                 ind_used[np.isnan(rt)]=False
                 if rt_fit==True:
                     popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
-                    print (popt)
+                    #print (popt)
                     rt_mean=chrono_curve(xx[(ind_ch01_s0[h]+1):(ind_ch01_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
                     dev=(rt[ind_ch01_s0[h]+1]-rt_mean)
                     if stimulus[ind_ch01_s0[h]+1]==0: 
@@ -417,6 +424,10 @@ for k in range(len(monkeys)):
         beha_te_unte[0,1,hh]=np.nanmean(beha_tested_rhigh,axis=0)
         beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
         beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
+        print (beha_tested_rlow)
+        print (beha_tested_rhigh)
+        print (beha_untested_rlow)
+        print (beha_untested_rhigh)
         beha_te_unte_all[0,0,uu]=np.nanmean(beha_tested_rlow,axis=0)
         beha_te_unte_all[0,1,uu]=np.nanmean(beha_tested_rhigh,axis=0)
         beha_te_unte_all[1,0,uu]=np.nanmean(beha_untested_rlow,axis=0)
@@ -438,9 +449,9 @@ for k in range(len(monkeys)):
     plt.xticks([0,1],['High Rew.','Low Rew.'])
     plt.legend(loc='best')
     if rt_fit==True:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_rt_fit_early.pdf'%(nback,monkeys[k]),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_rt_fit_%s.pdf'%(nback,monkeys[k],stage),dpi=500,bbox_inches='tight')
     if rt_fit==False:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_raw_early.pdf'%(nback,monkeys[k]),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_raw_%s.pdf'%(nback,monkeys[k],stage),dpi=500,bbox_inches='tight')
 
 
 ####################################################
@@ -456,10 +467,25 @@ ax.bar(width/2.0,beha_m[1,1],yerr=beha_sem[1,1],color='blue',width=width)
 ax.bar(1-width/2.0,beha_m[0,0],yerr=beha_sem[0,0],color='green',width=width,label='Tested')
 ax.bar(1+width/2.0,beha_m[1,0],yerr=beha_sem[1,0],color='blue',width=width,label='Untested')
 ax.set_ylabel('$\Delta$Reaction Time')
+ax.set_ylim([-200,400])
 plt.xticks([0,1],['High Rew.','Low Rew.'])
 plt.legend(loc='best')
 if rt_fit==True:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_rt_fit_early.pdf'%(nback),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_rt_fit_%s.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
 if rt_fit==False:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_raw_early.pdf'%(nback),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_raw_%s.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
+
+pp=[['Tested Low','Tested High'],
+    ['Untested Low','Untested High']]
+for i in range(2):
+    for ii in range(2):
+        print (pp[i][ii])
+        print (scipy.stats.wilcoxon(beha_te_unte_all[i,ii],nan_policy='omit'))
+
+beha_red=np.reshape(beha_te_unte_all,(2,-1))
+beha_red[:,9:]=-beha_red[:,9:]
+ppp=['Tested','Untested']
+for i in range(2):
+    print (ppp[i])
+    print (scipy.stats.wilcoxon(beha_red[i],nan_policy='omit'))
 

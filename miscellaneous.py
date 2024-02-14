@@ -230,45 +230,6 @@ def classifier(neural,clase,n_cv,reg):
         perf[g,1]=cl.score(neural[test_index],clase[test_index])
     return np.mean(perf,axis=0)
 
-def pseudopopulation_1(abs_path,files,quant,talig,dic_time,steps,thres,nt,n_rand,perc_tr,trials_back):
-    pseudo_tr_pre=nan*np.zeros((steps,n_rand,2*nt,1200)) 
-    pseudo_te_pre=nan*np.zeros((steps,n_rand,2*nt,1200))
-    neu_t=0
-    for kk in range(len(files)):
-        print (files[kk])
-        data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-        beha=behavior(data)
-        index_nonan=beha['index_nonan']
-        len_trials=len(index_nonan)
-        
-        firing_rate_pre=getRasters(data,talig,dic_time,index_nonan,thres)
-        n_neu=len(firing_rate_pre[0])
-        if trials_back==0:
-            variable=beha[quant]
-            firing_rate=firing_rate_pre.copy()
-        else:
-            variable=beha[quant][0:(-trials_back)]
-            firing_rate=firing_rate_pre[trials_back:]
-        ind1=np.where(variable==1)[0]
-        ind0=np.where(variable==0)[0]
-        nt1=int(len(ind1)*perc_tr)  
-        nt0=int(len(ind0)*perc_tr)
-        
-        for i in range(steps):
-            for ii in range(n_rand):
-                ind1_p=np.random.permutation(ind1)
-                ind0_p=np.random.permutation(ind0)
-                pseudo_tr_pre[i,ii,0:nt,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind1_p[0:nt1],nt,replace=True)][:,:,i]
-                pseudo_tr_pre[i,ii,nt:,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind0_p[0:nt0],nt,replace=True)][:,:,i]
-                pseudo_te_pre[i,ii,0:nt,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind1_p[nt1:],nt,replace=True)][:,:,i]
-                pseudo_te_pre[i,ii,nt:,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind0_p[nt0:],nt,replace=True)][:,:,i]
-        neu_t=(neu_t+n_neu)
-        
-    pseudo_tr=pseudo_tr_pre[:,:,:,0:neu_t]
-    pseudo_te=pseudo_te_pre[:,:,:,0:neu_t]
-    clase=np.zeros(2*nt)
-    clase[0:nt]=1    
-    return pseudo_tr,pseudo_te,clase
 
 def pseudopop_coherence(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr):
     pseudo_tr_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200)) 

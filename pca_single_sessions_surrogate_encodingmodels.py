@@ -235,7 +235,7 @@ for kk in range(len(files)):
         print (j)
         # Linear Regression
         #cv=KFold(n_splits=n_cv)
-        cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size)
+        cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size) #Try KFold instead??
         g=-1
         for train_index, test_index in cv.split(fr_norm[:,:,j]):
             g=(g+1)
@@ -255,7 +255,7 @@ for kk in range(len(files)):
                 cl=MLPRegressor(hidden_layer_sizes=models_vec[l],activation=activation,learning_rate_init=lr,alpha=reg)
                 cl.fit(feat_norm[train_index],fr_norm[:,:,j][train_index])
                 y_pred=cl.predict(feat_norm[test_index])
-                fr_surr_pre[l,test_index,:,j]=y_pred
+                fr_surr_pre[l,test_index,:,j]=y_pred # no hace falta CV porque va rellenando solo los huecos del test-set
                 sc=score(y_pred,fr_norm[:,:,j][test_index])
                 r2_vec[l+1,j,g]=np.mean(sc[abs(sc)<1000])
     print (np.mean(r2_vec,axis=2))
