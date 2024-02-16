@@ -549,7 +549,11 @@ for k in range(len(monkeys)):
     ax.set_ylabel('$\Delta$ Prob. (Choice = New Ctx)')
     plt.xticks([0,1],['Behavior','Neuronal'])
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/DEF_inference2_%s_%s_final_%s.png'%(monkeys[k],delta_type,stage),dpi=500,bbox_inches='tight')
+    if monkeys[k]=='Niels':
+        ax.set_ylim([-0.2,0.3])
+    if monkeys[k]=='Galileo':
+        ax.set_ylim([-0.18,0.10])
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/DEF_inference2_%s_%s_final_%s.png'%(monkeys[k],delta_type,stage),dpi=500,bbox_inches='tight')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/DEF_inference2_%s_%s_final_%s.pdf'%(monkeys[k],delta_type,stage),dpi=500,bbox_inches='tight')
 
         

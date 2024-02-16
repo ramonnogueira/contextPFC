@@ -70,46 +70,45 @@ def order_files(x):
 def gauss(x,mu,sig):
     return 1/(sig*np.sqrt(2*np.pi))*np.exp(-0.5*((x-mu)**2)/(sig**2))
 
-def func(x,a,b):
-    return 1.0/(1+np.exp(-a*x+b))
+# def func(x,a,b):
+#     return 1.0/(1+np.exp(-a*x+b))
 
-def func0(x,a,b):
-    y=1.0/(1+np.exp(-a*x))
-    return b*y
+# def func0(x,a,b):
+#     y=1.0/(1+np.exp(-a*x))
+#     return b*y
 
-# Best for behavior
-def func1(x,a,b,c):
-    y=1.0/(1+np.exp(-a*x))
-    return b*y+c
+# def func1(x,a,b,c):
+#     y=1.0/(1+np.exp(-a*x))
+#     return b*y+c
 
 def func2(x,a,b,c):
     y=1.0/(1+np.exp(-a*x+c))
     return b*y
 
-def func3(x,a,b,c,d):
-    y=1.0/(1+np.exp(-a*x+d))
-    return b*y+c
+# def func3(x,a,b,c,d):
+#     y=1.0/(1+np.exp(-a*x+d))
+#     return b*y+c
 
-def func4(x,a,b):
-    return a*x+b
+# def func4(x,a,b):
+#     return a*x+b
 
-def intercept(a,b):
-    return b/a
+# def intercept(a,b):
+#     return b/a
 
-def intercept0(a,b):
-    return np.log(b/0.5-1)/(-a)
+# def intercept0(a,b):
+#     return np.log(b/0.5-1)/(-a)
 
-def intercept1(a,b,c):
-    return np.log(b/(0.5-c)-1)/(-a)
+# def intercept1(a,b,c):
+#     return np.log(b/(0.5-c)-1)/(-a)
 
 def intercept2(a,b,c):
     return (np.log(b/0.5-1)-c)/(-a)
 
-def intercept3(a,b,c,d):
-    return (np.log(b/(0.5-c)-1)-d)/(-a)
+# def intercept3(a,b,c,d):
+#     return (np.log(b/(0.5-c)-1)-d)/(-a)
 
-def intercept4(a,b):
-    return (0.5-b)/a
+# def intercept4(a,b):
+#     return (0.5-b)/a
 
 def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
@@ -121,7 +120,7 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     inter=intercept2(popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
-    #print (inter)
+    print (inter)
     # plt.scatter(xx,yy,color='blue',s=1)
     # plt.scatter(xx,convo,color='green',s=1)
     # plt.plot(xx[t_back:],fit_func,color='black')
@@ -346,6 +345,7 @@ for k in range(len(monkeys)):
     fit_neu_m=np.nanmean(fit_neu,axis=0)
     fit_neu_sem=sem(fit_neu,axis=0,nan_policy='omit')
 
+    ##########################
     # Plot Behavior
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
@@ -359,9 +359,7 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Trials after context change')
     ax.set_ylabel('Prob. (Choice = Context)')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_def.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
-
-    ##########################
+    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
     # Plot Neuro
     fig=plt.figure(figsize=(2.3,2))
@@ -382,8 +380,10 @@ for k in range(len(monkeys)):
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_beha[inter_beha>0],color='green',label='Behavioral')
-    ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_neu[inter_beha>0],color='blue',label='Neuronal')
+    #ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_beha[inter_beha>0],color='green',label='Behavioral')
+    #ax.plot(np.arange(len(inter_beha[inter_beha>0])),inter_neu[inter_beha>0],color='blue',label='Neuronal')
+    ax.plot(np.arange(len(inter_beha)),inter_beha,color='green',label='Behavioral')
+    ax.plot(np.arange(len(inter_beha)),inter_neu,color='blue',label='Neuronal')
     ax.set_xlabel('Sessions')
     ax.set_ylabel('Threshold')
     plt.legend(loc='best')
@@ -395,8 +395,9 @@ for k in range(len(monkeys)):
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
     for i in range(len(inter_beha)):
-        if (inter_beha[i]>0) and (inter_neu[i]>0):
-            ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
+        #if (inter_beha[i]>0) and (inter_neu[i]>0):
+        #    ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
+        ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
     ax.set_xlabel('Threshold Behavioral')
     ax.set_ylabel('Threshold Neuronal')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
@@ -426,8 +427,6 @@ ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Prob. (Choice = Context)')
 #plt.legend(loc='best')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
-
-##########################
 
 # Plot Neuro
 fig=plt.figure(figsize=(2.3,2))
@@ -496,10 +495,10 @@ fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_both_
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
-alph_aa=[0.1,0.2,0.3,0.45,0.4,0.5,0.6,0.65,0.7,0.8,0.9,1,0.1,0.15,0.2,0.25,0.3,0.45,0.4,0.5,0.6,0.65,0.7,0.75,0.8,0.9,1]
+alph_aa=[0.1,0.2,0.3,0.45,0.4,0.5,0.6,0.65,0.7,0.8,0.9,1,0.1,0.15,0.2,0.25,0.3,0.4,0.45,0.5,0.6,0.65,0.7,0.75,0.8,0.9,1]
 for i in range(len(inter_beha_norm)):
-    if (inter_beha_norm[i]>0) and (inter_neu_norm[i]>0):
-        ax.scatter(inter_beha_norm[i],inter_neu_norm[i],color='black',alpha=alph_aa[i],s=10)
+    #if (inter_beha_norm[i]>0) and (inter_neu_norm[i]>0):
+    ax.scatter(inter_beha_norm[i]+np.random.normal(0,0.02),inter_neu_norm[i]+np.random.normal(0,0.02),color='black',alpha=alph_aa[i],s=10)
 ax.set_xlabel('Normalized Behavioral Th.')
 ax.set_ylabel('Normalized Neuronal Th.')
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')

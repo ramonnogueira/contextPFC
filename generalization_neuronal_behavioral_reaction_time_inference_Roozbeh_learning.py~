@@ -446,10 +446,6 @@ for k in range(len(monkeys)):
     ax.bar(1-width/2.0,beha_m[0,0],yerr=beha_sem[0,0],color='green',width=width,label='Tested')
     ax.bar(1+width/2.0,beha_m[1,0],yerr=beha_sem[1,0],color='blue',width=width,label='Untested')
     ax.set_ylabel('$\Delta$Reaction Time')
-    if monkeys[k]=='Niels':
-        ax.set_ylim([-250,400])
-    if monkeys[k]=='Galileo':
-        ax.set_ylim([-200,650])
     plt.xticks([0,1],['High Rew.','Low Rew.'])
     plt.legend(loc='best')
     if rt_fit==True:
