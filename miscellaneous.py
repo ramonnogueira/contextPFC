@@ -175,6 +175,8 @@ def behavior(data,group_coh):
     coh_signed=coherence.copy()
     coh_signed[stimulus!=right]=-coh_signed[stimulus!=right] # Negative
     coh_signed_uq=np.unique(coh_signed)
+    rew_pairs_pre=getField(data,'rew_pulse_dur')
+    rew_pairs=np.array([i for i in rew_pairs_pre],dtype=np.int16)[index_nonan]
     #
     coh_resol=nan*np.zeros(len(coherence)) #reduce the resolution of coherences (group them)
     for i in range(len(coh_signed_uq)):
@@ -215,6 +217,7 @@ def behavior(data,group_coh):
     dic['response_edf']=response_edf
     dic['reaction_time']=rt
     dic['change_ctx']=change_ctx
+    dic['rew_pairs']=rew_pairs
     return dic
 
 def classifier(neural,clase,n_cv,reg):
