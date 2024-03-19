@@ -233,126 +233,6 @@ def classifier(neural,clase,n_cv,reg):
         perf[g,1]=cl.score(neural[test_index],clase[test_index])
     return np.mean(perf,axis=0)
 
-
-def pseudopop_coherence(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr):
-    pseudo_tr_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200)) 
-    pseudo_te_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200))
-    pseudo_all_pre=nan*np.zeros((steps,n_rand,n_coh*nt,1200))
-    clase=nan*np.zeros(n_coh*nt)
-    clase_coh=nan*np.zeros(n_coh*nt)
-    neu_t=0
-    for kk in range(len(files)):
-        print (files[kk])
-        data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-        beha=behavior(data)
-        index_nonan=beha['index_nonan']
-        reward=beha['reward'] #Cuidado!!!
-        ind_correct=np.where(reward==1)[0]
-        
-        firing_rate=getRasters(data,talig,dic_time,index_nonan,thres)[ind_correct] #Cuidado!
-        n_neu=len(firing_rate[0])
-        
-        coherence=beha[quant][ind_correct]#Cuidado!
-        coh_uq=np.unique(coherence)
-        
-        for j in range(n_coh):
-            ind_coh=np.where(coherence==coh_uq[j])[0]
-            nt_coh=int(len(ind_coh)*perc_tr)
-            clase[j*nt:(j+1)*nt]=j
-            clase_coh[j*nt:(j+1)*nt]=coh_uq[j]
-            for i in range(steps):
-                for ii in range(n_rand):
-                    ind_coh_p=np.random.permutation(ind_coh)
-                    pseudo_all_pre[i,ii,j*nt:(j+1)*nt,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_p,nt,replace=True)][:,:,i]
-                    pseudo_tr_pre[i,ii,j*nt:(j+1)*nt,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_p[0:nt_coh],nt,replace=True)][:,:,i]
-                    pseudo_te_pre[i,ii,j*nt:(j+1)*nt,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_p[nt_coh:],nt,replace=True)][:,:,i]
-        neu_t=(neu_t+n_neu)
-
-    pseudo_all=pseudo_all_pre[:,:,:,0:neu_t]
-    pseudo_tr=pseudo_tr_pre[:,:,:,0:neu_t]
-    pseudo_te=pseudo_te_pre[:,:,:,0:neu_t]
-    dic={}
-    dic['pseudo_all']=pseudo_all
-    dic['pseudo_tr']=pseudo_tr
-    dic['pseudo_te']=pseudo_te
-    dic['clase']=clase
-    dic['clase_coh']=clase_coh
-    return dic
-
-def pseudopop_coherence_context(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,signed,tpre_sacc,group_coh):
-    if signed==True:
-        n_coh=15
-        quant='coherence_signed'
-    if signed==False:
-        n_coh=8
-        quant='coherence'
-    pseudo_all_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,1200))
-    pseudo_tr_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,1200)) 
-    pseudo_te_pre=nan*np.zeros((steps,n_rand,2*n_coh*nt,1200))
-    neu_t=0
-    time_w=dic_time[-2]
-    step_t=dic_time[-1]
-    for kk in range(len(files)):
-        print (files[kk])
-        data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
-        beha=behavior(data,group_coh)
-        index_nonan=beha['index_nonan']
-        len_trials=len(index_nonan)
-        rt=beha['reaction_time']
-        
-        firing_rate_pre=getRasters(data,talig,dic_time,index_nonan,thres)
-        firing_rate=normalize_fr(firing_rate_pre)
-        n_neu=len(firing_rate[0])
-
-        context=beha['context']
-        coherence=beha[quant]
-        coh_uq=np.unique(coherence)
-        choice=beha['choice']
-
-        for i in range(steps):
-            if talig=='dots_on':
-                max_t=(-dic_time[0]+i*step_t+time_w+100) # -initial + j*step_size + bin_size + 100
-            if talig=='response_edf':
-                max_t=0
-
-            for k in range(2): # loop contexts
-                for j in range(n_coh): #loop coherences
-                    ind_coh_ctx=np.where((coherence==coh_uq[j])&(context==k)&(rt>max_t))[0]
-                    nt_coh_ctx=int(len(ind_coh_ctx)*perc_tr)
-                    for ii in range(n_rand):
-                        ind_coh_ctx_p=np.random.permutation(ind_coh_ctx)
-                        dow=(k*n_coh+j)*nt
-                        up=(k*n_coh+j+1)*nt
-                        try:
-                            pseudo_all_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_ctx_p,nt,replace=True)][:,:,i]
-                            pseudo_tr_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_ctx_p[0:nt_coh_ctx],nt,replace=True)][:,:,i]
-                            pseudo_te_pre[i,ii,dow:up,neu_t:(neu_t+n_neu)]=firing_rate[np.random.choice(ind_coh_ctx_p[nt_coh_ctx:],nt,replace=True)][:,:,i]
-                        except:
-                            #print ('Error t %i coh %i '%(i,j))
-                            None
-        neu_t=(neu_t+n_neu)
-
-    clase_all=nan*np.zeros(2*n_coh*nt)
-    clase_coh=nan*np.zeros(2*n_coh*nt)
-    clase_ctx=nan*np.zeros(2*n_coh*nt)
-    for k in range(2):
-        for j in range(n_coh):
-            clase_all[(k*n_coh+j)*nt:(k*n_coh+j+1)*nt]=(k*n_coh+j)
-            clase_coh[(k*n_coh+j)*nt:(k*n_coh+j+1)*nt]=j
-            clase_ctx[(k*n_coh+j)*nt:(k*n_coh+j+1)*nt]=k
-
-    pseudo_all=pseudo_all_pre[:,:,:,0:neu_t]
-    pseudo_tr=pseudo_tr_pre[:,:,:,0:neu_t]
-    pseudo_te=pseudo_te_pre[:,:,:,0:neu_t]
-    dic={}
-    dic['pseudo_all']=pseudo_all
-    dic['pseudo_tr']=pseudo_tr
-    dic['pseudo_te']=pseudo_te
-    dic['clase_all']=clase_all
-    dic['clase_coh']=clase_coh
-    dic['clase_ctx']=clase_ctx
-    return dic
-
 def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_coh,shuff,learning):
     coh_uq=np.unique(group_coh[~np.isnan(group_coh)])
     n_coh=len(coh_uq)
@@ -383,8 +263,6 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
 
         context=beha['context'][ind_correct]
         coherence=beha['coh_resol'][ind_correct]
-        #print (coherence)
-        #coh_uq=np.unique(coherence)
         choice=beha['choice'][ind_correct]
         if shuff:
             context=permutation(context)
@@ -401,7 +279,7 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
                 for j in range(n_coh):
                     ind_coh_ctx_pre=np.where((coherence==coh_uq[j])&(context==k))[0]
                     ind_coh_ctx=np.where((coherence==coh_uq[j])&(context==k)&(rt>max_t))[0]
-                    #print (i,k,j,len(ind_coh_ctx_pre),len(ind_coh_ctx))
+                    print (i,k,j,len(ind_coh_ctx_pre),len(ind_coh_ctx))
                     nt_coh_ctx=int(len(ind_coh_ctx)*perc_tr)
                     for ii in range(n_rand):
                         ind_coh_ctx_p=np.random.permutation(ind_coh_ctx)

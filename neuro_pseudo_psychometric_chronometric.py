@@ -43,18 +43,17 @@ def log_curve_abs(x,a,c):
 def chrono_curve(x,a,b,c):
     return a*(x**2)+b*x+c
 
+#def chrono_curve(x,a,b,c,d):
+#    return a*(x**3)+b*(x**2)+c*x+d
+
 def proj_dist(wei,wei0,fr):
-    #return abs(np.dot(fr,wei.T)+wei0)
-    return (np.dot(fr,wei.T)+wei0)
+    return abs(np.dot(fr,wei.T)+wei0)
+    return #(np.dot(fr,wei.T)+wei0)
 
 ###################################################3
 
 monkey='Niels'#['Galileo']#'Niels']#,]
-
 talig='dots_on' #'targ_on','dots_on'
-dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
-steps=int((dic_time[0]+dic_time[1])/dic_time[3])
-xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=10
@@ -68,20 +67,24 @@ tpre_sacc=50
 maxfev=10000
 
 if monkey=='Niels':
+    dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
     xx_coh_pre=np.array([-75,-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2,75])
     xx_plot=np.array(['-75','-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2','75'])
     ind_l=8
     ind_u=12
 if monkey=='Galileo':
+    dic_time=np.array([0,800,200,200]) # time pre, time post, bin size, step size
     xx_coh_pre=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
     xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
-    ind_l=0
-    ind_u=10
+    ind_l=20
+    ind_u=30
 xx_coh=np.log(abs(xx_coh_pre))
 xx_coh[xx_coh<-100]=0
 xx_coh[xx_coh_pre<0]=-1*xx_coh[xx_coh_pre<0]
-
 print (xx_coh)
+
+steps=int((dic_time[0]+dic_time[1])/dic_time[3])
+xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
 
@@ -136,6 +139,7 @@ for ii in range(n_rand):
     cl=LogisticRegression(C=1/reg,class_weight='balanced')
     n_max=96*4*3
     neu_rnd=np.sort(np.random.choice(np.arange(steps*neu_total),n_max,replace=False)) # Careful!!!
+    #neu_rnd=np.arange(steps*neu_total)
     print (len(neu_rnd),neu_rnd)
     cl.fit(pseudo_tr_flat[:,neu_rnd],stim) # Cuidado con decode Stim y no Choice!
                     
@@ -167,20 +171,18 @@ for ii in range(n_rand):
             psycho_neuro_flat_pre[ii,j,0]=np.mean(cl.predict(pseudo_te_flat[ind_coh][:,neu_rnd]))
         except:
             print ('rand ',ii,'coh ',j)
-
-    #print (np.nanmean(chrono_neuro_flat_pre,axis=0))
     
     # Fit Chrono
     indnan0=~np.isnan(chrono_neuro_flat_pre[ii,:,0])
     popt0,pcov0=curve_fit(chrono_curve,xx_coh[indnan0],chrono_neuro_flat_pre[ii,:,0][indnan0])
-    fit_chrono_neuro_flat_pre[ii,indnan0,0]=chrono_curve(xx_coh[indnan0],popt0[0],popt0[1],popt0[2])
+    fit_chrono_neuro_flat_pre[ii,indnan0,0]=chrono_curve(xx_coh[indnan0],popt0[0],popt0[1],popt0[2])#,popt0[3])
     indnan1=~np.isnan(chrono_neuro_flat_pre[ii,:,1])
     popt1,pcov1=curve_fit(chrono_curve,xx_coh[indnan1],chrono_neuro_flat_pre[ii,:,1][indnan1])
-    fit_chrono_neuro_flat_pre[ii,indnan1,1]=chrono_curve(xx_coh[indnan1],popt1[0],popt1[1],popt1[2])
+    fit_chrono_neuro_flat_pre[ii,indnan1,1]=chrono_curve(xx_coh[indnan1],popt1[0],popt1[1],popt1[2])#,popt1[3])
     indnan2=~np.isnan(chrono_neuro_flat_pre[ii,:,2])
     popt2,pcov2=curve_fit(chrono_curve,xx_coh[indnan2],chrono_neuro_flat_pre[ii,:,2][indnan2])
-    fit_chrono_neuro_flat_pre[ii,indnan2,2]=chrono_curve(xx_coh[indnan2],popt2[0],popt2[1],popt2[2])
-
+    fit_chrono_neuro_flat_pre[ii,indnan2,2]=chrono_curve(xx_coh[indnan2],popt2[0],popt2[1],popt2[2])#,popt2[3])
+   
     # Fit Psycho
     indnan0=~np.isnan(psycho_neuro_flat_pre[ii,:,0])
     popt0,pcov0=curve_fit(log_curve,xx_coh[indnan0],psycho_neuro_flat_pre[ii,:,0][indnan0])
@@ -236,109 +238,108 @@ for ii in range(n_rand):
             
 
 ################################################################
-# psycho_neuro_flat_m=np.nanmean(psycho_neuro_flat_pre,axis=(0))
-# psycho_neuro_flat_std=np.nanstd(psycho_neuro_flat_pre,axis=(0))
-# fit_psycho_neuro_flat_m=np.nanmean(fit_psycho_neuro_flat_pre,axis=(0))
-# fit_psycho_neuro_flat_std=np.nanstd(fit_psycho_neuro_flat_pre,axis=(0))
+psycho_neuro_flat_m=np.nanmean(psycho_neuro_flat_pre,axis=(0))
+psycho_neuro_flat_std=np.nanstd(psycho_neuro_flat_pre,axis=(0))
+fit_psycho_neuro_flat_m=np.nanmean(fit_psycho_neuro_flat_pre,axis=(0))
+fit_psycho_neuro_flat_std=np.nanstd(fit_psycho_neuro_flat_pre,axis=(0))
 
-# # Figure Psychometric
-# # Linear x axis
-# fig=plt.figure(figsize=(2.3,2))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
-# # Curve fit
-# ax.scatter(xx_coh_pre,psycho_neuro_flat_m[:,0],color='black',s=3)
-# ax.plot(xx_coh_pre,fit_psycho_neuro_flat_m[:,0],color='black')
-# ax.fill_between(xx_coh_pre,fit_psycho_neuro_flat_m[:,0]-fit_psycho_neuro_flat_std[:,0],fit_psycho_neuro_flat_m[:,0]+fit_psycho_neuro_flat_std[:,0],color='black',alpha=0.5)
-# ax.scatter(xx_coh_pre,psycho_neuro_flat_m[:,1],color='green',s=3)
-# ax.plot(xx_coh_pre,fit_psycho_neuro_flat_m[:,1],color='green')
-# ax.fill_between(xx_coh_pre,fit_psycho_neuro_flat_m[:,1]-fit_psycho_neuro_flat_std[:,1],fit_psycho_neuro_flat_m[:,1]+fit_psycho_neuro_flat_std[:,1],color='green',alpha=0.5)
-# ax.scatter(xx_coh_pre,psycho_neuro_flat_m[:,2],color='blue',s=3)
-# ax.plot(xx_coh_pre,fit_psycho_neuro_flat_m[:,2],color='blue')
-# ax.fill_between(xx_coh_pre,fit_psycho_neuro_flat_m[:,2]-fit_psycho_neuro_flat_std[:,2],fit_psycho_neuro_flat_m[:,2]+fit_psycho_neuro_flat_std[:,2],color='blue',alpha=0.5)
-# #ax.plot(xx_coh_pre,0.5*np.ones(15),color='black',linestyle='--')
-# ax.axvline(0,color='black',linestyle='--')
-# ax.set_ylabel('Probability Right Response')
-# ax.set_xlabel('Evidence Right Choice (%)')
-# ax.set_ylim([-0.05,1.05])
-# plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
-# #plt.legend(loc='best')
-# #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-# #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.pdf'%(monkey),dpi=500,bbox_inches='tight')
-# #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.png'%(monkey),dpi=500,bbox_inches='tight')
+# Figure Psychometric
+# Linear x axis
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+# Curve fit
+ax.scatter(xx_coh_pre,psycho_neuro_flat_m[:,0],color='black',s=3)
+ax.plot(xx_coh_pre,fit_psycho_neuro_flat_m[:,0],color='black')
+ax.fill_between(xx_coh_pre,fit_psycho_neuro_flat_m[:,0]-fit_psycho_neuro_flat_std[:,0],fit_psycho_neuro_flat_m[:,0]+fit_psycho_neuro_flat_std[:,0],color='black',alpha=0.5)
+ax.scatter(xx_coh_pre,psycho_neuro_flat_m[:,1],color='green',s=3)
+ax.plot(xx_coh_pre,fit_psycho_neuro_flat_m[:,1],color='green')
+ax.fill_between(xx_coh_pre,fit_psycho_neuro_flat_m[:,1]-fit_psycho_neuro_flat_std[:,1],fit_psycho_neuro_flat_m[:,1]+fit_psycho_neuro_flat_std[:,1],color='green',alpha=0.5)
+ax.scatter(xx_coh_pre,psycho_neuro_flat_m[:,2],color='blue',s=3)
+ax.plot(xx_coh_pre,fit_psycho_neuro_flat_m[:,2],color='blue')
+ax.fill_between(xx_coh_pre,fit_psycho_neuro_flat_m[:,2]-fit_psycho_neuro_flat_std[:,2],fit_psycho_neuro_flat_m[:,2]+fit_psycho_neuro_flat_std[:,2],color='blue',alpha=0.5)
+#ax.plot(xx_coh_pre,0.5*np.ones(15),color='black',linestyle='--')
+ax.axvline(0,color='black',linestyle='--')
+ax.set_ylabel('Probability Right Response')
+ax.set_xlabel('Motion Strength (%)')
+ax.set_ylim([-0.05,1.05])
+plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
+#plt.legend(loc='best')
+#plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat2.pdf'%(monkey),dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat.png'%(monkey),dpi=500,bbox_inches='tight')
 
-# # Log x axis
-# fig=plt.figure(figsize=(2.3,2))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
-# # Curve fit
-# ax.scatter(xx_coh,psycho_neuro_flat_m[:,0],color='black',s=3)
-# ax.plot(xx_coh,fit_psycho_neuro_flat_m[:,0],color='black')
-# ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,0]-fit_psycho_neuro_flat_std[:,0],fit_psycho_neuro_flat_m[:,0]+fit_psycho_neuro_flat_std[:,0],color='black',alpha=0.5)
-# ax.scatter(xx_coh,psycho_neuro_flat_m[:,1],color='green',s=3)
-# ax.plot(xx_coh,fit_psycho_neuro_flat_m[:,1],color='green')
-# ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,1]-fit_psycho_neuro_flat_std[:,1],fit_psycho_neuro_flat_m[:,1]+fit_psycho_neuro_flat_std[:,1],color='green',alpha=0.5)
-# ax.scatter(xx_coh,psycho_neuro_flat_m[:,2],color='blue',s=3)
-# ax.plot(xx_coh,fit_psycho_neuro_flat_m[:,2],color='blue')
-# ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,2]-fit_psycho_neuro_flat_std[:,2],fit_psycho_neuro_flat_m[:,2]+fit_psycho_neuro_flat_std[:,2],color='blue',alpha=0.5)
-# ax.plot(xx_coh,0.5*np.ones(15),color='black',linestyle='--')
-# ax.axvline(0,color='black',linestyle='--')
-# ax.set_ylabel('Probability Right Response')
-# ax.set_xlabel('Evidence Right Choice (%)')
-# ax.set_ylim([-0.05,1.05])
-# plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
-# #plt.legend(loc='best')
-# plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat_log_early.pdf'%(monkey),dpi=500,bbox_inches='tight')
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat_log_early.png'%(monkey),dpi=500,bbox_inches='tight')
+# Log x axis
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+# Curve fit
+ax.scatter(xx_coh,psycho_neuro_flat_m[:,0],color='black',s=3)
+ax.plot(xx_coh,fit_psycho_neuro_flat_m[:,0],color='black')
+ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,0]-fit_psycho_neuro_flat_std[:,0],fit_psycho_neuro_flat_m[:,0]+fit_psycho_neuro_flat_std[:,0],color='black',alpha=0.5)
+ax.scatter(xx_coh,psycho_neuro_flat_m[:,1],color='green',s=3)
+ax.plot(xx_coh,fit_psycho_neuro_flat_m[:,1],color='green')
+ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,1]-fit_psycho_neuro_flat_std[:,1],fit_psycho_neuro_flat_m[:,1]+fit_psycho_neuro_flat_std[:,1],color='green',alpha=0.5)
+ax.scatter(xx_coh,psycho_neuro_flat_m[:,2],color='blue',s=3)
+ax.plot(xx_coh,fit_psycho_neuro_flat_m[:,2],color='blue')
+ax.fill_between(xx_coh,fit_psycho_neuro_flat_m[:,2]-fit_psycho_neuro_flat_std[:,2],fit_psycho_neuro_flat_m[:,2]+fit_psycho_neuro_flat_std[:,2],color='blue',alpha=0.5)
+ax.plot(xx_coh,0.5*np.ones(15),color='black',linestyle='--')
+ax.axvline(0,color='black',linestyle='--')
+ax.set_ylabel('Probability Right Response')
+ax.set_xlabel('Evidence Right Choice (%)')
+ax.set_ylim([-0.05,1.05])
+plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
+#plt.legend(loc='best')
+plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat_log2.pdf'%(monkey),dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_flat_log_early.png'%(monkey),dpi=500,bbox_inches='tight')
 
 #####################################
 # # Chrono
-# chrono_neuro_flat_m=np.nanmean(chrono_neuro_flat_pre,axis=(0))
-# chrono_neuro_flat_std=np.nanstd(chrono_neuro_flat_pre,axis=(0))
-# fit_chrono_neuro_flat_m=np.nanmean(fit_chrono_neuro_flat_pre,axis=(0))
-# fit_chrono_neuro_flat_std=np.nanstd(fit_chrono_neuro_flat_pre,axis=(0))
+chrono_neuro_flat_m=np.nanmean(chrono_neuro_flat_pre,axis=(0))
+chrono_neuro_flat_std=np.nanstd(chrono_neuro_flat_pre,axis=(0))
+fit_chrono_neuro_flat_m=np.nanmean(fit_chrono_neuro_flat_pre,axis=(0))
+fit_chrono_neuro_flat_std=np.nanstd(fit_chrono_neuro_flat_pre,axis=(0))
 
-# # Linear x axis
-# fig=plt.figure(figsize=(2.3,2))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
-# ax.scatter(xx_coh_pre,chrono_neuro_flat_m[:,0],color='black',s=3)
-# ax.plot(xx_coh_pre,fit_chrono_neuro_flat_m[:,0],color='black')
-# ax.fill_between(xx_coh_pre,fit_chrono_neuro_flat_m[:,0]-fit_chrono_neuro_flat_std[:,0],fit_chrono_neuro_flat_m[:,0]+fit_chrono_neuro_flat_std[:,0],color='black',alpha=0.5)
-# ax.scatter(xx_coh_pre,chrono_neuro_flat_m[:,1],color='green',s=3)
-# ax.plot(xx_coh_pre,fit_chrono_neuro_flat_m[:,1],color='green')
-# ax.fill_between(xx_coh_pre,fit_chrono_neuro_flat_m[:,1]-fit_chrono_neuro_flat_std[:,1],fit_chrono_neuro_flat_m[:,1]+fit_chrono_neuro_flat_std[:,1],color='green',alpha=0.5)
-# ax.scatter(xx_coh_pre,chrono_neuro_flat_m[:,2],color='blue',s=3)
-# ax.plot(xx_coh_pre,fit_chrono_neuro_flat_m[:,2],color='blue')
-# ax.fill_between(xx_coh_pre,fit_chrono_neuro_flat_m[:,2]-fit_chrono_neuro_flat_std[:,2],fit_chrono_neuro_flat_m[:,2]+fit_chrono_neuro_flat_std[:,2],color='blue',alpha=0.5)
-# ax.axvline(0,color='black',linestyle='--')
-# #ax.set_ylim([0,0.6])
-# ax.set_ylabel('Distance to Boundary')
-# ax.set_xlabel('Evidence Right Choice (%)')
-# #plt.xticks(xx_coh,coh_plot[0])
-# #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat_dist.pdf'%(monkey),dpi=500,bbox_inches='tight')
-# #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat_snr_inv.png'%(monkey),dpi=500,bbox_inches='tight')
+# Linear x axis
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.scatter(xx_coh_pre,chrono_neuro_flat_m[:,0],color='black',s=3)
+ax.plot(xx_coh_pre,fit_chrono_neuro_flat_m[:,0],color='black')
+ax.fill_between(xx_coh_pre,fit_chrono_neuro_flat_m[:,0]-fit_chrono_neuro_flat_std[:,0],fit_chrono_neuro_flat_m[:,0]+fit_chrono_neuro_flat_std[:,0],color='black',alpha=0.5)
+ax.scatter(xx_coh_pre,chrono_neuro_flat_m[:,1],color='green',s=3)
+ax.plot(xx_coh_pre,fit_chrono_neuro_flat_m[:,1],color='green')
+ax.fill_between(xx_coh_pre,fit_chrono_neuro_flat_m[:,1]-fit_chrono_neuro_flat_std[:,1],fit_chrono_neuro_flat_m[:,1]+fit_chrono_neuro_flat_std[:,1],color='green',alpha=0.5)
+ax.scatter(xx_coh_pre,chrono_neuro_flat_m[:,2],color='blue',s=3)
+ax.plot(xx_coh_pre,fit_chrono_neuro_flat_m[:,2],color='blue')
+ax.fill_between(xx_coh_pre,fit_chrono_neuro_flat_m[:,2]-fit_chrono_neuro_flat_std[:,2],fit_chrono_neuro_flat_m[:,2]+fit_chrono_neuro_flat_std[:,2],color='blue',alpha=0.5)
+ax.axvline(0,color='black',linestyle='--')
+#ax.set_ylim([0,0.6])
+ax.set_ylabel('Distance to Boundary')
+ax.set_xlabel('Evidence Right Choice (%)')
+#plt.xticks(xx_coh,coh_plot[0])
+#plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat_dist2.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
-# # Log x axis
-# fig=plt.figure(figsize=(2.3,2))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
+# Log x axis
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
 
-# ax.scatter(xx_coh,chrono_neuro_flat_m[:,0],color='black',s=3)
-# ax.plot(xx_coh,fit_chrono_neuro_flat_m[:,0],color='black')
-# ax.fill_between(xx_coh,fit_chrono_neuro_flat_m[:,0]-fit_chrono_neuro_flat_std[:,0],fit_chrono_neuro_flat_m[:,0]+fit_chrono_neuro_flat_std[:,0],color='black',alpha=0.5)
-# ax.scatter(xx_coh,chrono_neuro_flat_m[:,1],color='green',s=3)
-# ax.plot(xx_coh,fit_chrono_neuro_flat_m[:,1],color='green')
-# ax.fill_between(xx_coh,fit_chrono_neuro_flat_m[:,1]-fit_chrono_neuro_flat_std[:,1],fit_chrono_neuro_flat_m[:,1]+fit_chrono_neuro_flat_std[:,1],color='green',alpha=0.5)
-# ax.scatter(xx_coh,chrono_neuro_flat_m[:,2],color='blue',s=3)
-# ax.plot(xx_coh,fit_chrono_neuro_flat_m[:,2],color='blue')
-# ax.fill_between(xx_coh,fit_chrono_neuro_flat_m[:,2]-fit_chrono_neuro_flat_std[:,2],fit_chrono_neuro_flat_m[:,2]+fit_chrono_neuro_flat_std[:,2],color='blue',alpha=0.5)
-# ax.axvline(0,color='black',linestyle='--')
-# ax.set_ylabel('Distance to Boundary')
-# ax.set_xlabel('Evidence Right Choice (%)')
-# #plt.xticks(xx_coh,coh_plot[0])
-# #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-# fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat_dist_xlog.pdf'%(monkey),dpi=500,bbox_inches='tight')
-# #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat_snr_inv_xlog.png'%(monkey),dpi=500,bbox_inches='tight')
+ax.scatter(xx_coh,chrono_neuro_flat_m[:,0],color='black',s=3)
+ax.plot(xx_coh,fit_chrono_neuro_flat_m[:,0],color='black')
+ax.fill_between(xx_coh,fit_chrono_neuro_flat_m[:,0]-fit_chrono_neuro_flat_std[:,0],fit_chrono_neuro_flat_m[:,0]+fit_chrono_neuro_flat_std[:,0],color='black',alpha=0.5)
+ax.scatter(xx_coh,chrono_neuro_flat_m[:,1],color='green',s=3)
+ax.plot(xx_coh,fit_chrono_neuro_flat_m[:,1],color='green')
+ax.fill_between(xx_coh,fit_chrono_neuro_flat_m[:,1]-fit_chrono_neuro_flat_std[:,1],fit_chrono_neuro_flat_m[:,1]+fit_chrono_neuro_flat_std[:,1],color='green',alpha=0.5)
+ax.scatter(xx_coh,chrono_neuro_flat_m[:,2],color='blue',s=3)
+ax.plot(xx_coh,fit_chrono_neuro_flat_m[:,2],color='blue')
+ax.fill_between(xx_coh,fit_chrono_neuro_flat_m[:,2]-fit_chrono_neuro_flat_std[:,2],fit_chrono_neuro_flat_m[:,2]+fit_chrono_neuro_flat_std[:,2],color='blue',alpha=0.5)
+ax.axvline(0,color='black',linestyle='--')
+ax.set_ylabel('Distance to Boundary')
+ax.set_xlabel('Evidence Right Choice (%)')
+#plt.xticks(xx_coh,coh_plot[0])
+#plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
+fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_flat_dist_xlog2.pdf'%(monkey),dpi=500,bbox_inches='tight')
+
