@@ -279,7 +279,7 @@ def pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thre
                 for j in range(n_coh):
                     ind_coh_ctx_pre=np.where((coherence==coh_uq[j])&(context==k))[0]
                     ind_coh_ctx=np.where((coherence==coh_uq[j])&(context==k)&(rt>max_t))[0]
-                    print (i,k,j,len(ind_coh_ctx_pre),len(ind_coh_ctx))
+                    #print (i,k,j,len(ind_coh_ctx_pre),len(ind_coh_ctx))
                     nt_coh_ctx=int(len(ind_coh_ctx)*perc_tr)
                     for ii in range(n_rand):
                         ind_coh_ctx_p=np.random.permutation(ind_coh_ctx)
