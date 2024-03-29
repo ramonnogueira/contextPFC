@@ -106,12 +106,10 @@ method='lm'
 
 n_gen=1000
 
-psycho_all=nan*np.zeros((14,15,3))
-fit_psycho_all=nan*np.zeros((14,n_gen,3))
-chrono_all=nan*np.zeros((14,15,3))
-fit_chrono_all=nan*np.zeros((14,n_gen,3))
-params_psy_all=nan*np.zeros((14,2,3))
-params_rt_all=nan*np.zeros((14,6,3))
+psycho_all=nan*np.zeros((2,2,15,3))
+fit_psycho_all=nan*np.zeros((2,2,n_gen,3))
+chrono_all=nan*np.zeros((2,2,15,3))
+fit_chrono_all=nan*np.zeros((2,2,n_gen,3))
 
 xx_coh_all=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
 
@@ -124,7 +122,7 @@ for k in range(len(monkeys)):
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2'])
         indd=8
         indu=12 # Careful!
-        ind_uu=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14])
+        ind_uu=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14]) # missing 4 and 10
     if monkeys[k]=='Galileo':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
@@ -231,16 +229,6 @@ for k in range(len(monkeys)):
         fit_chrono[kk,:,2]=ff2[0]
         params_rt[kk,:,2]=ff2[1]
 
-        #######################################
-        # All
-        psycho_all[uu,ind_uu]=psycho[kk]
-        fit_psycho_all[uu]=fit_psycho[kk]
-        params_psy_all[uu]=params_psy[kk]
-        chrono_all[uu,ind_uu]=chrono[kk]
-        fit_chrono_all[uu]=fit_chrono[kk]
-        params_rt_all[uu]=params_rt[kk]
-
-        
     #################################################################
     # Plot Psychometric
     psycho_m=np.mean(psycho,axis=0)
@@ -294,17 +282,26 @@ for k in range(len(monkeys)):
     #plt.legend(loc='best')
     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
+    psycho_all[k,0,ind_uu]=psycho_m
+    psycho_all[k,1,ind_uu]=psycho_sem
+    fit_psycho_all[k,0]=fit_psycho_m
+    fit_psycho_all[k,1]=fit_psycho_sem
+    chrono_all[k,0,ind_uu]=chrono_m
+    chrono_all[k,1,ind_uu]=chrono_sem
+    fit_chrono_all[k,0]=fit_chrono_m
+    fit_chrono_all[k,1]=fit_chrono_sem
+   
 ############################################
-# Psycho all
-psycho_all_m=np.nanmean(psycho_all,axis=0)
-psycho_all_sem=sem(psycho_all,axis=0,nan_policy='omit')
-fit_psycho_all_m=np.nanmean(fit_psycho_all,axis=0)
-fit_psycho_all_sem=sem(fit_psycho_all,axis=0,nan_policy='omit')
 
-psycho_all_m=np.nanmean(np.array([np.mean(psycho_all[0:4],axis=0),np.mean(psycho_all[4:],axis=0)]),axis=0)
-psycho_all_sem=sem(np.array([np.mean(psycho_all[0:4],axis=0),np.mean(psycho_all[4:],axis=0)]),axis=0,nan_policy='omit')
-fit_psycho_all_m=np.nanmean(np.array([np.mean(fit_psycho_all[0:4],axis=0),np.mean(fit_psycho_all[4:],axis=0)]),axis=0)
-fit_psycho_all_sem=sem(np.array([np.mean(fit_psycho_all[0:4],axis=0),np.mean(fit_psycho_all[4:],axis=0)]),axis=0,nan_policy='omit')
+# These two coherences are only present in Galileo, so we removed them. 
+psycho_all[:,:,[4,10]]=nan
+chrono_all[:,:,[4,10]]=nan
+
+# Psycho all
+psycho_all_m=np.nanmean(psycho_all[:,0],axis=0)
+psycho_all_sem=0.5*np.sqrt(psycho_all[0,1]**2+psycho_all[1,1]**2)
+fit_psycho_all_m=np.nanmean(fit_psycho_all[:,0],axis=0)
+fit_psycho_all_sem=0.5*np.sqrt(fit_psycho_all[0,1]**2+fit_psycho_all[1,1]**2)
 
 fig=plt.figure(figsize=(2.3,2))
 bax=brokenaxes(xlims=((-55,-50),(-27,27),(50,55)),hspace=0.1)
@@ -329,15 +326,10 @@ bax.set_yticks([0,0.2,0.4,0.6,0.8,1.0])
 fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_both_def2.pdf',dpi=500,bbox_inches='tight')
 
 # Chronometric All
-chrono_all_m=np.nanmean(chrono_all,axis=0)
-chrono_all_sem=sem(chrono_all,axis=0,nan_policy='omit')
-fit_chrono_all_m=np.nanmean(fit_chrono_all,axis=0)
-fit_chrono_all_sem=sem(fit_chrono_all,axis=0,nan_policy='omit')
-
-# chrono_all_m=np.nanmean(np.array([np.mean(chrono_all[0:4],axis=0),np.mean(chrono_all[4:],axis=0)]),axis=0)
-# chrono_all_sem=sem(np.array([np.mean(chrono_all[0:4],axis=0),np.mean(chrono_all[4:],axis=0)]),axis=0,nan_policy='omit')
-# fit_chrono_all_m=np.nanmean(np.array([np.mean(fit_chrono_all[0:4],axis=0),np.mean(fit_chrono_all[4:],axis=0)]),axis=0)
-# fit_chrono_all_sem=sem(np.array([np.mean(fit_chrono_all[0:4],axis=0),np.mean(fit_chrono_all[4:],axis=0)]),axis=0,nan_policy='omit')
+chrono_all_m=np.nanmean(chrono_all[:,0],axis=0)
+chrono_all_sem=0.5*np.sqrt(chrono_all[0,1]**2+chrono_all[1,1]**2)
+fit_chrono_all_m=np.nanmean(fit_chrono_all[:,0],axis=0)
+fit_chrono_all_sem=0.5*np.sqrt(fit_chrono_all[0,1]**2+fit_chrono_all[1,1]**2)
 
 fig=plt.figure(figsize=(2.3,2))
 bax=brokenaxes(xlims=((-55,-50),(-27,27),(50,55)),hspace=0.1)
