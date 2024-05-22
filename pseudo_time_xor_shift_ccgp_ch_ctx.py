@@ -147,7 +147,7 @@ monkeys=['Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=5
+n_rand=2
 n_shuff=0
 perc_tr=0.8
 thres=0
@@ -311,7 +311,21 @@ perf_both_s=0.5*np.sqrt(perf_both_pre_s[0]**2+perf_both_pre_s[1]**2)
 ccgp_both_s=0.5*np.sqrt(ccgp_both_pre_s[0]**2+ccgp_both_pre_s[1]**2)
 shccgp_both_s=0.5*np.sqrt(shccgp_both_pre_s[0]**2+shccgp_both_pre_s[1]**2)
 
+fig=plt.figure(figsize=(3,2.5))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(xx,perf_both_m[:,0],color='blue',label='Direction')
+ax.fill_between(xx,perf_both_m[:,0]-perf_both_s[:,0],perf_both_m[:,0]+perf_both_s[:,0],color='blue',alpha=0.5)
+ax.plot(xx,perf_both_m[:,1],color='brown',label='Context')
+ax.fill_between(xx,perf_both_m[:,1]-perf_both_s[:,1],perf_both_m[:,1]+perf_both_s[:,1],color='brown',alpha=0.5)
+ax.plot(xx,perf_both_m[:,2],color='black',label='XOR')
+ax.fill_between(xx,perf_both_m[:,2]-perf_both_s[:,2],perf_both_m[:,2]+perf_both_s[:,2],color='black',alpha=0.5)
+ax.plot(xx,0.5*np.ones(steps),color='black',linestyle='--')
+ax.set_ylim([0.4,1])
+ax.set_xlabel('Time (sec)')
+ax.set_ylabel('Decoding Performance')
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both.pdf'%(talig),dpi=500,bbox_inches='tight')
 
-    
  
        

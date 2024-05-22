@@ -164,51 +164,22 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
 ##############################################
 
 monkeys=['Galileo']
+talig='dots_on'
+
 #bias_vec=np.linspace(-20,20,31) #Niels
 bias_vec=np.linspace(-15,15,31) #Galileo
-
-# target onset: 'targ_on', dots onset: 'dots_on', dots offset: 'dots_off', saccade: 'response_edf'
-#talig='response_edf'
-#dic_time=np.array([650,-50,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
-talig='response_edf'
-dic_time=np.array([700,-100,200,200])# time pre, time post, bin size, step size (time pre always positive) #For Galileo use timepost 800 or 1000. For Niels use 
-steps=int((dic_time[0]+dic_time[1])/dic_time[3])
-xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=10
 n_shuff=0
 perc_tr=0.8
 thres=0
-reg=1e0
+reg=1e2
 n_coh=15
-
-# Niels
-#files_groups=[[0,4],[4,8],[8,12]]
-#files_groups=[[0,3],[3,6],[6,9],[9,12]]
-#files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12]]
-#files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
-
-# Galileo
-#files_groups=[[0,10],[10,20],[20,30]]
-files_groups=[[0,5],[5,10],[10,15],[15,20],[20,25],[25,30]]
-#files_groups=[[0,3],[3,6],[6,9],[9,12],[12,15],[15,18],[18,21],[21,24],[24,27],[27,30]]
+tpre_sacc=50
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
-#group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
-#group_coh=np.array([-3,-3,-3,-2,-2,-1,-1,0,1,1,2,2,3,3,3])
-#group_coh=np.array([-3,-3,-2,-2,-2,-1,-1,0,1,1,2,2,2,3,3])
-#group_coh=np.array([-2,-2,-2,-2,-1,-1,-1,0,1,1,1,2,2,2,2])
-#group_coh=np.array([-2,-2,-2,-1,-1,-1,-1,0,1,1,1,1,2,2,2])
-#group_coh=np.array([nan,-2 ,-2 ,-2 ,-1 ,-1 ,-1 ,nan,1  ,1  ,1  ,2  ,2  ,2  ,nan])
-#group_coh=np.array([nan,nan,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,nan,nan])
-#group_coh=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
-#group_coh=np.array([nan,0 ,0 ,0 ,1 ,1 ,1 ,nan,1  ,1  ,1  ,0  ,0  ,0  ,nan])
-#group_coh=np.array([nan,nan,nan,nan,nan,nan,nan,nan,0  ,0  ,0  ,1  ,1  ,1  ,nan])
-#group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
 group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
-
-tpre_sacc=50
 
 #bias_vec=np.linspace(-3,3,31)
 #bias_vec=np.linspace(-5,5,31)
@@ -218,12 +189,35 @@ tpre_sacc=50
 #bias_vec=np.linspace(-15,15,31) #Galileo
 #bias_vec=np.linspace(-1,1,31)
 
-for k in range(len(monkeys)):
-    print (monkeys[k])
+for hh in range(len(monkeys)):
+    monkey=monkeys[hh]
+    if monkey=='Niels':
+        dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
+        xx_coh_pre=np.array([-75,-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2,75])
+        xx_plot=np.array(['-75','-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2','75'])
+        ind_ext=np.array([1,2,3,4,5,6,7,8,9,10,11,12,13]) # missing 0 and 14
+        ind_put=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14]) # missing 4 and 10
+        ind_l=8
+        ind_u=12
+    if monkey=='Galileo':
+        dic_time=np.array([0,800,200,200]) # Careful! time pre, time post, bin size, step size
+        xx_coh_pre=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
+        xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
+        ind_ext=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
+        ind_put=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
+        ind_l=20
+        ind_u=30
+
+    steps=int((dic_time[0]+dic_time[1])/dic_time[3])
+    xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
+
     #abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k])
-    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k])
-    files=miscellaneous.order_files(np.array(os.listdir(abs_path)))
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkey)
+    files_pre=np.array(os.listdir(abs_path))
+    order=miscellaneous.order_files(files_pre)
+    files=np.array(files_pre[order])[ind_l:ind_u]
     print (files)
+
     perf_all=nan*np.zeros((len(files_groups),steps,n_rand,3))
     ccgp_all=nan*np.zeros((len(files_groups),steps,n_rand,len(bias_vec),2,2))
     
