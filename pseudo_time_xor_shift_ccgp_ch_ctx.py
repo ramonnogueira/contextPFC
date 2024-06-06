@@ -42,43 +42,6 @@ def clase_resolution(group_coh,coherence):
         clase_coh[ind]=group_coh[i]
     return clase_coh
     
-
-def shuffle_distr(pseudo_tr,pseudo_te,clase_all,rot_mat_vec):
-    clase_uq=np.unique(clase_all)
-    pseudo_tr_sh=nan*np.zeros(np.shape(pseudo_tr))
-    pseudo_te_sh=nan*np.zeros(np.shape(pseudo_te))
-    for i in range(len(clase_uq)):
-        ind_cl=np.where(clase_all==clase_uq[i])[0]
-        rot_mat=rot_mat_vec[i]
-        #print (rot_mat)
-        #pseudo_tr_sh[ind_cl]=np.dot(pseudo_tr[ind_cl],rot_mat)
-        #pseudo_te_sh[ind_cl]=np.dot(pseudo_te[ind_cl],rot_mat)
-        pseudo_tr_sh[ind_cl]=pseudo_tr[ind_cl][:,rot_mat]
-        pseudo_te_sh[ind_cl]=pseudo_te[ind_cl][:,rot_mat]
-    return pseudo_tr_sh,pseudo_te_sh
-
-def index_shuffle(num_neu,clase_all):
-    clase_uq=np.unique(clase_all)
-    #rot_mat_vec=nan*np.zeros((len(clase_uq),num_neu,num_neu))
-    rot_mat_vec=[]#nan*np.zeros((len(clase_uq),num_neu))
-    for i in range(len(clase_uq)):
-        #print (i)
-        #rot_mat_vec[i]=ortho_group.rvs(num_neu)
-        rot_mat_vec.append(np.random.permutation(np.arange(num_neu)))
-    rot_mat_vec=np.array(rot_mat_vec)
-    return rot_mat_vec
-
-def null_model_coh(repr_tr,repr_te,pert_std,n_coh,nt):
-    n_neu=len(repr_tr[0])
-    repr_tr_pert=nan*np.zeros(np.shape(repr_tr))
-    repr_te_pert=nan*np.zeros(np.shape(repr_te))
-    for i in range(2*n_coh):
-        pert=np.random.normal(0,pert_std,n_neu)
-        for ii in range(nt):
-            repr_tr_pert[i*nt+ii]=(repr_tr[i*nt+ii]+pert)
-            repr_te_pert[i*nt+ii]=(repr_te[i*nt+ii]+pert)
-    return repr_tr_pert,repr_te_pert
-
 def classifier(data,var):
     n_cv=5
     reg=1
@@ -93,14 +56,15 @@ def classifier(data,var):
         perf[g,1]=cl.score(data[test],var[test])
     return np.mean(perf,axis=0)
 
-def rotation_ccgp(pseudo,clase_all):
+def rotation_ccgp(pseudo,clase_all,n_rot):
     clase_uq=np.unique(clase_all)
     num_neu=pseudo.shape[-1]
-    pseudo_sh=nan*np.zeros(np.shape(pseudo))
-    for i in range(len(clase_uq)):
-        ind_cl=np.where(clase_all==clase_uq[i])[0]
-        rot_mat=np.random.permutation(np.arange(num_neu))
-        pseudo_sh[:,ind_cl]=pseudo[:,ind_cl][:,:,rot_mat]
+    pseudo_sh=nan*np.zeros((n_rot,pseudo.shape[0],pseudo.shape[1],pseudo.shape[2]))
+    for n in range(n_rot):
+        for i in range(len(clase_uq)):
+            ind_cl=np.where(clase_all==clase_uq[i])[0]
+            rot_mat=np.random.permutation(np.arange(num_neu))
+            pseudo_sh[n][:,ind_cl]=pseudo[:,ind_cl][:,:,rot_mat]
     return pseudo_sh
 
 def abstraction_2D(feat_decod,feat_binary,bias,reg):
@@ -147,7 +111,7 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
     perf_all=nan*np.zeros((steps_all,n_rand,3))
     ccgp_all=nan*np.zeros((steps_all,n_rand,len(bias_vec),2,2))
     
-    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff,learning=True)      
+    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff,learning=True)
     for kk in range(steps):
         print (kk)
         # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
@@ -171,6 +135,14 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
         feat_binary[ind01]=np.array([0,1])
         feat_binary[ind10]=np.array([1,0])
         feat_binary[ind11]=np.array([1,1])
+
+        exp_cond=nan*np.zeros((len(coherence)))
+        exp_cond[ind00]=0
+        exp_cond[ind01]=1
+        exp_cond[ind10]=2
+        exp_cond[ind11]=3
+        pseudo_rot=rotation_ccgp(pseudo_all,exp_cond,100)
+        #print (sys.getsizeof(pseudo_rot))
         
         for ii in range(n_rand):
             #print (' ',ii)
@@ -200,14 +172,18 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
             xor=np.sum(feat_binary,axis=1)%2
             cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
             perf_all[kk,ii,2]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
+            
             # CCGP
             for f in range(len(bias_vec)):
                 ccgp=abstraction_2D(pseudo_all[ii][ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
                 ccgp_all[kk,ii,f]=ccgp[0]
 
+            # Create permutation indices (neurons) for each experimental condition (4) and null H iteration. Build here the rotated representations and send them to this CCGP function. Make sure I am filling all the trials (why 2400 and not 3000?).
+
+        # First rotate representations. Then evaluate ccgp and shccgp for the different n_rand with the same rotation. Careful with neuron subsampling, we rotate first with all neurons and then sub-sample them.
     return perf_all,ccgp_all
 
-def calculate_ccgp(ccgp_all,steps,steps_all,n_rand):
+def calculate_shccgp(ccgp_all,steps,steps_all,n_rand):
     shccgp_pre=nan*np.zeros((steps_all,n_rand,2,2))
     for p in range(steps):
         for pp in range(n_rand):
@@ -219,7 +195,7 @@ def calculate_ccgp(ccgp_all,steps,steps_all,n_rand):
 
 ##############################################
 
-monkeys=['Galileo']#'Niels','Galileo']
+monkeys=['Niels']#'Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
@@ -317,7 +293,7 @@ for hh in range(len(monkeys)):
     ccgp_orig_m=np.mean(ccgp_all[:,:,15],axis=(1,3))
     ccgp_orig_std=np.std(np.mean(ccgp_all[:,:,15],axis=3),axis=1)
 
-    shccgp_pre=calculate_ccgp(ccgp_all,steps,steps_all,n_rand)
+    shccgp_pre=calculate_shccgp(ccgp_all,steps,steps_all,n_rand)
     shccgp_m=np.mean(shccgp_pre,axis=(1,3))
     shccgp_std=np.std(np.mean(shccgp_pre,axis=3),axis=1)
 
