@@ -105,11 +105,26 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
          #perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
     return perf,inter
 
+def rotation_indices(n_rot,n_cat,n_neu):
+    ind=nan*np.zeros((n_rot,n_cat,n_neu))
+    for k in range(n_rot):
+        for i in range(n_cat):
+            ind[k,i]=np.random.permutation(np.arange(n_neu))
+    return np.array(ind,dtype=np.int16)
+
+def create_rot(pseudo,ind_cat,ind_rot):
+    pseudo_rot=nan*np.zeros(pseudo.shape) # trials x neurons
+    n_cat=len(ind_rot)
+    for i in range(n_cat):
+        pseudo_rot[ind_cat[i]]=pseudo[ind_cat[i]][:,ind_rot[i]]
+    return pseudo_rot
+
 ##############################################
 
-def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff):
+def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff):
     perf_all=nan*np.zeros((steps_all,n_rand,3))
     ccgp_all=nan*np.zeros((steps_all,n_rand,len(bias_vec),2,2))
+    ccgp_rot_all=nan*np.zeros((n_rot,steps_all,n_rand,len(bias_vec),2,2))
     
     pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff,learning=True)
     for kk in range(steps):
@@ -136,13 +151,8 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
         feat_binary[ind10]=np.array([1,0])
         feat_binary[ind11]=np.array([1,1])
 
-        exp_cond=nan*np.zeros((len(coherence)))
-        exp_cond[ind00]=0
-        exp_cond[ind01]=1
-        exp_cond[ind10]=2
-        exp_cond[ind11]=3
-        pseudo_rot=rotation_ccgp(pseudo_all,exp_cond,100)
-        #print (sys.getsizeof(pseudo_rot))
+        index_cat=np.array([ind00,ind01,ind10,ind11])
+        index_rot=rotation_indices(n_rot=n_rot,n_cat=len(index_cat),n_neu=neu_total)
         
         for ii in range(n_rand):
             #print (' ',ii)
@@ -178,10 +188,15 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
                 ccgp=abstraction_2D(pseudo_all[ii][ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
                 ccgp_all[kk,ii,f]=ccgp[0]
 
-            # Create permutation indices (neurons) for each experimental condition (4) and null H iteration. Build here the rotated representations and send them to this CCGP function. Make sure I am filling all the trials (why 2400 and not 3000?).
+            # Distribution of ccgp after breaking geometry through rotations
+            for n in range(n_rot):
+                #print ('rot ',n)
+                pseudo_rot=create_rot(pseudo_all[ii],index_cat,index_rot[n])
+                for f in range(len(bias_vec)):
+                    ccgp_rot=abstraction_2D(pseudo_rot[ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+                    ccgp_rot_all[n,kk,ii,f]=ccgp_rot[0]
 
-        # First rotate representations. Then evaluate ccgp and shccgp for the different n_rand with the same rotation. Careful with neuron subsampling, we rotate first with all neurons and then sub-sample them.
-    return perf_all,ccgp_all
+    return perf_all,ccgp_all,ccgp_rot_all
 
 def calculate_shccgp(ccgp_all,steps,steps_all,n_rand):
     shccgp_pre=nan*np.zeros((steps_all,n_rand,2,2))
@@ -192,23 +207,23 @@ def calculate_shccgp(ccgp_all,steps,steps_all,n_rand):
                 shccgp_pre[p,pp,ppp,1]=np.max(ccgp_all[p,pp,:,ppp,1])
     return shccgp_pre
 
-
 ##############################################
 
-monkeys=['Niels']#'Niels','Galileo']
+monkeys=['Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=5
+n_rand=2
 n_shuff=2
 perc_tr=0.8
 thres=0
 reg=1e2
 n_coh=15
 tpre_sacc=50
-tmax=3
+n_rot=2
 
-steps_all=4
+steps_all=16 #4
+tmax=12 #3
 xx_all=np.linspace(0,0.8,steps_all,endpoint=False)
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -221,24 +236,28 @@ shccgp_both_pre_m=nan*np.zeros((len(monkeys),steps_all,2))
 shccgp_both_pre_s=nan*np.zeros((len(monkeys),steps_all,2))
 
 perf_both_sh=nan*np.zeros((len(monkeys),n_shuff,steps_all,3))
+ccgp_both_rot=nan*np.zeros((len(monkeys),n_rot,steps_all,2))
+shccgp_both_rot=nan*np.zeros((len(monkeys),n_rot,steps_all,2))
 
 for hh in range(len(monkeys)):
     monkey=monkeys[hh]
     if monkey=='Niels':
         group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
         bias_vec=np.linspace(-20,20,31) #Niels
-        dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
+        dic_time=np.array([0,600,200,50]) # time pre, time post, bin size, step size
         ind_l=8
         ind_u=12
     if monkey=='Galileo':
         group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
         bias_vec=np.linspace(-15,15,31) #Galileo
-        dic_time=np.array([0,800,200,200]) # Careful! time pre, time post, bin size, step size
+        dic_time=np.array([0,800,200,50]) # Careful! time pre, time post, bin size, step size
         ind_l=20
         ind_u=30
 
     steps=int((dic_time[0]+dic_time[1])/dic_time[3])
     xx=np.linspace(-dic_time[0]/1000,dic_time[1]/1000,steps,endpoint=False)
+    print (steps)
+    print (xx)
 
     #abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k])
     abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkey)
@@ -247,19 +266,40 @@ for hh in range(len(monkeys)):
     files=np.array(files_pre[order])[ind_l:ind_u]
     print (files)
 
-    # No shuffled
-    perf_all,ccgp_all=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff=False)
+    # Original
+    perf_all,ccgp_all,ccgp_rot_all=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff=False)
     perf_all_m=np.nanmean(perf_all,axis=1)
     perf_all_std=np.std(perf_all,axis=1)
-    print (perf_all_m)
     perf_both_pre_m[hh]=perf_all_m
     perf_both_pre_s[hh]=perf_all_std
+    print (perf_all_m)
+
+    ccgp_orig_m=np.mean(ccgp_all[:,:,15],axis=(1,3))
+    ccgp_orig_std=np.std(np.mean(ccgp_all[:,:,15],axis=3),axis=1)
+    shccgp_pre=calculate_shccgp(ccgp_all,steps,steps_all,n_rand)
+    shccgp_m=np.mean(shccgp_pre,axis=(1,3))
+    shccgp_std=np.std(np.mean(shccgp_pre,axis=3),axis=1)
+
+    # Rotated ccgp
+    ccgp_rot_pre_m=np.mean(ccgp_rot_all[:,:,:,15],axis=(2,4))
+    ccgp_rot_m=np.mean(ccgp_rot_pre_m,axis=0)
+    ccgp_rot_s=np.std(ccgp_rot_pre_m,axis=0)
+    
+    shccgp_rot=nan*np.zeros((n_rot,steps_all,2)) # Rotated null H ccgp and shccgp
+    for n in range(n_rot):
+        shccgp_r_pre=calculate_shccgp(ccgp_rot_all[n],steps,steps_all,n_rand)
+        shccgp_rot[n]=np.mean(shccgp_r_pre,axis=(1,3))
+    shccgp_rot_m=np.mean(shccgp_rot,axis=0)
+    shccgp_rot_s=np.std(shccgp_rot,axis=0)
+
+    ccgp_both_rot[hh]=ccgp_rot_pre_m
+    shccgp_both_rot[hh]=shccgp_rot
 
     # Shuffled
     perf_sh=nan*np.zeros((n_shuff,steps_all,3))
     for i in range(n_shuff):
         print ('shuff iteration ',i)
-        perf_sh_pre,ccgp_sh_pre=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff=True)
+        perf_sh_pre,ccgp_sh_pre,ccgp_rot_all=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,0,perc_tr,tpre_sacc,group_ref,shuff=True)
         perf_sh[i]=np.nanmean(perf_sh_pre,axis=1)
     perf_sh_m=np.mean(perf_sh,axis=0)
     perf_sh_s=np.std(perf_sh,axis=0)
@@ -278,11 +318,9 @@ for hh in range(len(monkeys)):
     ax.plot(xx,perf_all_m[0:steps,2],color='black',label='XOR')
     ax.fill_between(xx,perf_all_m[0:steps,2]-perf_all_std[0:steps,2],perf_all_m[0:steps,2]+perf_all_std[0:steps,2],color='black',alpha=0.5)
     ax.plot(xx,0.5*np.ones(steps),color='black',linestyle='--')
-
     ax.fill_between(xx,perf_sh_m[0:steps,0]-1.96*perf_sh_s[0:steps,0],perf_sh_m[0:steps,0]+1.96*perf_sh_s[0:steps,0],color='blue',alpha=0.5)
     ax.fill_between(xx,perf_sh_m[0:steps,1]-1.96*perf_sh_s[0:steps,1],perf_sh_m[0:steps,1]+1.96*perf_sh_s[0:steps,1],color='brown',alpha=0.5)
     ax.fill_between(xx,perf_sh_m[0:steps,2]-1.96*perf_sh_s[0:steps,2],perf_sh_m[0:steps,2]+1.96*perf_sh_s[0:steps,2],color='black',alpha=0.5)
-    
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
@@ -290,13 +328,6 @@ for hh in range(len(monkeys)):
     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_%s.pdf'%(talig,monkeys[hh]),dpi=500,bbox_inches='tight')
  
     # Plot Shifted CCGP
-    ccgp_orig_m=np.mean(ccgp_all[:,:,15],axis=(1,3))
-    ccgp_orig_std=np.std(np.mean(ccgp_all[:,:,15],axis=3),axis=1)
-
-    shccgp_pre=calculate_shccgp(ccgp_all,steps,steps_all,n_rand)
-    shccgp_m=np.mean(shccgp_pre,axis=(1,3))
-    shccgp_std=np.std(np.mean(shccgp_pre,axis=3),axis=1)
-
     fig=plt.figure(figsize=(3,2.5))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
@@ -308,6 +339,10 @@ for hh in range(len(monkeys)):
     ax.fill_between(xx,shccgp_m[0:steps,0]-shccgp_std[0:steps,0],shccgp_m[0:steps,0]+shccgp_std[0:steps,0],color='blue',alpha=0.5)
     ax.plot(xx,shccgp_m[0:steps,1],color='brown',label='Sh-CCGP Context')
     ax.fill_between(xx,shccgp_m[0:steps,1]-shccgp_std[0:steps,1],shccgp_m[0:steps,1]+shccgp_std[0:steps,1],color='brown',alpha=0.5)
+    ax.fill_between(xx,ccgp_rot_m[0:steps,0]-1.96*ccgp_rot_s[0:steps,0],ccgp_rot_m[0:steps,0]+1.96*ccgp_rot_s[0:steps,0],color='blue',alpha=0.5)
+    ax.fill_between(xx,ccgp_rot_m[0:steps,1]-1.96*ccgp_rot_s[0:steps,1],ccgp_rot_m[0:steps,1]+1.96*ccgp_rot_s[0:steps,1],color='brown',alpha=0.5)
+    ax.fill_between(xx,shccgp_rot_m[0:steps,0]-1.96*shccgp_rot_s[0:steps,0],shccgp_rot_m[0:steps,0]+1.96*shccgp_rot_s[0:steps,0],color='blue',alpha=0.5)
+    ax.fill_between(xx,shccgp_rot_m[0:steps,1]-1.96*shccgp_rot_s[0:steps,1],shccgp_rot_m[0:steps,1]+1.96*shccgp_rot_s[0:steps,1],color='brown',alpha=0.5)
     ax.plot(xx,0.5*np.ones(steps),color='black',linestyle='--')
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Time (sec)')
@@ -320,10 +355,6 @@ for hh in range(len(monkeys)):
     shccgp_both_pre_m[hh]=shccgp_m
     shccgp_both_pre_s[hh]=shccgp_std
 
-
-
-
-
 # Both
 perf_both_m=np.nanmean(perf_both_pre_m,axis=0)
 ccgp_both_m=np.nanmean(ccgp_both_pre_m,axis=0)
@@ -331,6 +362,14 @@ shccgp_both_m=np.nanmean(shccgp_both_pre_m,axis=0)
 perf_both_s=0.5*np.sqrt(np.nansum([perf_both_pre_s[0]**2,perf_both_pre_s[1]**2],axis=0))
 ccgp_both_s=0.5*np.sqrt(np.nansum([ccgp_both_pre_s[0]**2,ccgp_both_pre_s[1]**2],axis=0))
 shccgp_both_s=0.5*np.sqrt(np.nansum([shccgp_both_pre_s[0]**2,shccgp_both_pre_s[1]**2],axis=0))
+
+perf_both_sh_m=np.mean(np.mean(perf_both_sh,axis=0),axis=0)
+perf_both_sh_s=np.std(np.mean(perf_both_sh,axis=0),axis=0)
+
+ccgp_both_rot_m=np.mean(np.mean(ccgp_both_rot,axis=0),axis=0)
+ccgp_both_rot_s=np.std(np.mean(ccgp_both_rot,axis=0),axis=0)
+shccgp_both_rot_m=np.mean(np.mean(shccgp_both_rot,axis=0),axis=0)
+shccgp_both_rot_s=np.std(np.mean(shccgp_both_rot,axis=0),axis=0)
 
 fig=plt.figure(figsize=(3,2.5))
 ax=fig.add_subplot(111)
@@ -342,6 +381,9 @@ ax.fill_between(xx_all[0:tmax],perf_both_m[0:tmax][:,1]-perf_both_s[0:tmax][:,1]
 ax.plot(xx_all[0:tmax],perf_both_m[0:tmax][:,2],color='black',label='XOR')
 ax.fill_between(xx_all[0:tmax],perf_both_m[0:tmax][:,2]-perf_both_s[0:tmax][:,2],perf_both_m[0:tmax][:,2]+perf_both_s[0:tmax][:,2],color='black',alpha=0.5)
 ax.plot(xx_all[0:tmax],0.5*np.ones(steps_all)[0:tmax],color='black',linestyle='--')
+ax.fill_between(xx_all[0:tmax],perf_both_sh_m[0:tmax,0]-1.96*perf_both_sh_s[0:tmax,0],perf_both_sh_m[0:tmax,0]+1.96*perf_both_sh_s[0:tmax,0],color='blue',alpha=0.5)
+ax.fill_between(xx_all[0:tmax],perf_both_sh_m[0:tmax,1]-1.96*perf_both_sh_s[0:tmax,1],perf_both_sh_m[0:tmax,1]+1.96*perf_both_sh_s[0:tmax,1],color='brown',alpha=0.5)
+ax.fill_between(xx_all[0:tmax],perf_both_sh_m[0:tmax,2]-1.96*perf_both_sh_s[0:tmax,2],perf_both_sh_m[0:tmax,2]+1.96*perf_both_sh_s[0:tmax,2],color='black',alpha=0.5)
 ax.set_ylim([0.4,1])
 ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
@@ -360,6 +402,10 @@ ax.fill_between(xx_all[0:tmax],shccgp_both_m[0:tmax][:,0]-shccgp_both_s[0:tmax][
 ax.plot(xx_all[0:tmax],shccgp_both_m[0:tmax][:,1],color='brown',label='Sh-CCGP Context')
 ax.fill_between(xx_all[0:tmax],shccgp_both_m[0:tmax][:,1]-shccgp_both_s[0:tmax][:,1],shccgp_both_m[0:tmax][:,1]+shccgp_both_s[0:tmax][:,1],color='brown',alpha=0.5)
 ax.plot(xx_all[0:tmax],0.5*np.ones(steps_all)[0:tmax],color='black',linestyle='--')
+ax.fill_between(xx_all[0:tmax],ccgp_both_rot_m[0:tmax,0]-1.96*ccgp_both_rot_s[0:tmax,0],ccgp_both_rot_m[0:tmax,0]+1.96*ccgp_both_rot_s[0:tmax,0],color='blue',alpha=0.5)
+ax.fill_between(xx_all[0:tmax],ccgp_both_rot_m[0:tmax,1]-1.96*ccgp_both_rot_s[0:tmax,1],ccgp_both_rot_m[0:tmax,1]+1.96*ccgp_both_rot_s[0:tmax,1],color='brown',alpha=0.5)
+ax.fill_between(xx_all[0:tmax],shccgp_both_rot_m[0:tmax,0]-1.96*shccgp_both_rot_s[0:tmax,0],shccgp_both_rot_m[0:tmax,0]+1.96*shccgp_both_rot_s[0:tmax,0],color='blue',alpha=0.5)
+ax.fill_between(xx_all[0:tmax],shccgp_both_rot_m[0:tmax,1]-1.96*shccgp_both_rot_s[0:tmax,1],shccgp_both_rot_m[0:tmax,1]+1.96*shccgp_both_rot_s[0:tmax,1],color='brown',alpha=0.5)
 ax.set_ylim([0.4,1])
 ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
