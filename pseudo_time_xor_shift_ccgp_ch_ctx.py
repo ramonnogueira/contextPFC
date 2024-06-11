@@ -213,17 +213,20 @@ monkeys=['Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=2
-n_shuff=2
+n_rand=5
+n_shuff=10
 perc_tr=0.8
 thres=0
 reg=1e2
 n_coh=15
 tpre_sacc=50
-n_rot=2
+n_rot=10
 
-steps_all=16 #4
-tmax=12 #3
+#steps_all=4
+#tmax=3
+steps_all=13
+tmax=9
+
 xx_all=np.linspace(0,0.8,steps_all,endpoint=False)
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -244,13 +247,15 @@ for hh in range(len(monkeys)):
     if monkey=='Niels':
         group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
         bias_vec=np.linspace(-20,20,31) #Niels
-        dic_time=np.array([0,600,200,50]) # time pre, time post, bin size, step size
+        #dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
+        dic_time=np.array([0,450,200,50]) # time pre, time post, bin size, step size
         ind_l=8
         ind_u=12
     if monkey=='Galileo':
         group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
         bias_vec=np.linspace(-15,15,31) #Galileo
-        dic_time=np.array([0,800,200,50]) # Careful! time pre, time post, bin size, step size
+        #dic_time=np.array([0,800,200,200]) # Careful! time pre, time post, bin size, step size
+        dic_time=np.array([0,650,200,50]) # Careful! time pre, time post, bin size, step size
         ind_l=20
         ind_u=30
 
