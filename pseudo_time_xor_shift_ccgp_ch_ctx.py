@@ -213,14 +213,14 @@ monkeys=['Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=5
-n_shuff=10
+n_rand=20
+n_shuff=20
 perc_tr=0.8
 thres=0
 reg=1e2
 n_coh=15
 tpre_sacc=50
-n_rot=10
+n_rot=20
 
 #steps_all=4
 #tmax=3

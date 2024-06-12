@@ -172,14 +172,14 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
 
 ##########################################################
 
-monkey='Niels'
+monkey='Galileo'
 
 talig='dots_on' #'response_edf' #dots_on
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=20
 #n_bias=1
-n_shuff=100
+n_shuff=0
 perc_tr=0.8
 thres=0
 reg=1e2
@@ -197,7 +197,7 @@ if monkey=='Niels':
     ind_u=12
 if monkey=='Galileo':
     group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
-    bias_vec=np.linspace(-15,15,31) #Galileo
+    bias_vec=np.linspace(-10,10,31) #Galileo
     dic_time=np.array([0,800,200,200]) # Careful! time pre, time post, bin size, step size
     ind_l=20
     ind_u=30
