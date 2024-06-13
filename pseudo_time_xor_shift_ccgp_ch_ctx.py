@@ -213,7 +213,7 @@ monkeys=['Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=20
+n_rand=10
 n_shuff=20
 perc_tr=0.8
 thres=0
@@ -246,14 +246,14 @@ for hh in range(len(monkeys)):
     monkey=monkeys[hh]
     if monkey=='Niels':
         group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
-        bias_vec=np.linspace(-20,20,31) #Niels
+        bias_vec=np.linspace(-10,10,31) #Niels
         #dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
         dic_time=np.array([0,450,200,50]) # time pre, time post, bin size, step size
         ind_l=8
         ind_u=12
     if monkey=='Galileo':
-        group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
-        bias_vec=np.linspace(-15,15,31) #Galileo
+        group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
+        bias_vec=np.linspace(-10,10,31) #Galileo
         #dic_time=np.array([0,800,200,200]) # Careful! time pre, time post, bin size, step size
         dic_time=np.array([0,650,200,50]) # Careful! time pre, time post, bin size, step size
         ind_l=20
@@ -344,8 +344,8 @@ for hh in range(len(monkeys)):
     ax.fill_between(xx,shccgp_m[0:steps,0]-shccgp_std[0:steps,0],shccgp_m[0:steps,0]+shccgp_std[0:steps,0],color='blue',alpha=0.5)
     ax.plot(xx,shccgp_m[0:steps,1],color='brown',label='Sh-CCGP Context')
     ax.fill_between(xx,shccgp_m[0:steps,1]-shccgp_std[0:steps,1],shccgp_m[0:steps,1]+shccgp_std[0:steps,1],color='brown',alpha=0.5)
-    ax.fill_between(xx,ccgp_rot_m[0:steps,0]-1.96*ccgp_rot_s[0:steps,0],ccgp_rot_m[0:steps,0]+1.96*ccgp_rot_s[0:steps,0],color='blue',alpha=0.5)
-    ax.fill_between(xx,ccgp_rot_m[0:steps,1]-1.96*ccgp_rot_s[0:steps,1],ccgp_rot_m[0:steps,1]+1.96*ccgp_rot_s[0:steps,1],color='brown',alpha=0.5)
+    ax.fill_between(xx,ccgp_rot_m[0:steps,0]-1.96*ccgp_rot_s[0:steps,0],ccgp_rot_m[0:steps,0]+1.96*ccgp_rot_s[0:steps,0],color='royalblue',alpha=0.5)
+    ax.fill_between(xx,ccgp_rot_m[0:steps,1]-1.96*ccgp_rot_s[0:steps,1],ccgp_rot_m[0:steps,1]+1.96*ccgp_rot_s[0:steps,1],color='orange',alpha=0.5)
     ax.fill_between(xx,shccgp_rot_m[0:steps,0]-1.96*shccgp_rot_s[0:steps,0],shccgp_rot_m[0:steps,0]+1.96*shccgp_rot_s[0:steps,0],color='blue',alpha=0.5)
     ax.fill_between(xx,shccgp_rot_m[0:steps,1]-1.96*shccgp_rot_s[0:steps,1],shccgp_rot_m[0:steps,1]+1.96*shccgp_rot_s[0:steps,1],color='brown',alpha=0.5)
     ax.plot(xx,0.5*np.ones(steps),color='black',linestyle='--')

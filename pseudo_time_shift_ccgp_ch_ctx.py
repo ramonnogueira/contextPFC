@@ -122,16 +122,18 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
         feat_binary[ind01]=np.array([0,1])
         feat_binary[ind10]=np.array([1,0])
         feat_binary[ind11]=np.array([1,1])
-
+       
         index_cat=np.array([ind00,ind01,ind10,ind11])
         index_rot=rotation_indices(n_rot=n_rot,n_cat=len(index_cat),n_neu=neu_total)
         
         for ii in range(n_rand):
             #print (' ',ii)
             sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
+            #np.set_printoptions(threshold=sys.maxsize)
+            #print (sum_nan)
             indnan_flat=(sum_nan==0) # True will be used, False discarded
             ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
-                
+            
             if monkey=='Niels':
                 neu_rnd=np.arange(neu_total)
             if monkey=='Galileo':
@@ -178,7 +180,6 @@ talig='dots_on' #'response_edf' #dots_on
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
 n_rand=20
-#n_bias=1
 n_shuff=0
 perc_tr=0.8
 thres=0
@@ -192,13 +193,13 @@ group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 if monkey=='Niels':
     group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan])
     bias_vec=np.linspace(-10,10,31) #Niels
-    dic_time=np.array([0,600,200,200]) # time pre, time post, bin size, step size
+    dic_time=np.array([0,450,200,50]) # time pre, time post, bin size, step size
     ind_l=8
     ind_u=12
 if monkey=='Galileo':
-    group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
+    group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]) # Careful!
     bias_vec=np.linspace(-10,10,31) #Galileo
-    dic_time=np.array([0,800,200,200]) # Careful! time pre, time post, bin size, step size
+    dic_time=np.array([0,650,200,50]) # Careful! time pre, time post, bin size, step size
     ind_l=20
     ind_u=30
 
