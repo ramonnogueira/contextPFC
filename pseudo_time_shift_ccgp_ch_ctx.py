@@ -179,7 +179,7 @@ monkey='Galileo'
 talig='dots_on' #'response_edf' #dots_on
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=20
+n_rand=10
 n_shuff=0
 perc_tr=0.8
 thres=0
@@ -197,7 +197,8 @@ if monkey=='Niels':
     ind_l=8
     ind_u=12
 if monkey=='Galileo':
-    group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]) # Careful!
+    #group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]) # Careful!
+    group_coh_vec=np.array([1  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) # Careful!
     bias_vec=np.linspace(-10,10,31) #Galileo
     dic_time=np.array([0,650,200,50]) # Careful! time pre, time post, bin size, step size
     ind_l=20
