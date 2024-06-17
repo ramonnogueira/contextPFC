@@ -233,11 +233,12 @@ for t in range(steps):
     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0),color='brown',label='Sh-CCGP Context 2')
     ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0)-np.std(ccgp_all[t,:,:,1,1],axis=0),np.mean(ccgp_all[t,:,:,1,1],axis=0)+np.std(ccgp_all[t,:,:,1,1],axis=0),color='brown',alpha=0.5)
     ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
+    ax.axvline(0,color='black',linestyle='--')
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Bias')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i.pdf'%(talig,monkey,t),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i_2.pdf'%(talig,monkey,t),dpi=500,bbox_inches='tight')
 
 
 # # Parallelism Score
