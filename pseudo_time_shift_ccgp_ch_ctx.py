@@ -186,7 +186,7 @@ thres=0
 reg=1e2
 n_coh=15
 tpre_sacc=50
-n_rot=0
+n_rot=1
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
@@ -197,8 +197,8 @@ if monkey=='Niels':
     ind_l=8
     ind_u=12
 if monkey=='Galileo':
-    #group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]) # Careful!
-    group_coh_vec=np.array([1  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) # Careful!
+    group_coh_vec=np.array([nan,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,nan]) # Careful!
+    #group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ]) # Careful!
     bias_vec=np.linspace(-10,10,31) #Galileo
     dic_time=np.array([0,650,200,50]) # Careful! time pre, time post, bin size, step size
     ind_l=20
@@ -220,25 +220,46 @@ print (files)
 perf_all,ccgp_all,ccgp_rot_all=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff=False)
 
 # Plot as a function of time
+# for t in range(steps):
+#     fig=plt.figure(figsize=(2.3,2))
+#     ax=fig.add_subplot(111)
+#     miscellaneous.adjust_spines(ax,['left','bottom'])
+#     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,0,0],axis=0),color='royalblue',label='Sh-CCGP Direction 1')
+#     ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,0,0],axis=0)-np.std(ccgp_all[t,:,:,0,0],axis=0),np.mean(ccgp_all[t,:,:,0,0],axis=0)+np.std(ccgp_all[t,:,:,0,0],axis=0),color='royalblue',alpha=0.5)
+#     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,0,1],axis=0),color='blue',label='Sh-CCGP Direction 2')
+#     ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,0,1],axis=0)-np.std(ccgp_all[t,:,:,0,1],axis=0),np.mean(ccgp_all[t,:,:,0,1],axis=0)+np.std(ccgp_all[t,:,:,0,1],axis=0),color='blue',alpha=0.5)
+#     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,0],axis=0),color='orange',label='Sh-CCGP Context 1')
+#     ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,0],axis=0)-np.std(ccgp_all[t,:,:,1,0],axis=0),np.mean(ccgp_all[t,:,:,1,0],axis=0)+np.std(ccgp_all[t,:,:,1,0],axis=0),color='orange',alpha=0.5)
+#     ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0),color='brown',label='Sh-CCGP Context 2')
+#     ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0)-np.std(ccgp_all[t,:,:,1,1],axis=0),np.mean(ccgp_all[t,:,:,1,1],axis=0)+np.std(ccgp_all[t,:,:,1,1],axis=0),color='brown',alpha=0.5)
+#     ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
+#     ax.axvline(0,color='black',linestyle='--')
+#     ax.set_ylim([0.4,1])
+#     ax.set_xlabel('Bias')
+#     ax.set_ylabel('Decoding Performance')
+#     plt.legend(loc='best')
+#     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i_2.pdf'%(talig,monkey,t),dpi=500,bbox_inches='tight')
+
+# Plot as a function of time
 for t in range(steps):
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,0,0],axis=0),color='royalblue',label='Sh-CCGP Direction 1')
-    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,0,0],axis=0)-np.std(ccgp_all[t,:,:,0,0],axis=0),np.mean(ccgp_all[t,:,:,0,0],axis=0)+np.std(ccgp_all[t,:,:,0,0],axis=0),color='royalblue',alpha=0.5)
-    ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,0,1],axis=0),color='blue',label='Sh-CCGP Direction 2')
-    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,0,1],axis=0)-np.std(ccgp_all[t,:,:,0,1],axis=0),np.mean(ccgp_all[t,:,:,0,1],axis=0)+np.std(ccgp_all[t,:,:,0,1],axis=0),color='blue',alpha=0.5)
-    ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,0],axis=0),color='orange',label='Sh-CCGP Context 1')
-    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,0],axis=0)-np.std(ccgp_all[t,:,:,1,0],axis=0),np.mean(ccgp_all[t,:,:,1,0],axis=0)+np.std(ccgp_all[t,:,:,1,0],axis=0),color='orange',alpha=0.5)
-    ax.plot(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0),color='brown',label='Sh-CCGP Context 2')
-    ax.fill_between(bias_vec,np.mean(ccgp_all[t,:,:,1,1],axis=0)-np.std(ccgp_all[t,:,:,1,1],axis=0),np.mean(ccgp_all[t,:,:,1,1],axis=0)+np.std(ccgp_all[t,:,:,1,1],axis=0),color='brown',alpha=0.5)
+    ax.plot(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,0,0],axis=0),color='royalblue',label='Sh-CCGP Direction 1')
+    ax.fill_between(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,0,0],axis=0)-np.std(ccgp_rot_all[0,t,:,:,0,0],axis=0),np.mean(ccgp_rot_all[0,t,:,:,0,0],axis=0)+np.std(ccgp_rot_all[0,t,:,:,0,0],axis=0),color='royalblue',alpha=0.5)
+    ax.plot(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,0,1],axis=0),color='blue',label='Sh-CCGP Direction 2')
+    ax.fill_between(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,0,1],axis=0)-np.std(ccgp_rot_all[0,t,:,:,0,1],axis=0),np.mean(ccgp_rot_all[0,t,:,:,0,1],axis=0)+np.std(ccgp_rot_all[0,t,:,:,0,1],axis=0),color='blue',alpha=0.5)
+    ax.plot(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,1,0],axis=0),color='orange',label='Sh-CCGP Context 1')
+    ax.fill_between(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,1,0],axis=0)-np.std(ccgp_rot_all[0,t,:,:,1,0],axis=0),np.mean(ccgp_rot_all[0,t,:,:,1,0],axis=0)+np.std(ccgp_rot_all[0,t,:,:,1,0],axis=0),color='orange',alpha=0.5)
+    ax.plot(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,1,1],axis=0),color='brown',label='Sh-CCGP Context 2')
+    ax.fill_between(bias_vec,np.mean(ccgp_rot_all[0,t,:,:,1,1],axis=0)-np.std(ccgp_rot_all[0,t,:,:,1,1],axis=0),np.mean(ccgp_rot_all[0,t,:,:,1,1],axis=0)+np.std(ccgp_rot_all[0,t,:,:,1,1],axis=0),color='brown',alpha=0.5)
     ax.plot(bias_vec,0.5*np.ones(len(bias_vec)),color='black',linestyle='--')
     ax.axvline(0,color='black',linestyle='--')
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Bias')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i_2.pdf'%(talig,monkey,t),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/shifted_ccgp_tl_%s_%s_t%i_rot.pdf'%(talig,monkey,t),dpi=500,bbox_inches='tight')
 
 
 # # Parallelism Score

@@ -155,46 +155,70 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
         index_rot=rotation_indices(n_rot=n_rot,n_cat=len(index_cat),n_neu=neu_total)
         
         for ii in range(n_rand):
+            #pseudo_rot_tr=create_rot(pseudo_tr[ii],index_cat,index_rot[0])
+            #pseudo_rot_te=create_rot(pseudo_te[ii],index_cat,index_rot[0])
+
             #print (' ',ii)
             sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
             indnan_flat=(sum_nan==0) # True will be used, False discarded
             ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+            print (np.sum(ind_nonan))
+            # sum_nan=np.sum(np.isnan(pseudo_rot_tr),axis=1)
+            # indnan_flat=(sum_nan==0) # True will be used, False discarded
+            # ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
                 
             if monkey=='Niels':
                 neu_rnd=np.arange(neu_total)
             if monkey=='Galileo':
-                n_max=96*4 # 96 channels, 4 files
-                neu_rnd=np.sort(np.random.choice(np.arange(neu_total),n_max,replace=False)) # Careful!!!
+                neu_rnd=np.arange(neu_total)
+                #n_max=96*4 # 96 channels, 4 files
+                #neu_rnd=np.sort(np.random.choice(np.arange(neu_total),n_max,replace=False)) # Careful!!!
             
-            # Choice
-            cl=LogisticRegression(C=1/reg,class_weight='balanced')
-            #cl=LinearSVC(C=1/reg,class_weight='balanced')
-            cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
-            perf_all[kk,ii,0]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
-            # Context
-            cl=LogisticRegression(C=1/reg,class_weight='balanced')
-            #cl=LinearSVC(C=1/reg,class_weight='balanced')
-            cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
-            perf_all[kk,ii,1]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
-            # XOR
-            cl=LogisticRegression(C=1/reg,class_weight='balanced')
-            #cl=LinearSVC(C=1/reg,class_weight='balanced')
-            xor=np.sum(feat_binary,axis=1)%2
-            cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
-            perf_all[kk,ii,2]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
-            
-            # CCGP
-            for f in range(len(bias_vec)):
-                ccgp=abstraction_2D(pseudo_all[ii][ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
-                ccgp_all[kk,ii,f]=ccgp[0]
+            # # Choice
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # perf_all[kk,ii,0]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # # Context
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # perf_all[kk,ii,1]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # # XOR
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # xor=np.sum(feat_binary,axis=1)%2
+            # cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
+            # perf_all[kk,ii,2]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
 
-            # Distribution of ccgp after breaking geometry through rotations
-            for n in range(n_rot):
-                #print ('rot ',n)
-                pseudo_rot=create_rot(pseudo_all[ii],index_cat,index_rot[n])
-                for f in range(len(bias_vec)):
-                    ccgp_rot=abstraction_2D(pseudo_rot[ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
-                    ccgp_rot_all[n,kk,ii,f]=ccgp_rot[0]
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_rot_tr[ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # perf_all[kk,ii,0]=cl.score(pseudo_rot_te[ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # # Context
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_rot_tr[ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # perf_all[kk,ii,1]=cl.score(pseudo_rot_te[ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # # XOR
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # xor=np.sum(feat_binary,axis=1)%2
+            # cl.fit(pseudo_rot_tr[ind_nonan][:,neu_rnd],xor[ind_nonan])
+            # perf_all[kk,ii,2]=cl.score(pseudo_rot_te[ind_nonan][:,neu_rnd],xor[ind_nonan])
+     
+            # CCGP
+            # for f in range(len(bias_vec)):
+            #     ccgp=abstraction_2D(pseudo_all[ii][ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+            #     ccgp_all[kk,ii,f]=ccgp[0]
+
+            # # Distribution of ccgp after breaking geometry through rotations
+            # for n in range(n_rot):
+            #     #print ('rot ',n)
+            #     pseudo_rot=create_rot(pseudo_all[ii],index_cat,index_rot[n])
+            #     for f in range(len(bias_vec)):
+            #         ccgp_rot=abstraction_2D(pseudo_rot[ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+            #         ccgp_rot_all[n,kk,ii,f]=ccgp_rot[0]
 
     return perf_all,ccgp_all,ccgp_rot_all
 
@@ -209,18 +233,18 @@ def calculate_shccgp(ccgp_all,steps,steps_all,n_rand):
 
 ##############################################
 
-monkeys=['Niels','Galileo']
+monkeys=['Galileo']#'Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=10
-n_shuff=20
+n_rand=5
+n_shuff=0
 perc_tr=0.8
 thres=0
 reg=1e2
 n_coh=15
 tpre_sacc=50
-n_rot=20
+n_rot=10
 
 #steps_all=4
 #tmax=3
@@ -330,7 +354,7 @@ for hh in range(len(monkeys)):
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_%s.pdf'%(talig,monkeys[hh]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_%s_3.pdf'%(talig,monkeys[hh]),dpi=500,bbox_inches='tight')
  
     # Plot Shifted CCGP
     fig=plt.figure(figsize=(3,2.5))
@@ -353,7 +377,7 @@ for hh in range(len(monkeys)):
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_%s.pdf'%(talig,monkeys[hh]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_%s_3.pdf'%(talig,monkeys[hh]),dpi=500,bbox_inches='tight')
 
     ccgp_both_pre_m[hh]=ccgp_orig_m
     ccgp_both_pre_s[hh]=ccgp_orig_std
@@ -393,7 +417,7 @@ ax.set_ylim([0.4,1])
 ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both.pdf'%(talig),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both_3.pdf'%(talig),dpi=500,bbox_inches='tight')
 
 fig=plt.figure(figsize=(3,2.5))
 ax=fig.add_subplot(111)
@@ -415,5 +439,5 @@ ax.set_ylim([0.4,1])
 ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_both.pdf'%(talig),dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_both_3.pdf'%(talig),dpi=500,bbox_inches='tight')
        
