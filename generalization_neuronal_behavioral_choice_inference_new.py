@@ -178,7 +178,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     context_subj=context_pre.copy()
     for i in range(len(ctx_ch)):
         diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
     return context_subj
 
 #################################################
@@ -191,7 +191,7 @@ monkeys=['Niels','Galileo']
 stage='late'
 t_back=20
 t_forw=80
-delta_type='fit'
+delta_type='raw'
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
