@@ -226,7 +226,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     context_subj=context_pre.copy()
     for i in range(len(ctx_ch)):
         diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
     return context_subj
 
 #################################################
@@ -236,16 +236,16 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Galileo: t_back 20, t_forw 80, dic_time (-200,600,200,200)ms. No kernel. Groups of 3 sessions
 
 monkeys=['Niels','Galileo']
-stage='early'
+stage='late'
 
-nback=30
+nback=50
 rt_fit=True
 
 maxfev=100000
 p0=(-20,20,-0.005,0.1,500,500)
 p0l=(-20,20,-0.005,-3,500,700)
 p0r=(-20,20,-0.005,3,700,500)
-method='lm'
+method='trf'
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
@@ -268,7 +268,7 @@ for k in range(len(monkeys)):
         if stage=='late':
             files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
    
-    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
     order=order_files(files_pre)
     files_all=np.array(files_pre[order])
@@ -326,10 +326,11 @@ for k in range(len(monkeys)):
 
             xx=np.array([100*coh_signed,choice]).T
         
-            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+            
             # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
             # rlow tested is left, rhigh untested is right
             for h in range(len(ind_ch01_s0)):
+                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
@@ -352,8 +353,8 @@ for k in range(len(monkeys)):
 
             # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Right.
             # rlow untested is left, rhigh tested is right
-            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch01_s1)):
+                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
@@ -375,8 +376,8 @@ for k in range(len(monkeys)):
 
             # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Left.
             # rhigh tested is left, rlow untested is right
-            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch10_s0)):
+                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
@@ -398,8 +399,8 @@ for k in range(len(monkeys)):
 
             # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Right.
             # rhigh untested is left, rlow tested is right
-            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch10_s1)):
+                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
@@ -453,9 +454,9 @@ for k in range(len(monkeys)):
     plt.xticks([0,1],['High Rew.','Low Rew.'])
     plt.legend(loc='best')
     if rt_fit==True:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_rt_fit_%s.pdf'%(nback,monkeys[k],stage),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_rt_fit_%s.pdf'%(nback,monkeys[k],stage),dpi=500,bbox_inches='tight')
     if rt_fit==False:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_raw_%s.pdf'%(nback,monkeys[k],stage),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_%s_raw_%s.pdf'%(nback,monkeys[k],stage),dpi=500,bbox_inches='tight')
 
 
 ####################################################
@@ -475,9 +476,9 @@ ax.set_ylim([-200,400])
 plt.xticks([0,1],['High Rew.','Low Rew.'])
 plt.legend(loc='best')
 if rt_fit==True:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_rt_fit_%s.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_rt_fit_%s.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
 if rt_fit==False:
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_raw_%s.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_raw_%s.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
 
 pp=[['Tested Low','Tested High'],
     ['Untested Low','Untested High']]
