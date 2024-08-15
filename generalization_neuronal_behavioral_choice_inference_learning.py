@@ -174,7 +174,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     context_subj=context_pre.copy()
     for i in range(len(ctx_ch)):
         diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
     return context_subj
 
 #################################################
@@ -229,7 +229,7 @@ for k in range(len(monkeys)):
             if stage=='late':
                 files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
         
-        abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+        abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
         files_pre=np.array(os.listdir(abs_path))
         order=order_files(files_pre)
         files_all=np.array(files_pre[order])
@@ -434,4 +434,4 @@ ax.fill_between(np.arange(len(stage_vec)),delta_neurof_m-delta_neurof_sem,delta_
 ax.plot(np.arange(len(stage_vec)),np.zeros(len(stage_vec)),color='black',linestyle='--')
 ax.set_ylabel('$\Delta$ Prob. (Choice = New Ctx)')
 ax.set_ylim([-0.15,0.15])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/inference_choice_both_learning.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/inference_choice_both_learning.pdf',dpi=500,bbox_inches='tight')

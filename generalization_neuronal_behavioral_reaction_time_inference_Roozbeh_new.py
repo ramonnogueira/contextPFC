@@ -190,9 +190,9 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Galileo: t_back 20, t_forw 80, dic_time (-200,600,200,200)ms. No kernel. Groups of 3 sessions
 
 monkeys=['Niels','Galileo']
-stage='late'
+stage='mid'
 
-nback=50
+nback=30
 
 maxfev=100000
 p0=(-20,20,-0.005,0.1,500,500)
@@ -265,6 +265,7 @@ for k in range(len(monkeys)):
             indch_ct01_pre=np.where(ctx_ch==1)[0]
             indch_ct10_pre=np.where(ctx_ch==-1)[0]
             ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
+            #print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
     
             ##################################################
             # Behavior
@@ -279,123 +280,151 @@ for k in range(len(monkeys)):
         
             # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
             # rlow tested is left, rhigh untested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch01_s0)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-                ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1) 
+                ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
 
+            for h in range(len(ind_ch01_s0)):                
                 popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
                 rt_mean1=chrono_curve(xx[(ind_ch01_s0[h]+1):(ind_ch01_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
                 dev1=(rt[ind_ch01_s0[h]+1]-rt_mean1)
 
-               # try:
-                stim_ch=stimulus[ind_ch01_s0[h]+np.arange(10)]
-                stim_diff=(stim_ch[1:]-stim_ch[0:-1])
-
-                if stim_diff[0]==0: # stimulus in inference trial (+1) is same as stimulus in trial 0 after ctx change
+                if stimulus[ind_ch01_s0[h]+1]==0: 
                     beha_tested_rlow.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch01_s0[h]+ind_other):(ind_ch01_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch01_s0[h]+ind_other]-rt_mean2)
-                    # beha_untested_rhigh.append(dev2)
-                    
-                if stim_diff[0]==1: # stimulus in inference trial (+1) is different than stimulus in trial 0 after ctx change
+                    try:
+                        stim_ch=stimulus[ind_ch01_s0[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch01_s0[h]+ind_other):(ind_ch01_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch01_s0[h]+ind_other]-rt_mean2)
+                        beha_untested_rhigh.append(dev2)
+                    except:
+                        print ('aqui 01 0 0')
+                   
+                if stimulus[ind_ch01_s0[h]+1]==1:
                     beha_untested_rhigh.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch01_s0[h]+ind_other):(ind_ch01_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch01_s0[h]+ind_other]-rt_mean2)
-                    # beha_tested_rlow.append(dev2)
-              
-              #  except:
-              #      None
-                
+                    try:
+                        stim_ch=stimulus[ind_ch01_s0[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch01_s0[h]+ind_other):(ind_ch01_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch01_s0[h]+ind_other]-rt_mean2)
+                        beha_tested_rlow.append(dev2)
+                    except:
+                        print ('aqui 01 0 1')
+                              
             # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Right.
             # rlow untested is left, rhigh tested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch01_s1)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
-               
+
+            for h in range(len(ind_ch01_s1)):
                 popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
                 rt_mean1=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
                 dev1=(rt[ind_ch01_s1[h]+1]-rt_mean1)
 
-                stim_ch=stimulus[ind_ch01_s1[h]+np.arange(15)]
-                stim_diff=(stim_ch[1:]-stim_ch[0:-1])
-                
-                if stim_diff[0]==1: # stimulus in inference trial (+1) is same as stimulus in trial 0 after ctx change
+                if stimulus[ind_ch01_s1[h]+1]==0:
                     beha_untested_rlow.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch01_s1[h]+ind_other):(ind_ch01_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch01_s1[h]+ind_other]-rt_mean2)
-                    # beha_tested_rhigh.append(dev2)
+                    try:
+                        stim_ch=stimulus[ind_ch01_s1[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch01_s1[h]+ind_other):(ind_ch01_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch01_s1[h]+ind_other]-rt_mean2)
+                        beha_tested_rhigh.append(dev2)
+                    except:
+                        print ('aqui 01 1 0')
 
-                if stim_diff[0]==0: # stimulus in inference trial (+1) is different than stimulus in trial 0 after ctx change
+                if stimulus[ind_ch01_s1[h]+1]==1:
                     beha_tested_rhigh.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch01_s1[h]+ind_other):(ind_ch01_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch01_s1[h]+ind_other]-rt_mean2)
-                    # beha_untested_rlow.append(dev2)
-                        
-            #     #except:
-            #     #    None
-                
+                    try:
+                        stim_ch=stimulus[ind_ch01_s1[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch01_s1[h]+ind_other):(ind_ch01_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch01_s1[h]+ind_other]-rt_mean2)
+                        beha_untested_rlow.append(dev2)
+                    except:
+                        print ('aqui 01 1 1')
+                          
             # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Left.
             # rhigh tested is left, rlow untested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch10_s0)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
-               
+                
+            for h in range(len(ind_ch10_s0)):
                 popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
                 rt_mean1=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
                 dev1=(rt[ind_ch10_s0[h]+1]-rt_mean1)
-                stim_ch=stimulus[ind_ch10_s0[h]+np.arange(15)]
-                stim_diff=(stim_ch[1:]-stim_ch[0:-1])
 
-                if stim_diff[0]==0: # stimulus in inference trial (+1) is same as stimulus in trial 0 after ctx change
+                if stimulus[ind_ch10_s0[h]+1]==0: 
                     beha_tested_rhigh.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch10_s0[h]+ind_other):(ind_ch10_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch10_s0[h]+ind_other]-rt_mean2)
-                    # beha_untested_rlow.append(dev2)
+                    try:
+                        stim_ch=stimulus[ind_ch10_s0[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch10_s0[h]+ind_other):(ind_ch10_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch10_s0[h]+ind_other]-rt_mean2)
+                        beha_untested_rlow.append(dev2)
+                    except:
+                        print ('aqui 10 0 0')
 
-                if stim_diff[0]==1: # stimulus in inference trial (+1) is different than stimulus in trial 0 after ctx change
+                if stimulus[ind_ch10_s0[h]+1]==1:
                     beha_untested_rlow.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch10_s0[h]+ind_other):(ind_ch10_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch10_s0[h]+ind_other]-rt_mean2)
-                    # beha_tested_rhigh.append(dev2)
-      
+                    try:
+                        stim_ch=stimulus[ind_ch10_s0[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch10_s0[h]+ind_other):(ind_ch10_s0[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch10_s0[h]+ind_other]-rt_mean2)
+                        beha_tested_rhigh.append(dev2)
+                    except:
+                        print ('aqui 10 0 1')
+
             # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Right.
             # rhigh untested is left, rlow tested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch10_s1)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
-               
+
+            for h in range(len(ind_ch10_s1)):
                 popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
                 rt_mean1=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
                 dev1=(rt[ind_ch10_s1[h]+1]-rt_mean1)
-                stim_ch=stimulus[ind_ch10_s1[h]+np.arange(10)]
-                stim_diff=(stim_ch[1:]-stim_ch[0:-1])
-                if stim_diff[0]==1: # stimulus in inference trial (+1) is same as stimulus in trial 0 after ctx change
-                    beha_untested_rhigh.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch10_s1[h]+ind_other):(ind_ch10_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch10_s1[h]+ind_other]-rt_mean2)
-                    # beha_tested_rlow.append(dev2)
 
-                if stim_diff[0]==0: # stimulus in inference trial (+1) is different than stimulus in trial 0 after ctx change
+                if stimulus[ind_ch10_s1[h]+1]==0: 
+                    beha_untested_rhigh.append(dev1)
+                    try:
+                        stim_ch=stimulus[ind_ch10_s1[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==1)[0][0]+2) # There is an untested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch10_s1[h]+ind_other):(ind_ch10_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch10_s1[h]+ind_other]-rt_mean2)
+                        beha_tested_rlow.append(dev2)
+                    except:
+                        print ('aqui 10 1 0')
+
+                if stimulus[ind_ch10_s1[h]+1]==1:
                     beha_tested_rlow.append(dev1)
-                    # ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
-                    # rt_mean2=chrono_curve(xx[(ind_ch10_s1[h]+ind_other):(ind_ch10_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                    # dev2=(rt[ind_ch10_s1[h]+ind_other]-rt_mean2)
-                    # beha_untested_rhigh.append(dev2)
+                    try:
+                        stim_ch=stimulus[ind_ch10_s1[h]+np.arange(10)]
+                        stim_diff=(stim_ch[1:]-stim_ch[0:-1])
+                        ind_other=(np.where(stim_diff[1:]==-1)[0][0]+2) # There is an tested trial one or few trials after inference trial. Lets find the index
+                        rt_mean2=chrono_curve(xx[(ind_ch10_s1[h]+ind_other):(ind_ch10_s1[h]+ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev2=(rt[ind_ch10_s1[h]+ind_other]-rt_mean2)
+                        beha_untested_rhigh.append(dev2)
+                    except:
+                        print ('aqui 10 1 1')
                 
         # Behavior
         beha_te_unte[0,0,hh]=np.nanmean(beha_tested_rlow,axis=0)

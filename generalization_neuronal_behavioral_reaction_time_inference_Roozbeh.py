@@ -238,7 +238,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 monkeys=['Niels','Galileo']
 stage='late'
 
-nback=50
+nback=30
 rt_fit=True
 
 maxfev=100000
@@ -314,6 +314,7 @@ for k in range(len(monkeys)):
             indch_ct01_pre=np.where(ctx_ch==1)[0]
             indch_ct10_pre=np.where(ctx_ch==-1)[0]
             ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
+            print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
     
             ##################################################
             # Behavior
@@ -329,11 +330,12 @@ for k in range(len(monkeys)):
             
             # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
             # rlow tested is left, rhigh untested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch01_s0)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
+            for h in range(len(ind_ch01_s0)):
                 if rt_fit==True:
                     popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
                     #print (popt)
@@ -353,11 +355,12 @@ for k in range(len(monkeys)):
 
             # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Right.
             # rlow untested is left, rhigh tested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch01_s1)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
+            for h in range(len(ind_ch01_s1)):
                 if rt_fit==True:
                     popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
                     rt_mean=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
@@ -376,11 +379,12 @@ for k in range(len(monkeys)):
 
             # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Left.
             # rhigh tested is left, rlow untested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch10_s0)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
+            for h in range(len(ind_ch10_s0)):
                 if rt_fit==True:
                     popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
                     rt_mean=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
@@ -399,11 +403,12 @@ for k in range(len(monkeys)):
 
             # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Right.
             # rhigh untested is left, rlow tested is right
+            ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
             for h in range(len(ind_ch10_s1)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
                 ind_used[ind_pre]=True
                 ind_used[np.isnan(rt)]=False
+            for h in range(len(ind_ch10_s1)):
                 if rt_fit==True:
                     popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
                     rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]

@@ -40,44 +40,7 @@ def clase_resolution(group_coh,coherence):
     for i in range(len(coh_uq)):
         ind=np.where(coherence==coh_uq[i])[0]
         clase_coh[ind]=group_coh[i]
-    return clase_coh
-    
-
-def shuffle_distr(pseudo_tr,pseudo_te,clase_all,rot_mat_vec):
-    clase_uq=np.unique(clase_all)
-    pseudo_tr_sh=nan*np.zeros(np.shape(pseudo_tr))
-    pseudo_te_sh=nan*np.zeros(np.shape(pseudo_te))
-    for i in range(len(clase_uq)):
-        ind_cl=np.where(clase_all==clase_uq[i])[0]
-        rot_mat=rot_mat_vec[i]
-        #print (rot_mat)
-        #pseudo_tr_sh[ind_cl]=np.dot(pseudo_tr[ind_cl],rot_mat)
-        #pseudo_te_sh[ind_cl]=np.dot(pseudo_te[ind_cl],rot_mat)
-        pseudo_tr_sh[ind_cl]=pseudo_tr[ind_cl][:,rot_mat]
-        pseudo_te_sh[ind_cl]=pseudo_te[ind_cl][:,rot_mat]
-    return pseudo_tr_sh,pseudo_te_sh
-
-def index_shuffle(num_neu,clase_all):
-    clase_uq=np.unique(clase_all)
-    #rot_mat_vec=nan*np.zeros((len(clase_uq),num_neu,num_neu))
-    rot_mat_vec=[]#nan*np.zeros((len(clase_uq),num_neu))
-    for i in range(len(clase_uq)):
-        #print (i)
-        #rot_mat_vec[i]=ortho_group.rvs(num_neu)
-        rot_mat_vec.append(np.random.permutation(np.arange(num_neu)))
-    rot_mat_vec=np.array(rot_mat_vec)
-    return rot_mat_vec
-
-def null_model_coh(repr_tr,repr_te,pert_std,n_coh,nt):
-    n_neu=len(repr_tr[0])
-    repr_tr_pert=nan*np.zeros(np.shape(repr_tr))
-    repr_te_pert=nan*np.zeros(np.shape(repr_te))
-    for i in range(2*n_coh):
-        pert=np.random.normal(0,pert_std,n_neu)
-        for ii in range(nt):
-            repr_tr_pert[i*nt+ii]=(repr_tr[i*nt+ii]+pert)
-            repr_te_pert[i*nt+ii]=(repr_te[i*nt+ii]+pert)
-    return repr_tr_pert,repr_te_pert
+    return clase_coh    
 
 def classifier(data,var):
     n_cv=5
@@ -140,26 +103,117 @@ def abstraction_2D(feat_decod,feat_binary,bias,reg):
          #perf[k,kk,0]=supp.score(feat_decod[ind_train],task[ind_train])
          #perf[k,kk,1]=supp.score(feat_decod[ind_test],task[ind_test])
     return perf,inter
-
-# def sig_test(dist1,dist2):
-#     dist_all=np.concatenate((dist1,dist2))
-#     clase=np.zeros(2*len(dist1))
-#     clase[len(dist1):]=1
-#     #
-#     d1m=np.mean(dist_all[clase==0])
-#     d2m=np.mean(dist_all[clase==1])
-#     diff=abs((np.mean(dist_all[clase==0])-np.mean(dist_all[clase==1])))
-#     #
-#     n_rand=10000
-#     diff_vec=np.zeros(n_rand)
-#     for i in range(n_rand):
-#         clase_sh=permutation(clase)
-#         diff_vec[i]=abs((np.mean(dist_all[clase_sh==0])-np.mean(dist_all[clase_sh==1])))
-
-#     diff_sort=np.sort(diff_vec)
-#     pval=len(diff_sort[diff_sort>diff])/n_rand
-#     return diff,diff_sort,pval
         
+def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff):
+    perf_all=nan*np.zeros((steps_all,n_rand,3))
+    ccgp_all=nan*np.zeros((steps_all,n_rand,len(bias_vec),2,2))
+    ccgp_rot_all=nan*np.zeros((n_rot,steps_all,n_rand,len(bias_vec),2,2))
+    
+    pseudo=miscellaneous.pseudopop_coherence_context_correct(abs_path,files,talig,dic_time,steps,thres,nt,n_rand,perc_tr,tpre_sacc,group_ref,shuff,learning=True)
+    for kk in range(steps):
+        print (kk)
+        # Careful! in this function I am only using correct trials so that choice and stimulus are the same    
+        pseudo_all=pseudo['pseudo_all'][kk]
+        pseudo_tr=pseudo['pseudo_tr'][kk]
+        pseudo_te=pseudo['pseudo_te'][kk]
+        context=pseudo['clase_ctx']
+        clase_all=pseudo['clase_all']
+        coherence=pseudo['clase_coh']
+        neu_total=pseudo_tr.shape[-1]
+        
+        clase_coh=clase_resolution(group_coh_vec,coherence)
+        indnan=~np.isnan(clase_coh) # Indices for the coherences we are going to use (True means to use, False to discard)
+        
+        feat_binary=nan*np.zeros((len(coherence),2))
+        ind00=np.where((clase_coh==0)&(context==0))[0]
+        ind01=np.where((clase_coh==0)&(context==1))[0]
+        ind10=np.where((clase_coh==1)&(context==0))[0]
+        ind11=np.where((clase_coh==1)&(context==1))[0]
+        feat_binary[ind00]=np.array([0,0])
+        feat_binary[ind01]=np.array([0,1])
+        feat_binary[ind10]=np.array([1,0])
+        feat_binary[ind11]=np.array([1,1])
+
+        index_cat=np.array([ind00,ind01,ind10,ind11])
+        index_rot=rotation_indices(n_rot=n_rot,n_cat=len(index_cat),n_neu=neu_total)
+        
+        for ii in range(n_rand):
+            #pseudo_rot_tr=create_rot(pseudo_tr[ii],index_cat,index_rot[0])
+            #pseudo_rot_te=create_rot(pseudo_te[ii],index_cat,index_rot[0])
+
+            #print (' ',ii)
+            sum_nan=np.sum(np.isnan(pseudo_tr[ii]),axis=1)
+            indnan_flat=(sum_nan==0) # True will be used, False discarded
+            ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+            print (np.sum(ind_nonan))
+            # sum_nan=np.sum(np.isnan(pseudo_rot_tr),axis=1)
+            # indnan_flat=(sum_nan==0) # True will be used, False discarded
+            # ind_nonan=(indnan*indnan_flat) # Index used combination of discarded from RT and discarded from group_coh
+                
+            if monkey=='Niels':
+                neu_rnd=np.arange(neu_total)
+            if monkey=='Galileo':
+                neu_rnd=np.arange(neu_total)
+                #n_max=96*4 # 96 channels, 4 files
+                #neu_rnd=np.sort(np.random.choice(np.arange(neu_total),n_max,replace=False)) # Careful!!!
+            
+            # # Choice
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # perf_all[kk,ii,0]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # # Context
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # perf_all[kk,ii,1]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # # XOR
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # xor=np.sum(feat_binary,axis=1)%2
+            # cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
+            # perf_all[kk,ii,2]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],xor[ind_nonan])
+
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_rot_tr[ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # perf_all[kk,ii,0]=cl.score(pseudo_rot_te[ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # # Context
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # cl.fit(pseudo_rot_tr[ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # perf_all[kk,ii,1]=cl.score(pseudo_rot_te[ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # # XOR
+            # cl=LogisticRegression(C=1/reg,class_weight='balanced')
+            # #cl=LinearSVC(C=1/reg,class_weight='balanced')
+            # xor=np.sum(feat_binary,axis=1)%2
+            # cl.fit(pseudo_rot_tr[ind_nonan][:,neu_rnd],xor[ind_nonan])
+            # perf_all[kk,ii,2]=cl.score(pseudo_rot_te[ind_nonan][:,neu_rnd],xor[ind_nonan])
+     
+            # CCGP
+            # for f in range(len(bias_vec)):
+            #     ccgp=abstraction_2D(pseudo_all[ii][ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+            #     ccgp_all[kk,ii,f]=ccgp[0]
+
+            # # Distribution of ccgp after breaking geometry through rotations
+            # for n in range(n_rot):
+            #     #print ('rot ',n)
+            #     pseudo_rot=create_rot(pseudo_all[ii],index_cat,index_rot[n])
+            #     for f in range(len(bias_vec)):
+            #         ccgp_rot=abstraction_2D(pseudo_rot[ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
+            #         ccgp_rot_all[n,kk,ii,f]=ccgp_rot[0]
+
+    return perf_all,ccgp_all,ccgp_rot_all
+
+def calculate_shccgp(ccgp_all,steps,steps_all,n_rand):
+    shccgp_pre=nan*np.zeros((steps_all,n_rand,2,2))
+    for p in range(steps):
+        for pp in range(n_rand):
+            for ppp in range(2):
+                shccgp_pre[p,pp,ppp,0]=np.max(ccgp_all[p,pp,:,ppp,0])
+                shccgp_pre[p,pp,ppp,1]=np.max(ccgp_all[p,pp,:,ppp,1])
+    return shccgp_pre
+
 
 ##############################################
 
@@ -181,13 +235,6 @@ tpre_sacc=50
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 group_coh_vec=np.array([0  ,0  ,0  ,0  ,0  ,0  ,0  ,nan,1  ,1  ,1  ,1  ,1  ,1  ,1  ])
 
-#bias_vec=np.linspace(-3,3,31)
-#bias_vec=np.linspace(-5,5,31)
-#bias_vec=np.linspace(-7,7,31)
-#bias_vec=np.linspace(-10,10,31)
-#bias_vec=np.linspace(-20,20,31) #Niels
-#bias_vec=np.linspace(-15,15,31) #Galileo
-#bias_vec=np.linspace(-1,1,31)
 
 for hh in range(len(monkeys)):
     monkey=monkeys[hh]

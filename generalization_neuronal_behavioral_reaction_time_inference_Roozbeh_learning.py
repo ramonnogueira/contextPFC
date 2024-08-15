@@ -226,7 +226,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     context_subj=context_pre.copy()
     for i in range(len(ctx_ch)):
         diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
     return context_subj
 
 #################################################
@@ -270,7 +270,7 @@ for k in range(len(monkeys)):
             if stage=='late':
                 files_groups=[[20,22],[22,24],[24,26],[26,28],[28,30]]
    
-        abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+        abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
         files_pre=np.array(os.listdir(abs_path))
         order=order_files(files_pre)
         files_all=np.array(files_pre[order])
@@ -328,13 +328,14 @@ for k in range(len(monkeys)):
 
                 xx=np.array([100*coh_signed,choice]).T
         
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
                 # rlow tested is left, rhigh untested is right
+                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
                 for h in range(len(ind_ch01_s0)):
                     ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
                     ind_used[ind_pre]=True
                     ind_used[np.isnan(rt)]=False
+                for h in range(len(ind_ch01_s0)):
                     if rt_fit==True:
                         popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
                         #print (popt)
@@ -359,6 +360,7 @@ for k in range(len(monkeys)):
                     ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
                     ind_used[ind_pre]=True
                     ind_used[np.isnan(rt)]=False
+                for h in range(len(ind_ch01_s1)):
                     if rt_fit==True:
                         popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1]
                         rt_mean=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
@@ -382,6 +384,7 @@ for k in range(len(monkeys)):
                     ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
                     ind_used[ind_pre]=True
                     ind_used[np.isnan(rt)]=False
+                for h in range(len(ind_ch10_s0)):
                     if rt_fit==True:
                         popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
                         rt_mean=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
@@ -405,6 +408,7 @@ for k in range(len(monkeys)):
                     ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
                     ind_used[ind_pre]=True
                     ind_used[np.isnan(rt)]=False
+                for h in range(len(ind_ch10_s1)):
                     if rt_fit==True:
                         popt=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1]
                         rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
@@ -457,4 +461,4 @@ ax.fill_between(np.arange(len(stage_vec)),beha_def_m-beha_def_sem,beha_def_m+beh
 ax.plot(np.arange(len(stage_vec)),np.zeros(len(stage_vec)),color='black',linestyle='--')
 ax.set_ylabel('$\Delta$Reaction Time')
 ax.set_ylim([-150,250])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/inference_rt_both_learning.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/inference_rt_both_learning.pdf',dpi=500,bbox_inches='tight')
