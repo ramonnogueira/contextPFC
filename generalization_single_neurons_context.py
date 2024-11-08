@@ -160,15 +160,15 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
-    print ('Fit ',popt)
-    print (pcov)
-    # plt.scatter(xx,yy,color='blue',s=5)
-    # plt.plot(xx[(t_back+1):],fit_func,color='black')
-    # plt.axvline(0,color='black',linestyle='--')
-    # plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    # plt.ylim([-0.1,1.1])
-    # plt.show()
-    return fit_func
+    #print ('Fit ',popt)
+    #print (pcov)
+    #plt.scatter(xx,yy,color='blue',s=5)
+    #plt.plot(xx[(t_back+1):],fit_func,color='black')
+    #plt.axvline(0,color='black',linestyle='--')
+    #plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
+    #plt.ylim([-0.1,1.1])
+    #plt.show()
+    return fit_func,popt
 
 def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     context_subj=context_pre.copy()
@@ -183,10 +183,10 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkeys=['Niels']
+monkeys=['Galileo']
 stage_vec=['late']
-t_back=20
-t_forw=80
+t_back=50
+t_forw=50
 delta_type='fit'
 
 talig='dots_on' #'response_edf' #dots_on
@@ -194,8 +194,8 @@ thres=0
 reg=1e-3
 maxfev=100000
 method='dogbox'
-bounds=([0,0,-0.5],[10,1,0.5])
-#bounds=([-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf])
+#bounds=([0,0,-0.5],[10,1,0.5])
+bounds=([-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf])
 p0_low=(0.05,0.5,-0.3)
 p0_high=(0.05,0.5,0.3)
 p0=(0.05,0.5,0.01)
@@ -234,26 +234,10 @@ for k in range(len(monkeys)):
         order=order_files(files_pre)
         files_all=np.array(files_pre[order])
         print (files_all)
-        
-        fit_beha=nan*np.zeros((2,2,5,t_back+t_forw))
-        y0_beha=nan*np.zeros((2,2,5))
-        beha_te_unte=nan*np.zeros((2,2,5,t_back+t_forw))
-        fit_neuro=nan*np.zeros((2,2,5,t_back+t_forw))
-        y0_neuro=nan*np.zeros((2,2,5))
-        neuro_te_unte=nan*np.zeros((2,2,5,t_back+t_forw))
-     
+            
         for hh in range(len(files_groups)):
-            beha_tested_rlow=[]
-            beha_tested_rhigh=[]
-            beha_untested_rlow=[]
-            beha_untested_rhigh=[]
-            neuro_tested_rlow=[]
-            neuro_tested_rhigh=[]
-            neuro_untested_rlow=[]
-            neuro_untested_rhigh=[]
             files=files_all[files_groups[hh][0]:files_groups[hh][1]]
-            print (files)
-        
+            diff_fr_gr=nan*np.zeros((len(files),t_back+t_forw))
             for kk in range(len(files)):
                 print (files[kk])
                 #Load data
@@ -277,84 +261,130 @@ for k in range(len(monkeys)):
                 ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
                 context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
                 ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
+                print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
+                ind_ch_vec=[ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1]
                 
                 firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
                 firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
+
+                # Get the sign of firing rate change after context change for each neuron
+                diff_ctx=nan*np.zeros((4,96))
+                for i in range(4):
+                    ind_ch_u=ind_ch_vec[i]
+                    diff_ctx_pre=np.zeros((len(ind_ch_u),96))
+                    for j in range(len(ind_ch_u)):
+                        for ii in range(96): 
+                            fi_pre=np.mean(firing_rate[(ind_ch_u[j]-t_back):(ind_ch_u[j]-1),ii])
+                            fi_post=np.mean(firing_rate[(ind_ch_u[j]):(ind_ch_u[j]+t_forw),ii])
+                            diff_ctx_pre[j,ii]=(fi_post-fi_pre)
+                    diff_ctx[i]=np.nanmean(diff_ctx_pre,axis=0)
+                # firing rate change for 0 to 1 and sign
+                diff_01=np.nanmean(diff_ctx[0:2],axis=0)
+                sign_01=np.ones(96)
+                sign_01[diff_01<0]=-1
+                # firing rate change for 1 to 0 and sign
+                diff_10=np.nanmean(diff_ctx[2:],axis=0)
+                sign_10=np.ones(96)
+                sign_10[diff_10<0]=-1
+
+                # Lets get rid of splitting between 01_0 and 01_1!
+                # Calculation
+                diff_ctx=nan*np.zeros((4,t_back+t_forw))
+                for i in range(4):
+                    ind_ch_u=ind_ch_vec[i]
+                    if i==0 or i==1:
+                        s_mult=sign_01
+                    if i==2 or i==3:
+                        s_mult=sign_10
+                        
+                    diff_ctx_pre=nan*np.zeros((len(ind_ch_u),t_back+t_forw))
+                    for j in range(len(ind_ch_u)):
+                        #print (j)
+                        for ii in range(t_back+t_forw):
+                            try:
+                                outlier=2
+                                act_neu=s_mult*firing_rate[ind_ch_u[j]-t_back+ii]
+                                diff_ctx_pre[j,ii]=np.nanmean(act_neu[abs(act_neu)<outlier])
+                            except:
+                                None
+
+                    #diff_ctx_pre[diff_ctx_pre]
+                    diff_ctx[i]=np.nanmean(diff_ctx_pre,axis=0)
+                diff_fr_gr[kk]=np.nanmean(diff_ctx,axis=0)
                 
-                print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
+            diff_fr_gr_m=np.nanmean(diff_fr_gr,axis=0)
+            popt=fit_plot(xx,diff_fr_gr_m,t_back,t_forw,maxfev,method,bounds,p0)[1]
+            print ('Parameters ')
+            print (popt)
                 
-                ##################################################
-                # Neuro
-                # Probability of Choice of classifier = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
-                ind_train=ret_ind_train(coherence,ind_ch,t_back,t_forw)
-                cl=LogisticRegression(C=1/reg,class_weight='balanced')
-                cl.fit(firing_rate[ind_train],context[ind_train])
-                choice_cl=cl.predict(firing_rate)
+#                 ##################################################
+#                 # Neuro
+#                 # Probability of Choice of classifier = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
+#                 ind_train=ret_ind_train(coherence,ind_ch,t_back,t_forw)
+#                 cl=LogisticRegression(C=1/reg,class_weight='balanced')
+#                 cl.fit(firing_rate[ind_train],context[ind_train])
+#                 choice_cl=cl.predict(firing_rate)
 
-                # Numero 1 y 2 top
-                for h in range(len(ind_ch01_s0)):
-                    cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,choice_cl,new_ctx='right')
-                    neuro_tested_rlow.append(cc_01_0[0]) #1
-                    neuro_untested_rhigh.append(cc_01_0[1]) #2
-                # Numero 3 y 4 top
-                for h in range(len(ind_ch01_s1)):
-                    cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,choice_cl,new_ctx='right')
-                    neuro_untested_rlow.append(cc_01_1[0]) #3
-                    neuro_tested_rhigh.append(cc_01_1[1]) #4
-                # Numero 3 y 4 bottom           
-                for h in range(len(ind_ch10_s0)):
-                    cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,choice_cl,new_ctx='left')
-                    neuro_untested_rlow.append(cc_10_0[1]) #3
-                    neuro_tested_rhigh.append(cc_10_0[0]) #4
-                # Numero 1 y 2 bottom           
-                for h in range(len(ind_ch10_s1)):
-                    cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,choice_cl,new_ctx='left')
-                    neuro_tested_rlow.append(cc_10_1[1]) #1
-                    neuro_untested_rhigh.append(cc_10_1[0]) #2
-            # Neuro
-            neuro_te_unte[0,0,hh]=np.nanmean(neuro_tested_rlow,axis=0)
-            neuro_te_unte[0,1,hh]=np.nanmean(neuro_tested_rhigh,axis=0)
-            neuro_te_unte[1,0,hh]=np.nanmean(neuro_untested_rlow,axis=0)
-            neuro_te_unte[1,1,hh]=np.nanmean(neuro_untested_rhigh,axis=0)
-            try:
-                aa00=fit_plot(xx,neuro_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-                aa01=fit_plot(xx,neuro_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-                aa10=fit_plot(xx,neuro_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-                aa11=fit_plot(xx,neuro_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
-                fit_neuro[0,0,hh,(t_back+1):]=aa00
-                fit_neuro[0,0,hh,0:t_back]=np.nanmean(neuro_te_unte[0,0,hh,0:t_back])
-                fit_neuro[0,1,hh,(t_back+1):]=aa01
-                fit_neuro[0,1,hh,0:t_back]=np.nanmean(neuro_te_unte[0,1,hh,0:t_back])
-                fit_neuro[1,0,hh,(t_back+1):]=aa10
-                fit_neuro[1,0,hh,0:t_back]=np.nanmean(neuro_te_unte[1,0,hh,0:t_back])
-                fit_neuro[1,1,hh,(t_back+1):]=aa11
-                fit_neuro[1,1,hh,0:t_back]=np.nanmean(neuro_te_unte[1,1,hh,0:t_back])
-                y0_neuro[0,0,hh]=aa00[0]
-                y0_neuro[0,1,hh]=aa01[0]
-                y0_neuro[1,0,hh]=aa10[0]
-                y0_neuro[1,1,hh]=aa11[0]
-            except:
-                print ('aqui neuro')
+#                 # Numero 1 y 2 top
+#                 for h in range(len(ind_ch01_s0)):
+#                     cc_01_0=func_eval(ind_ch01_s0[h],t_back,t_forw,stimulus,choice_cl,new_ctx='right')
+#                     neuro_tested_rlow.append(cc_01_0[0]) #1
+#                     neuro_untested_rhigh.append(cc_01_0[1]) #2
+#                 # Numero 3 y 4 top
+#                 for h in range(len(ind_ch01_s1)):
+#                     cc_01_1=func_eval(ind_ch01_s1[h],t_back,t_forw,stimulus,choice_cl,new_ctx='right')
+#                     neuro_untested_rlow.append(cc_01_1[0]) #3
+#                     neuro_tested_rhigh.append(cc_01_1[1]) #4
+#                 # Numero 3 y 4 bottom           
+#                 for h in range(len(ind_ch10_s0)):
+#                     cc_10_0=func_eval(ind_ch10_s0[h],t_back,t_forw,stimulus,choice_cl,new_ctx='left')
+#                     neuro_untested_rlow.append(cc_10_0[1]) #3
+#                     neuro_tested_rhigh.append(cc_10_0[0]) #4
+#                 # Numero 1 y 2 bottom           
+#                 for h in range(len(ind_ch10_s1)):
+#                     cc_10_1=func_eval(ind_ch10_s1[h],t_back,t_forw,stimulus,choice_cl,new_ctx='left')
+#                     neuro_tested_rlow.append(cc_10_1[1]) #1
+#                     neuro_untested_rhigh.append(cc_10_1[0]) #2
+#             # Neuro
+#             neuro_te_unte[0,0,hh]=np.nanmean(neuro_tested_rlow,axis=0)
+#             neuro_te_unte[0,1,hh]=np.nanmean(neuro_tested_rhigh,axis=0)
+#             neuro_te_unte[1,0,hh]=np.nanmean(neuro_untested_rlow,axis=0)
+#             neuro_te_unte[1,1,hh]=np.nanmean(neuro_untested_rhigh,axis=0)
+#             try:
+#                 aa00=fit_plot(xx,neuro_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+#                 aa01=fit_plot(xx,neuro_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+#                 aa10=fit_plot(xx,neuro_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+#                 aa11=fit_plot(xx,neuro_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+#                 fit_neuro[0,0,hh,(t_back+1):]=aa00
+#                 fit_neuro[0,0,hh,0:t_back]=np.nanmean(neuro_te_unte[0,0,hh,0:t_back])
+#                 fit_neuro[0,1,hh,(t_back+1):]=aa01
+#                 fit_neuro[0,1,hh,0:t_back]=np.nanmean(neuro_te_unte[0,1,hh,0:t_back])
+#                 fit_neuro[1,0,hh,(t_back+1):]=aa10
+#                 fit_neuro[1,0,hh,0:t_back]=np.nanmean(neuro_te_unte[1,0,hh,0:t_back])
+#                 fit_neuro[1,1,hh,(t_back+1):]=aa11
+#                 fit_neuro[1,1,hh,0:t_back]=np.nanmean(neuro_te_unte[1,1,hh,0:t_back])
+#                 y0_neuro[0,0,hh]=aa00[0]
+#                 y0_neuro[0,1,hh]=aa01[0]
+#                 y0_neuro[1,0,hh]=aa10[0]
+#                 y0_neuro[1,1,hh]=aa11[0]
+#             except:
+#                 print ('aqui neuro')
         
-        ####################################################
+#         ####################################################
 
-        if delta_type=='raw':
-
-            delta_neuro=(neuro_te_unte[:,:,:,t_back+1]-np.nanmean(neuro_te_unte[:,:,:,0:t_back],axis=3))
-        if delta_type=='fit':
-
-            delta_neuro=(y0_neuro-np.nanmean(neuro_te_unte[:,:,:,0:t_back],axis=3))
-        delta_beha_all[ss,:,:,:,k]=delta_beha
-        delta_neuro_all[ss,:,:,:,k]=delta_neuro
+#         if delta_type=='raw':
+#             delta_neuro=(neuro_te_unte[:,:,:,t_back+1]-np.nanmean(neuro_te_unte[:,:,:,0:t_back],axis=3))
+#         if delta_type=='fit':
+#             delta_neuro=(y0_neuro-np.nanmean(neuro_te_unte[:,:,:,0:t_back],axis=3))
+#         delta_neuro_all[ss,:,:,:,k]=delta_neuro
 
         
-#########################################
-# All monkeys    
+# #########################################
+# # All monkeys    
 
-delta_neurof=np.reshape(delta_neuro_all,(len(stage_vec),-1))
+# delta_neurof=np.reshape(delta_neuro_all,(len(stage_vec),-1))
 
-
-delta_neurof_m=np.nanmean(delta_neurof,axis=1)
-delta_neurof_sem=sem(delta_neurof,axis=1,nan_policy='omit')
+# delta_neurof_m=np.nanmean(delta_neurof,axis=1)
+# delta_neurof_sem=sem(delta_neurof,axis=1,nan_policy='omit')
 
 
