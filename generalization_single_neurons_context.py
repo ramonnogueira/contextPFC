@@ -181,20 +181,22 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkeys=['Niels']
-t_back=20
-t_forw=80
+monkeys=['Niels','Galileo']
+t_back=80
+t_forw=20
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
 reg=1e-3
 maxfev=100000
 method='dogbox'
-bounds=([0,0,-0.5],[10,1,0.5])
-p0=(0.05,0.5,0.01)
+bounds=([0,0,-5],[10,1,5])
+p0=(0.01,0.5,-0.3)
 
 xx=np.arange(t_back+t_forw)-t_back
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
+
+thres_all=nan*np.zeros((len(monkeys),15))
 
 for k in range(len(monkeys)):     
     if monkeys[k]=='Niels':
@@ -288,4 +290,72 @@ for k in range(len(monkeys)):
         diff_fr_gr_m=np.nanmean(diff_fr_gr,axis=0)
         popt=fit_plot(xx,diff_fr_gr_m,t_back,t_forw,maxfev,method,bounds,p0)[1]
         thres_vec[hh]=popt[0]
-  
+        thres_all[k,hh]=popt[0]
+
+    # Plot
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.plot(np.arange(len(files_groups)),thres_vec,color='green')
+    #ax.fill_between(np.arange(len(stage_vec)),beha_def_m-beha_def_sem,beha_def_m+beha_def_sem,color='green',alpha=0.5)
+    #ax.plot(np.arange(len(stage_vec)),np.zeros(len(stage_vec)),color='black',linestyle='--')
+    ax.set_ylabel('Slope Fit $\Delta$FR after change')
+    ax.set_xlabel('Sessions')
+    #ax.set_ylim([-150,250])
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_learning_fr_change_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+
+#####################
+# Epochs
+# Niels
+slope_epoch=np.zeros((3,2))
+slope_epoch[0,0]=np.mean(thres_all[0,0:4])
+slope_epoch[1,0]=np.mean(thres_all[0,4:8])
+slope_epoch[2,0]=np.mean(thres_all[0,8:12])
+slope_epoch[0,1]=sem(thres_all[0,0:4])
+slope_epoch[1,1]=sem(thres_all[0,4:8])
+slope_epoch[2,1]=sem(thres_all[0,8:12])
+
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(np.arange(3),slope_epoch[:,0],color='green')
+ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
+ax.set_ylabel('Slope Fit $\Delta$FR after change')
+ax.set_xlabel('Sessions')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Niels.pdf',dpi=500,bbox_inches='tight')
+
+# Galileo
+slope_epoch=np.zeros((3,2))
+slope_epoch[0,0]=np.mean(thres_all[1,0:5])
+slope_epoch[1,0]=np.mean(thres_all[1,5:10])
+slope_epoch[2,0]=np.mean(thres_all[1,10:15])
+slope_epoch[0,1]=sem(thres_all[1,0:5])
+slope_epoch[1,1]=sem(thres_all[1,5:10])
+slope_epoch[2,1]=sem(thres_all[1,10:15])
+
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(np.arange(3),slope_epoch[:,0],color='green')
+ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
+ax.set_ylabel('Slope Fit $\Delta$FR after change')
+ax.set_xlabel('Sessions')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Galileo.pdf',dpi=500,bbox_inches='tight')
+
+# Both
+slope_epoch=np.zeros((3,2))
+slope_epoch[0,0]=np.mean(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
+slope_epoch[1,0]=np.mean(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
+slope_epoch[2,0]=np.mean(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
+slope_epoch[0,1]=sem(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
+slope_epoch[1,1]=sem(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
+slope_epoch[2,1]=sem(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
+
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(np.arange(3),slope_epoch[:,0],color='green')
+ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
+ax.set_ylabel('Slope Fit $\Delta$FR after change')
+ax.set_xlabel('Sessions')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_both.pdf',dpi=500,bbox_inches='tight')
