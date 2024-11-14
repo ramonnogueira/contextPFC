@@ -158,12 +158,15 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
     return ind_train
 
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
-    popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+    #popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    #fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+    popt,pcov=curve_fit(func1,xx,yy,nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    fit_func=func1(xx,popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
     # plt.scatter(xx,yy,color='blue',s=5)
-    # plt.plot(xx[(t_back+1):],fit_func,color='black')
+    # #plt.plot(xx[(t_back+1):],fit_func,color='black')
+    # plt.plot(xx,fit_func,color='black')
     # plt.axvline(0,color='black',linestyle='--')
     # plt.show()
     return fit_func,popt
@@ -179,11 +182,11 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 
 # Function 2 for both. Bounds and p0 are important. 
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
-# Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
+# Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 2 sessions
 
-monkeys=['Niels','Galileo']
-t_back=80
-t_forw=20
+monkeys=['Niels']
+t_back=50
+t_forw=100
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
@@ -191,12 +194,13 @@ reg=1e-3
 maxfev=100000
 method='dogbox'
 bounds=([0,0,-5],[10,1,5])
-p0=(0.01,0.5,-0.3)
+p0=(0.1,0.5,-0.3)
 
 xx=np.arange(t_back+t_forw)-t_back
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
 thres_all=nan*np.zeros((len(monkeys),15))
+fr_ch_all=nan*np.zeros((len(monkeys),15,t_back+t_forw))
 
 for k in range(len(monkeys)):     
     if monkeys[k]=='Niels':
@@ -288,6 +292,7 @@ for k in range(len(monkeys)):
             diff_fr_gr[kk]=np.nanmean(diff_ctx,axis=0)
                 
         diff_fr_gr_m=np.nanmean(diff_fr_gr,axis=0)
+        fr_ch_all[k,hh]=diff_fr_gr_m
         popt=fit_plot(xx,diff_fr_gr_m,t_back,t_forw,maxfev,method,bounds,p0)[1]
         thres_vec[hh]=popt[0]
         thres_all[k,hh]=popt[0]
@@ -305,8 +310,8 @@ for k in range(len(monkeys)):
     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_learning_fr_change_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
 #####################
-# Epochs
 # Niels
+# Slope
 slope_epoch=np.zeros((3,2))
 slope_epoch[0,0]=np.mean(thres_all[0,0:4])
 slope_epoch[1,0]=np.mean(thres_all[0,4:8])
@@ -314,7 +319,6 @@ slope_epoch[2,0]=np.mean(thres_all[0,8:12])
 slope_epoch[0,1]=sem(thres_all[0,0:4])
 slope_epoch[1,1]=sem(thres_all[0,4:8])
 slope_epoch[2,1]=sem(thres_all[0,8:12])
-
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
@@ -323,6 +327,26 @@ ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+
 ax.set_ylabel('Slope Fit $\Delta$FR after change')
 ax.set_xlabel('Sessions')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Niels.pdf',dpi=500,bbox_inches='tight')
+
+# Firing rate
+fr_epoch=np.zeros((3,t_back+t_forw))
+fr_epoch[0]=np.mean(fr_ch_all[0,0:4],axis=0)
+fr_epoch[1]=np.mean(fr_ch_all[0,4:8],axis=0)
+fr_epoch[2]=np.mean(fr_ch_all[0,8:12],axis=0)
+epoch=['early','mid','late']
+for i in range(3):
+    ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,fr_epoch[i],color='black',s=5)
+    ax.plot(xx,ff,color='green')
+    ax.axvline(0,color='black',linestyle='--')
+    ax.set_ylabel('Mean firing rate (z-score)')
+    ax.set_xlabel('Sessions')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_Niels_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
+
+
 
 # Galileo
 slope_epoch=np.zeros((3,2))
