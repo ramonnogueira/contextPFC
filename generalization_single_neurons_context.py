@@ -69,9 +69,17 @@ def order_files(x):
     return order
 
 # Best for behavior
+# def func1(x,a,b,c):
+#     y=1.0/(1+np.exp(-a*x))
+#     return b*y+c
+
 def func1(x,a,b,c):
-    y=1.0/(1+np.exp(-a*x))
-    return b*y+c
+    y0=(0.5*b+c)
+    y1=1.0/(1+np.exp(-a*x))
+    #heavin=1.0/(1+np.exp(1000*x))
+    #heavip=1.0/(1+np.exp(-1000*x))
+    #return heavin*y0+heavip*(b*y1+c)
+    return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
 
 def calculate_ind_ch_corr(ind_ch,reward):
     n_forw=7
@@ -164,11 +172,11 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     fit_func=func1(xx,popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
-    # plt.scatter(xx,yy,color='blue',s=5)
-    # #plt.plot(xx[(t_back+1):],fit_func,color='black')
-    # plt.plot(xx,fit_func,color='black')
-    # plt.axvline(0,color='black',linestyle='--')
-    # plt.show()
+    #plt.scatter(xx,yy,color='blue',s=5)
+    #plt.plot(xx[(t_back+1):],fit_func,color='black')
+    #plt.plot(xx,fit_func,color='black')
+    #plt.axvline(0,color='black',linestyle='--')
+    #plt.show()
     return fit_func,popt
 
 def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
@@ -185,8 +193,8 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 2 sessions
 
 monkeys=['Niels']
-t_back=50
-t_forw=100
+t_back=20
+t_forw=80
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
@@ -347,7 +355,6 @@ for i in range(3):
     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_Niels_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
 
 
-
 # Galileo
 slope_epoch=np.zeros((3,2))
 slope_epoch[0,0]=np.mean(thres_all[1,0:5])
@@ -356,7 +363,6 @@ slope_epoch[2,0]=np.mean(thres_all[1,10:15])
 slope_epoch[0,1]=sem(thres_all[1,0:5])
 slope_epoch[1,1]=sem(thres_all[1,5:10])
 slope_epoch[2,1]=sem(thres_all[1,10:15])
-
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
@@ -366,15 +372,28 @@ ax.set_ylabel('Slope Fit $\Delta$FR after change')
 ax.set_xlabel('Sessions')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Galileo.pdf',dpi=500,bbox_inches='tight')
 
+fr_epoch=np.zeros((3,t_back+t_forw))
+fr_epoch[0]=np.mean(fr_ch_all[0,0:5],axis=0)
+fr_epoch[1]=np.mean(fr_ch_all[0,5:10],axis=0)
+fr_epoch[2]=np.mean(fr_ch_all[0,10:15],axis=0)
+epoch=['early','mid','late']
+for i in range(3):
+    ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,fr_epoch[i],color='black',s=5)
+    ax.plot(xx,ff,color='green')
+    ax.axvline(0,color='black',linestyle='--')
+    ax.set_ylabel('Mean firing rate (z-score)')
+    ax.set_xlabel('Sessions')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_Galileo_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
+
 # Both
 slope_epoch=np.zeros((3,2))
 slope_epoch[0,0]=np.mean(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
 slope_epoch[1,0]=np.mean(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
 slope_epoch[2,0]=np.mean(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
-slope_epoch[0,1]=sem(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
-slope_epoch[1,1]=sem(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
-slope_epoch[2,1]=sem(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
-
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
@@ -383,3 +402,21 @@ ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+
 ax.set_ylabel('Slope Fit $\Delta$FR after change')
 ax.set_xlabel('Sessions')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_both.pdf',dpi=500,bbox_inches='tight')
+
+fr_epoch=np.zeros((3,t_back+t_forw))
+fr_epoch[0]=np.mean(np.concatenate((fr_ch_all[0,0:4],fr_ch_all[1,0:5])))
+fr_epoch[1]=np.mean(np.concatenate((fr_ch_all[0,4:8],fr_ch_all[1,5:10])))
+fr_epoch[2]=np.mean(np.concatenate((fr_ch_all[0,8:12],fr_ch_all[1,10:15])))
+epoch=['early','mid','late']
+for i in range(3):
+    ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+    fig=plt.figure(figsize=(2.3,2))
+    ax=fig.add_subplot(111)
+    miscellaneous.adjust_spines(ax,['left','bottom'])
+    ax.scatter(xx,fr_epoch[i],color='black',s=5)
+    ax.plot(xx,ff,color='green')
+    ax.axvline(0,color='black',linestyle='--')
+    ax.set_ylabel('Mean firing rate (z-score)')
+    ax.set_xlabel('Sessions')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_both_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
+
