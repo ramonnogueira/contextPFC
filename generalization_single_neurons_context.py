@@ -68,19 +68,6 @@ def order_files(x):
     order=np.argsort(ord_pre)
     return order
 
-# Best for behavior
-# def func1(x,a,b,c):
-#     y=1.0/(1+np.exp(-a*x))
-#     return b*y+c
-
-def func1(x,a,b,c):
-    y0=(0.5*b+c)
-    y1=1.0/(1+np.exp(-a*x))
-    #heavin=1.0/(1+np.exp(1000*x))
-    #heavip=1.0/(1+np.exp(-1000*x))
-    #return heavin*y0+heavip*(b*y1+c)
-    return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
-
 def calculate_ind_ch_corr(ind_ch,reward):
     n_forw=7
     n_ch=len(ind_ch)
@@ -165,6 +152,16 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
         ind_train=np.delete(ind_train,ind_del)
     return ind_train
 
+# Best for behavior
+def func1(x,a,b,c):
+    y=1.0/(1+np.exp(-a*x))
+    return b*y+c
+
+# def func1(x,a,b,c):
+#     y0=(0.5*b+c)
+#     y1=1.0/(1+np.exp(-a*x))
+#     return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
+
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     #popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     #fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
@@ -188,13 +185,9 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 
 #################################################
 
-# Function 2 for both. Bounds and p0 are important. 
-# Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
-# Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 2 sessions
-
-monkeys=['Niels']
-t_back=20
-t_forw=80
+monkeys=['Niels','Galileo']
+t_back=50
+t_forw=50
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
@@ -290,7 +283,7 @@ for k in range(len(monkeys)):
                 for j in range(len(ind_ch_u)):
                     for ii in range(t_back+t_forw):
                         try:
-                            outlier=3
+                            outlier=100
                             act_neu=s_mult*firing_rate[ind_ch_u[j]-t_back+ii]
                             diff_ctx_pre[j,ii]=np.nanmean(act_neu[abs(act_neu)<outlier])
                         except:
@@ -349,6 +342,7 @@ for i in range(3):
     miscellaneous.adjust_spines(ax,['left','bottom'])
     ax.scatter(xx,fr_epoch[i],color='black',s=5)
     ax.plot(xx,ff,color='green')
+    #ax.plot(xx[(t_back+1):],ff,color='green')
     ax.axvline(0,color='black',linestyle='--')
     ax.set_ylabel('Mean firing rate (z-score)')
     ax.set_xlabel('Sessions')
@@ -373,9 +367,9 @@ ax.set_xlabel('Sessions')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Galileo.pdf',dpi=500,bbox_inches='tight')
 
 fr_epoch=np.zeros((3,t_back+t_forw))
-fr_epoch[0]=np.mean(fr_ch_all[0,0:5],axis=0)
-fr_epoch[1]=np.mean(fr_ch_all[0,5:10],axis=0)
-fr_epoch[2]=np.mean(fr_ch_all[0,10:15],axis=0)
+fr_epoch[0]=np.mean(fr_ch_all[1,0:5],axis=0)
+fr_epoch[1]=np.mean(fr_ch_all[1,5:10],axis=0)
+fr_epoch[2]=np.mean(fr_ch_all[1,10:15],axis=0)
 epoch=['early','mid','late']
 for i in range(3):
     ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
@@ -384,6 +378,7 @@ for i in range(3):
     miscellaneous.adjust_spines(ax,['left','bottom'])
     ax.scatter(xx,fr_epoch[i],color='black',s=5)
     ax.plot(xx,ff,color='green')
+    #ax.plot(xx[(t_back+1):],ff,color='green')
     ax.axvline(0,color='black',linestyle='--')
     ax.set_ylabel('Mean firing rate (z-score)')
     ax.set_xlabel('Sessions')
@@ -404,9 +399,9 @@ ax.set_xlabel('Sessions')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_both.pdf',dpi=500,bbox_inches='tight')
 
 fr_epoch=np.zeros((3,t_back+t_forw))
-fr_epoch[0]=np.mean(np.concatenate((fr_ch_all[0,0:4],fr_ch_all[1,0:5])))
-fr_epoch[1]=np.mean(np.concatenate((fr_ch_all[0,4:8],fr_ch_all[1,5:10])))
-fr_epoch[2]=np.mean(np.concatenate((fr_ch_all[0,8:12],fr_ch_all[1,10:15])))
+fr_epoch[0]=np.mean(np.concatenate((fr_ch_all[0,0:4],fr_ch_all[1,0:5]),axis=0),axis=0)
+fr_epoch[1]=np.mean(np.concatenate((fr_ch_all[0,4:8],fr_ch_all[1,5:10]),axis=0),axis=0)
+fr_epoch[2]=np.mean(np.concatenate((fr_ch_all[0,8:12],fr_ch_all[1,10:15]),axis=0),axis=0)
 epoch=['early','mid','late']
 for i in range(3):
     ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
@@ -415,8 +410,8 @@ for i in range(3):
     miscellaneous.adjust_spines(ax,['left','bottom'])
     ax.scatter(xx,fr_epoch[i],color='black',s=5)
     ax.plot(xx,ff,color='green')
+    #ax.plot(xx[(t_back+1):],ff,color='green')
     ax.axvline(0,color='black',linestyle='--')
     ax.set_ylabel('Mean firing rate (z-score)')
     ax.set_xlabel('Sessions')
     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_both_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
-
