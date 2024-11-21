@@ -59,7 +59,6 @@ def adjust_spines(ax, spines):
         # no xaxis ticks
         ax.xaxis.set_ticks([])
 
-
 def order_files(x):
     ord_pre=[]
     for i in range(len(x)):
@@ -114,53 +113,22 @@ def calculate_ind_ch_corr2(ind_ch01,ind_ch10,reward,stimulus):
             ind_ch10_s1.append(bb[0])
     return np.array(ind_ch01_s0,dtype=np.int16),np.array(ind_ch01_s1,dtype=np.int16),np.array(ind_ch10_s0,dtype=np.int16),np.array(ind_ch10_s1,dtype=np.int16)
 
-def func_eval(index,t_back,t_forw,stimulus,choice,new_ctx):
-    pp=nan*np.zeros((2,t_forw+t_back))
-    for j in range(t_back):
-        indj=(index-t_back+j)
-        try:
-            if new_ctx=='right':
-                pp[int(stimulus[indj]),j]=choice[indj]
-            if new_ctx=='left':
-                pp[int(stimulus[indj]),j]=int(1-choice[indj])
-        except:
-            None
-    for j in range(t_forw):
-        indj=(index+j)
-        try:
-            if new_ctx=='right':
-                pp[int(stimulus[indj]),j+t_back]=choice[indj]
-            if new_ctx=='left':
-                pp[int(stimulus[indj]),j+t_back]=int(1-choice[indj])
-        except:
-            None
-    return pp
-
-# Extract indices for training classifier (remove the one for testing from the entire dataset) and fit the classifier
-def ret_ind_train(coherence,ind_ch,t_back,t_forw):      
-    ind_train=np.arange(len(coherence))
-    for p in range(len(ind_ch)):
-        ind_t=np.arange(t_back+t_forw)-t_back+ind_ch[p]
-        ind_del=[]
-        for pp in range(len(ind_t)):
-            try:
-                ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
-            except:
-                None
-                #print ('error aqui')
-        ind_del=np.array(ind_del)
-        ind_train=np.delete(ind_train,ind_del)
-    return ind_train
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
 
 # Best for behavior
-def func1(x,a,b,c):
-    y=1.0/(1+np.exp(-a*x))
-    return b*y+c
-
 # def func1(x,a,b,c):
-#     y0=(0.5*b+c)
-#     y1=1.0/(1+np.exp(-a*x))
-#     return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
+#     y=1.0/(1+np.exp(-a*x))
+#     return b*y+c
+
+def func1(x,a,b,c):
+    y0=(0.5*b+c)
+    y1=1.0/(1+np.exp(-a*x))
+    return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
 
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     #popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
@@ -176,26 +144,21 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     #plt.show()
     return fit_func,popt
 
-def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
-    context_subj=context_pre.copy()
-    for i in range(len(ctx_ch)):
-        diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
-    return context_subj
-
 #################################################
+
+# Old func1 only t_back+1, from -50 to 80 works well (not really)
 
 monkeys=['Niels','Galileo']
 t_back=50
-t_forw=50
+t_forw=80
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
 reg=1e-3
 maxfev=100000
 method='dogbox'
-bounds=([0,0,-5],[10,1,5])
-p0=(0.1,0.5,-0.3)
+bounds=([0,0,-5],[2,1,5])
+p0=(0.05,0.5,-0.3)
 
 xx=np.arange(t_back+t_forw)-t_back
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -283,7 +246,7 @@ for k in range(len(monkeys)):
                 for j in range(len(ind_ch_u)):
                     for ii in range(t_back+t_forw):
                         try:
-                            outlier=100
+                            outlier=3
                             act_neu=s_mult*firing_rate[ind_ch_u[j]-t_back+ii]
                             diff_ctx_pre[j,ii]=np.nanmean(act_neu[abs(act_neu)<outlier])
                         except:

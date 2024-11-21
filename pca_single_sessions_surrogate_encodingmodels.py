@@ -189,7 +189,7 @@ group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 col=np.array(['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue'])
 alph=np.array([0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7])
 
-abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkey) 
+abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/sorted/late/%s/'%(monkey) 
 files=os.listdir(abs_path)
 
 for kk in range(len(files)):
@@ -264,56 +264,56 @@ for kk in range(len(files)):
     fr_surr=fr_surr_pre[3] # Careful!!!
     fr_surr[np.isnan(fr_surr)]=0 #Due to the ShuffleSplit sometimes a particular trial is not filled, but they are few
 
-    ##########################################################
-    # Train PCA all coherences
-    mean_coh_pre=nan*np.zeros((steps*2*len(coh_uq),num_neu))
-    len_tr=nan*np.zeros((steps*2*len(coh_uq)))
-    per_tr=nan*np.zeros((steps*2*len(coh_uq)))
+    # ##########################################################
+    # # Train PCA all coherences
+    # mean_coh_pre=nan*np.zeros((steps*2*len(coh_uq),num_neu))
+    # len_tr=nan*np.zeros((steps*2*len(coh_uq)))
+    # per_tr=nan*np.zeros((steps*2*len(coh_uq)))
     
-    for j in range(steps):
-        min_t=(j*dic_time[3]+dic_time[2]-dic_time[0]+tpre_sacc) # for each time step temporal threshold at which the RT needs to be bigger than that
-        for jj in range(len(coh_uq)):
-            ind_ctx0_pre=np.where((coherence==coh_uq[jj])&(context==0))[0]
-            ind_ctx1_pre=np.where((coherence==coh_uq[jj])&(context==1))[0]
-            ind_ctx0=np.where((coherence==coh_uq[jj])&(context==0)&(rt>min_t))[0]
-            ind_ctx1=np.where((coherence==coh_uq[jj])&(context==1)&(rt>min_t))[0]
-            per_tr[jj*steps+j]=len(ind_ctx0)/len(ind_ctx0_pre)
-            per_tr[jj*steps+j+len(coh_uq)*steps]=len(ind_ctx1)/len(ind_ctx1_pre)
-            len_tr[jj*steps+j]=len(ind_ctx0)
-            len_tr[jj*steps+j+len(coh_uq)*steps]=len(ind_ctx1)
-            #mean_coh_pre[jj*steps+j]=np.mean(firing_rate[ind_ctx0][:,:,j],axis=0)
-            #mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(firing_rate[ind_ctx1][:,:,j],axis=0)
-            #mean_coh_pre[jj*steps+j]=np.mean(fr_norm[ind_ctx0][:,:,j],axis=0)
-            #mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_norm[ind_ctx1][:,:,j],axis=0)
-            mean_coh_pre[jj*steps+j]=np.mean(fr_surr[ind_ctx0][:,:,j],axis=0)
-            mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_surr[ind_ctx1][:,:,j],axis=0)
+    # for j in range(steps):
+    #     min_t=(j*dic_time[3]+dic_time[2]-dic_time[0]+tpre_sacc) # for each time step temporal threshold at which the RT needs to be bigger than that
+    #     for jj in range(len(coh_uq)):
+    #         ind_ctx0_pre=np.where((coherence==coh_uq[jj])&(context==0))[0]
+    #         ind_ctx1_pre=np.where((coherence==coh_uq[jj])&(context==1))[0]
+    #         ind_ctx0=np.where((coherence==coh_uq[jj])&(context==0)&(rt>min_t))[0]
+    #         ind_ctx1=np.where((coherence==coh_uq[jj])&(context==1)&(rt>min_t))[0]
+    #         per_tr[jj*steps+j]=len(ind_ctx0)/len(ind_ctx0_pre)
+    #         per_tr[jj*steps+j+len(coh_uq)*steps]=len(ind_ctx1)/len(ind_ctx1_pre)
+    #         len_tr[jj*steps+j]=len(ind_ctx0)
+    #         len_tr[jj*steps+j+len(coh_uq)*steps]=len(ind_ctx1)
+    #         #mean_coh_pre[jj*steps+j]=np.mean(firing_rate[ind_ctx0][:,:,j],axis=0)
+    #         #mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(firing_rate[ind_ctx1][:,:,j],axis=0)
+    #         #mean_coh_pre[jj*steps+j]=np.mean(fr_norm[ind_ctx0][:,:,j],axis=0)
+    #         #mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_norm[ind_ctx1][:,:,j],axis=0)
+    #         mean_coh_pre[jj*steps+j]=np.mean(fr_surr[ind_ctx0][:,:,j],axis=0)
+    #         mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_surr[ind_ctx1][:,:,j],axis=0)
                 
-    ind_tr=(per_tr>=0.25)*(len_tr>=10)
-    print (per_tr)
-    mean_coh=mean_coh_pre[ind_tr]
+    # ind_tr=(per_tr>=0.25)*(len_tr>=10)
+    # print (per_tr)
+    # mean_coh=mean_coh_pre[ind_tr]
     
-    embedding=PCA(n_components=3)
-    fitPCA=embedding.fit(mean_coh)
-    print (fitPCA.explained_variance_ratio_)
+    # embedding=PCA(n_components=3)
+    # fitPCA=embedding.fit(mean_coh)
+    # print (fitPCA.explained_variance_ratio_)
 
-    # Plot as a function of time
-    for j in range(steps)[::-1]:
-        print (j)
-        plt.rcParams.update({'font.size': 15})
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ind_step=(np.arange(0,steps*2*len(coh_uq),steps)+j)
-        for jj in np.arange(2*len(coh_uq))[ind_tr[ind_step]]:
-            pseudo_mds_ctx=embedding.transform(mean_coh_pre[ind_step][jj:(jj+1)])
-            ax.scatter(pseudo_mds_ctx[0,0],pseudo_mds_ctx[0,1],pseudo_mds_ctx[0,2],color=col[jj],alpha=alph[jj],s=100)
-        ax.set_xlabel('PC1')
-        ax.set_ylabel('PC2')
-        ax.set_zlabel('PC3')
-        ax.set_xlim([-5,5])
-        ax.set_ylim([-5,5])
-        ax.set_zlim([-5,5])
-        plt.show()
-        plt.close(fig)
+    # # Plot as a function of time
+    # for j in range(steps)[::-1]:
+    #     print (j)
+    #     plt.rcParams.update({'font.size': 15})
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111, projection='3d')
+    #     ind_step=(np.arange(0,steps*2*len(coh_uq),steps)+j)
+    #     for jj in np.arange(2*len(coh_uq))[ind_tr[ind_step]]:
+    #         pseudo_mds_ctx=embedding.transform(mean_coh_pre[ind_step][jj:(jj+1)])
+    #         ax.scatter(pseudo_mds_ctx[0,0],pseudo_mds_ctx[0,1],pseudo_mds_ctx[0,2],color=col[jj],alpha=alph[jj],s=100)
+    #     ax.set_xlabel('PC1')
+    #     ax.set_ylabel('PC2')
+    #     ax.set_zlabel('PC3')
+    #     ax.set_xlim([-5,5])
+    #     ax.set_ylim([-5,5])
+    #     ax.set_zlim([-5,5])
+    #     plt.show()
+    #     plt.close(fig)
 
     #########################################################
     # # Train PCA on only 4 conditions
