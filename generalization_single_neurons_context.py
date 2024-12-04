@@ -121,27 +121,27 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     return context_subj
 
 # Best for behavior
-# def func1(x,a,b,c):
-#     y=1.0/(1+np.exp(-a*x))
-#     return b*y+c
-
 def func1(x,a,b,c):
-    y0=(0.5*b+c)
-    y1=1.0/(1+np.exp(-a*x))
-    return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
+    y=1.0/(1+np.exp(-a*x))
+    return b*y+c
+
+# def func1(x,a,b,c):
+#     y0=(0.5*b+c)
+#     y1=1.0/(1+np.exp(-a*x))
+#     return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
 
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
-    #popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    #fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
-    popt,pcov=curve_fit(func1,xx,yy,nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    fit_func=func1(xx,popt[0],popt[1],popt[2])#,popt[3])
+    popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+    #popt,pcov=curve_fit(func1,xx,yy,nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    #fit_func=func1(xx,popt[0],popt[1],popt[2])#,popt[3])
     print ('Fit ',popt)
     print (pcov)
-    #plt.scatter(xx,yy,color='blue',s=5)
-    #plt.plot(xx[(t_back+1):],fit_func,color='black')
+    plt.scatter(xx,yy,color='blue',s=5)
+    plt.plot(xx[(t_back+1):],fit_func,color='black')
     #plt.plot(xx,fit_func,color='black')
-    #plt.axvline(0,color='black',linestyle='--')
-    #plt.show()
+    plt.axvline(0,color='black',linestyle='--')
+    plt.show()
     return fit_func,popt
 
 #################################################
