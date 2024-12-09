@@ -121,8 +121,12 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
     return context_subj
 
 # Best for behavior
-def func1(x,a,b,c):
-    y=1.0/(1+np.exp(-a*x))
+# def func1(x,a,b,c):
+#     y=1.0/(1+np.exp(-a*x+3))
+#     return b*y+c
+
+def func1(x,a,b,c,d):
+    y=1.0/(1+np.exp(-a*x+d))
     return b*y+c
 
 # def func1(x,a,b,c):
@@ -131,34 +135,36 @@ def func1(x,a,b,c):
 #     return np.heaviside(-x,1)*y0+np.heaviside(x,0)*(b*y1+c)
 
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
-    popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
-    #popt,pcov=curve_fit(func1,xx,yy,nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
-    #fit_func=func1(xx,popt[0],popt[1],popt[2])#,popt[3])
+    #popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    #fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
+    popt,pcov=curve_fit(func1,xx,yy,nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
+    fit_func=func1(xx,popt[0],popt[1],popt[2],popt[3])
     print ('Fit ',popt)
     print (pcov)
-    plt.scatter(xx,yy,color='blue',s=5)
-    plt.plot(xx[(t_back+1):],fit_func,color='black')
-    #plt.plot(xx,fit_func,color='black')
-    plt.axvline(0,color='black',linestyle='--')
-    plt.show()
+    # plt.scatter(xx,yy,color='blue',s=5)
+    # #plt.plot(xx[(t_back+1):],fit_func,color='black')
+    # plt.plot(xx,fit_func,color='black')
+    # plt.axvline(0,color='black',linestyle='--')
+    # plt.show()
     return fit_func,popt
 
 #################################################
 
 # Old func1 only t_back+1, from -50 to 80 works well (not really)
 
-monkeys=['Niels','Galileo']
+monkeys=['Galileo']
 t_back=50
-t_forw=80
+t_forw=100
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
 reg=1e-3
 maxfev=100000
 method='dogbox'
-bounds=([0,0,-5],[2,1,5])
-p0=(0.05,0.5,-0.3)
+#bounds=([0,0,-5],[2,1,5])
+#p0=(0.2,0.5,-0.3)
+bounds=([0,0,-5,2],[10,1,5,7])
+p0=(0.1,0.5,-0.3,4)
 
 xx=np.arange(t_back+t_forw)-t_back
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
@@ -168,10 +174,10 @@ fr_ch_all=nan*np.zeros((len(monkeys),15,t_back+t_forw))
 
 for k in range(len(monkeys)):     
     if monkeys[k]=='Niels':
-        dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive)
+        #dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive)
         files_groups=[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12]]
     if monkeys[k]=='Galileo':
-        dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive)
+        #dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive)
         files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
 
     abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
@@ -181,6 +187,7 @@ for k in range(len(monkeys)):
     print (files_all)
 
     thres_vec=nan*np.zeros(len(files_groups))
+    fr_ch_vec_=nan*np.zeros((len(files_groups),t_back+t_forw))
     
     for hh in range(len(files_groups)):
         files=files_all[files_groups[hh][0]:files_groups[hh][1]]
@@ -246,7 +253,7 @@ for k in range(len(monkeys)):
                 for j in range(len(ind_ch_u)):
                     for ii in range(t_back+t_forw):
                         try:
-                            outlier=3
+                            outlier=2
                             act_neu=s_mult*firing_rate[ind_ch_u[j]-t_back+ii]
                             diff_ctx_pre[j,ii]=np.nanmean(act_neu[abs(act_neu)<outlier])
                         except:
@@ -256,6 +263,7 @@ for k in range(len(monkeys)):
             diff_fr_gr[kk]=np.nanmean(diff_ctx,axis=0)
                 
         diff_fr_gr_m=np.nanmean(diff_fr_gr,axis=0)
+        fr_ch_vec[hh]=diff_fr_gr_m
         fr_ch_all[k,hh]=diff_fr_gr_m
         popt=fit_plot(xx,diff_fr_gr_m,t_back,t_forw,maxfev,method,bounds,p0)[1]
         thres_vec[hh]=popt[0]
@@ -273,85 +281,62 @@ for k in range(len(monkeys)):
     #ax.set_ylim([-150,250])
     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_learning_fr_change_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
-#####################
-# Niels
-# Slope
-slope_epoch=np.zeros((3,2))
-slope_epoch[0,0]=np.mean(thres_all[0,0:4])
-slope_epoch[1,0]=np.mean(thres_all[0,4:8])
-slope_epoch[2,0]=np.mean(thres_all[0,8:12])
-slope_epoch[0,1]=sem(thres_all[0,0:4])
-slope_epoch[1,1]=sem(thres_all[0,4:8])
-slope_epoch[2,1]=sem(thres_all[0,8:12])
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.plot(np.arange(3),slope_epoch[:,0],color='green')
-ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
-ax.set_ylabel('Slope Fit $\Delta$FR after change')
-ax.set_xlabel('Sessions')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Niels.pdf',dpi=500,bbox_inches='tight')
-
-# Firing rate
-fr_epoch=np.zeros((3,t_back+t_forw))
-fr_epoch[0]=np.mean(fr_ch_all[0,0:4],axis=0)
-fr_epoch[1]=np.mean(fr_ch_all[0,4:8],axis=0)
-fr_epoch[2]=np.mean(fr_ch_all[0,8:12],axis=0)
-epoch=['early','mid','late']
-for i in range(3):
-    ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+    # Niels
+    # Slope
+    slope_epoch=np.zeros((3,2))
+    if monkeys[k]=='Niels':
+        slope_epoch[0,0]=np.mean(thres_vec[0:4])
+        slope_epoch[1,0]=np.mean(thres_vec[4:8])
+        slope_epoch[2,0]=np.mean(thres_vec[8:12])
+        slope_epoch[0,1]=sem(thres_vec[0:4])
+        slope_epoch[1,1]=sem(thres_vec[4:8])
+        slope_epoch[2,1]=sem(thres_vec[8:12])
+    if monkeys[k]=='Galileo':
+        slope_epoch[0,0]=np.mean(thres_vec[0:5])
+        slope_epoch[1,0]=np.mean(thres_vec[5:10])
+        slope_epoch[2,0]=np.mean(thres_vec[10:15])
+        slope_epoch[0,1]=sem(thres_vec[0:5])
+        slope_epoch[1,1]=sem(thres_vec[5:10])
+        slope_epoch[2,1]=sem(thres_vec[10:15])
     fig=plt.figure(figsize=(2.3,2))
     ax=fig.add_subplot(111)
     miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.scatter(xx,fr_epoch[i],color='black',s=5)
-    ax.plot(xx,ff,color='green')
-    #ax.plot(xx[(t_back+1):],ff,color='green')
-    ax.axvline(0,color='black',linestyle='--')
-    ax.set_ylabel('Mean firing rate (z-score)')
+    ax.plot(np.arange(3),slope_epoch[:,0],color='green')
+    ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
+    ax.set_ylabel('Slope Fit $\Delta$FR after change')
     ax.set_xlabel('Sessions')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_Niels_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
+    # Firing rate
+    epoch=['early','mid','late']
+    fr_epoch=np.zeros((3,t_back+t_forw))
+    if monkeys[k]=='Niels':
+        fr_epoch[0]=np.mean(fr_ch_vec[0:4],axis=0)
+        fr_epoch[1]=np.mean(fr_ch_vec[4:8],axis=0)
+        fr_epoch[2]=np.mean(fr_ch_vec[8:12],axis=0)
+    if monkeys[k]=='Galileo':
+        fr_epoch[0]=np.mean(fr_ch_vec[0:5],axis=0)
+        fr_epoch[1]=np.mean(fr_ch_vec[5:10],axis=0)
+        fr_epoch[2]=np.mean(fr_ch_vec[10:15],axis=0)
 
-# Galileo
-slope_epoch=np.zeros((3,2))
-slope_epoch[0,0]=np.mean(thres_all[1,0:5])
-slope_epoch[1,0]=np.mean(thres_all[1,5:10])
-slope_epoch[2,0]=np.mean(thres_all[1,10:15])
-slope_epoch[0,1]=sem(thres_all[1,0:5])
-slope_epoch[1,1]=sem(thres_all[1,5:10])
-slope_epoch[2,1]=sem(thres_all[1,10:15])
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.plot(np.arange(3),slope_epoch[:,0],color='green')
-ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
-ax.set_ylabel('Slope Fit $\Delta$FR after change')
-ax.set_xlabel('Sessions')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_Galileo.pdf',dpi=500,bbox_inches='tight')
-
-fr_epoch=np.zeros((3,t_back+t_forw))
-fr_epoch[0]=np.mean(fr_ch_all[1,0:5],axis=0)
-fr_epoch[1]=np.mean(fr_ch_all[1,5:10],axis=0)
-fr_epoch[2]=np.mean(fr_ch_all[1,10:15],axis=0)
-epoch=['early','mid','late']
-for i in range(3):
-    ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.scatter(xx,fr_epoch[i],color='black',s=5)
-    ax.plot(xx,ff,color='green')
-    #ax.plot(xx[(t_back+1):],ff,color='green')
-    ax.axvline(0,color='black',linestyle='--')
-    ax.set_ylabel('Mean firing rate (z-score)')
-    ax.set_xlabel('Sessions')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_Galileo_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
+    for i in range(3):
+        ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+        fig=plt.figure(figsize=(2.3,2))
+        ax=fig.add_subplot(111)
+        miscellaneous.adjust_spines(ax,['left','bottom'])
+        ax.scatter(xx,fr_epoch[i],color='black',s=5)
+        ax.plot(xx,ff,color='green')
+        #ax.plot(xx[(t_back+1):],ff,color='green')
+        ax.axvline(0,color='black',linestyle='--')
+        ax.set_ylabel('Mean firing rate (z-score)')
+        ax.set_xlabel('Sessions')
+        fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_change_change_%s_%s.pdf'%(monkeys[k],epoch[i]),dpi=500,bbox_inches='tight')
 
 # Both
 slope_epoch=np.zeros((3,2))
-slope_epoch[0,0]=np.mean(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
-slope_epoch[1,0]=np.mean(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
-slope_epoch[2,0]=np.mean(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
+slope_epoch[0,0]=np.nanmean(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
+slope_epoch[1,0]=np.nanmean(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
+slope_epoch[2,0]=np.nanmean(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])
@@ -362,9 +347,9 @@ ax.set_xlabel('Sessions')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_epochs_fr_change_both.pdf',dpi=500,bbox_inches='tight')
 
 fr_epoch=np.zeros((3,t_back+t_forw))
-fr_epoch[0]=np.mean(np.concatenate((fr_ch_all[0,0:4],fr_ch_all[1,0:5]),axis=0),axis=0)
-fr_epoch[1]=np.mean(np.concatenate((fr_ch_all[0,4:8],fr_ch_all[1,5:10]),axis=0),axis=0)
-fr_epoch[2]=np.mean(np.concatenate((fr_ch_all[0,8:12],fr_ch_all[1,10:15]),axis=0),axis=0)
+fr_epoch[0]=np.nanmean(np.concatenate((fr_ch_all[0,0:4],fr_ch_all[1,0:5]),axis=0),axis=0)
+fr_epoch[1]=np.nanmean(np.concatenate((fr_ch_all[0,4:8],fr_ch_all[1,5:10]),axis=0),axis=0)
+fr_epoch[2]=np.nanmean(np.concatenate((fr_ch_all[0,8:12],fr_ch_all[1,10:15]),axis=0),axis=0)
 epoch=['early','mid','late']
 for i in range(3):
     ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
