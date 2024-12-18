@@ -139,8 +139,8 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     #fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
     popt,pcov=curve_fit(func1,xx,yy,nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func1(xx,popt[0],popt[1],popt[2],popt[3])
-    #print ('Fit ',popt)
-    #print (pcov)
+    print ('Fit ',popt)
+    print (pcov)
     #plt.scatter(xx,yy,color='blue',s=5)
     # #plt.plot(xx[(t_back+1):],fit_func,color='black')
     #plt.plot(xx,fit_func,color='black')
@@ -157,8 +157,6 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
 monkeys=['Niels','Galileo']
 t_back=50
 t_forw=100
-
-thres_sis=5.88 # cutoff of slopes for the plots. Based on "What is the slope (a) necessary to go from y = 0.05 to y = 0.9 from x = -0.5 to x = 0.5 on the sigmoid curve 1/(1+exp(-a*x))"
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
@@ -247,6 +245,30 @@ for k in range(len(monkeys)):
             sign_10=np.ones(96)
             sign_10[diff_ctx[1]<0]=-1
 
+            #########################################
+            # Mean across context changes and neurons. 
+            # diff_ctx=nan*np.zeros((2,t_back+t_forw))
+            # for i in range(2):
+            #     ind_ch_u=ind_ch_vec[i]
+            #     if i==0:
+            #         s_mult=sign_01
+            #     if i==1:
+            #         s_mult=sign_10
+                        
+            #     diff_ctx_pre=nan*np.zeros((len(ind_ch_u),t_back+t_forw))
+            #     for j in range(len(ind_ch_u)):
+            #         for ii in range(t_back+t_forw):
+            #             try:
+            #                 outlier=2
+            #                 act_neu=s_mult*firing_rate[ind_ch_u[j]-t_back+ii]
+            #                 diff_ctx_pre[j,ii]=np.nanmean(act_neu[abs(act_neu)<outlier])
+            #             except:
+            #                 None
+
+            #     diff_ctx[i]=np.nanmean(diff_ctx_pre,axis=0)
+            # diff_fr_gr[kk]=np.nanmean(diff_ctx,axis=0)
+            
+            #########################################
             # Mean across context changes for each individual neuron
             diff_ctx_neu=nan*np.zeros((2,96,t_back+t_forw))
             for i in range(2):
@@ -268,156 +290,114 @@ for k in range(len(monkeys)):
             diff_fr_gr_neu[kk]=np.nanmean(diff_ctx_neu,axis=0)
 
         diff_fr_gr_neu_m=np.nanmean(diff_fr_gr_neu,axis=0)
-        #fit_err=[]
         for oo in range(96):
-            #print (oo)
+            print (oo)
             try:
-                func_fit,popt=fit_plot(xx,diff_fr_gr_neu_m[oo],t_back,t_forw,maxfev,method,bounds,p0)
+                popt=fit_plot(xx,diff_fr_gr_neu_m[oo],t_back,t_forw,maxfev,method,bounds,p0)[1]
             except:
                 print ('error fit')
-                #fit_err.append(oo)
             thres_neu_vec[hh,oo]=popt[0]
             thres_neu_all[k,hh,oo]=popt[0]
+            
+#         diff_fr_gr_m=np.nanmean(diff_fr_gr,axis=0)
+#         fr_ch_vec[hh]=diff_fr_gr_m
+#         fr_ch_all[k,hh]=diff_fr_gr_m
 
-            fig=plt.figure(figsize=(2.3,2))
-            ax=fig.add_subplot(111)
-            miscellaneous.adjust_spines(ax,['left','bottom'])
-            ax.plot(xx,diff_fr_gr_neu_m[oo],color='black',lw=0.5)
-            ax.plot(xx,func_fit,color='green')
-            ax.axvline(0,color='black',linestyle='--')
-            ax.set_xlabel('Trials after context change')
-            ax.set_ylabel('Norm. Firing Rate (sp/s)')
-            fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/neurons_fr_change/fr_change_neu_%i_group_%i_monkey_%s.pdf'%(oo,hh,monkeys[k]),dpi=500,bbox_inches='tight')
-            fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/neurons_fr_change/fr_change_neu_%i_group_%i_monkey_%s.png'%(oo,hh,monkeys[k]),dpi=500,bbox_inches='tight')
+#         thres_vec[hh]=popt[0]
+#         thres_all[k,hh]=popt[0]
 
-    # How many neurons are discarded for too high of a slope?
-    print ('Monkey %s'%monkeys[k])
-    gg_vec=[]
-    for gg in range(12):
-        yy_d=thres_neu_vec[gg][thres_neu_vec[gg]>=thres_sis]
-        gg_vec.append(len(yy_d)/96)
-        print (gg_vec[gg])
-    print ('Mean: ',np.mean(gg_vec))
-    
-    # Plot all thresholds throughout learning
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    aa=np.zeros((len(files_groups),2))
-    for pp in range(len(files_groups)):
-        thres_plot=thres_neu_vec[pp][thres_neu_vec[pp]<thres_sis]
-        aa[pp,0]=np.nanmean(thres_plot)
-        aa[pp,1]=sem(thres_plot,nan_policy='omit')
-    ax.errorbar(x=np.arange(len(files_groups)),y=aa[:,0],yerr=aa[:,1],color='green')
-    ax.set_ylabel('Slope Fit $\Delta$FR after change')
-    ax.set_xlabel('Sessions')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_fr_neu_change_all_sessions_learning_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+#     # Plot all thresholds throughout learning
+#     fig=plt.figure(figsize=(2.3,2))
+#     ax=fig.add_subplot(111)
+#     miscellaneous.adjust_spines(ax,['left','bottom'])
+#     ax.plot(np.arange(len(files_groups)),thres_vec,color='green')
+#     #ax.fill_between(np.arange(len(stage_vec)),beha_def_m-beha_def_sem,beha_def_m+beha_def_sem,color='green',alpha=0.5)
+#     #ax.plot(np.arange(len(stage_vec)),np.zeros(len(stage_vec)),color='black',linestyle='--')
+#     ax.set_ylabel('Slope Fit $\Delta$FR after change')
+#     ax.set_xlabel('Sessions')
+#     #ax.set_ylim([-150,250])
+#     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_fr_change_all_sessions_learning_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
-    # Slope of fit throughout learning (3 points)
-    slope_epoch=np.zeros((3,2))
-    if monkeys[k]=='Niels':
-        thres_plot1=thres_neu_vec[0:4][thres_neu_vec[0:4]<thres_sis]
-        thres_plot2=thres_neu_vec[4:8][thres_neu_vec[4:8]<thres_sis]
-        thres_plot3=thres_neu_vec[8:12][thres_neu_vec[8:12]<thres_sis]
-    if monkeys[k]=='Galileo':
-        thres_plot1=thres_neu_vec[0:5][thres_neu_vec[0:5]<thres_sis]
-        thres_plot2=thres_neu_vec[5:10][thres_neu_vec[5:10]<thres_sis]
-        thres_plot3=thres_neu_vec[10:15][thres_neu_vec[10:15]<thres_sis]
-    slope_epoch[0,0]=np.mean(thres_plot1)
-    slope_epoch[1,0]=np.mean(thres_plot2)
-    slope_epoch[2,0]=np.mean(thres_plot3)
-    slope_epoch[0,1]=sem(thres_plot1)
-    slope_epoch[1,1]=sem(thres_plot2)
-    slope_epoch[2,1]=sem(thres_plot3)
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(np.arange(3),slope_epoch[:,0],color='green')
-    ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
-    ax.set_ylabel('Slope Fit $\Delta$FR after change')
-    ax.set_xlabel('Sessions')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_fr_neu_change_three_epochs_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+#     # Slope of fit throughout learning (3 points)
+#     slope_epoch=np.zeros((3,2))
+#     if monkeys[k]=='Niels':
+#         slope_epoch[0,0]=np.mean(thres_vec[0:4])
+#         slope_epoch[1,0]=np.mean(thres_vec[4:8])
+#         slope_epoch[2,0]=np.mean(thres_vec[8:12])
+#         slope_epoch[0,1]=sem(thres_vec[0:4])
+#         slope_epoch[1,1]=sem(thres_vec[4:8])
+#         slope_epoch[2,1]=sem(thres_vec[8:12])
+#     if monkeys[k]=='Galileo':
+#         slope_epoch[0,0]=np.mean(thres_vec[0:5])
+#         slope_epoch[1,0]=np.mean(thres_vec[5:10])
+#         slope_epoch[2,0]=np.mean(thres_vec[10:15])
+#         slope_epoch[0,1]=sem(thres_vec[0:5])
+#         slope_epoch[1,1]=sem(thres_vec[5:10])
+#         slope_epoch[2,1]=sem(thres_vec[10:15])
+#     fig=plt.figure(figsize=(2.3,2))
+#     ax=fig.add_subplot(111)
+#     miscellaneous.adjust_spines(ax,['left','bottom'])
+#     ax.plot(np.arange(3),slope_epoch[:,0],color='green')
+#     ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
+#     ax.set_ylabel('Slope Fit $\Delta$FR after change')
+#     ax.set_xlabel('Sessions')
+#     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_fr_change_three_epochs_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
-    # Histogram slopes for each epoch
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.hist(thres_plot1,bins=50,color='green')
-    ax.axvline(np.mean(thres_plot1),color='green',linestyle='--')
-    ax.set_ylabel('Number of occurrences')
-    ax.set_xlabel('Slope')
-    ax.set_xlim([0,6])
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/hist_neu_slopes_epoch_early_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+#     # Mean FR for each epoch and fit the curve (3 plots)
+#     epoch=['early','mid','late']
+#     fr_epoch=np.zeros((3,t_back+t_forw))
+#     if monkeys[k]=='Niels':
+#         fr_epoch[0]=np.mean(fr_ch_vec[0:4],axis=0)
+#         fr_epoch[1]=np.mean(fr_ch_vec[4:8],axis=0)
+#         fr_epoch[2]=np.mean(fr_ch_vec[8:12],axis=0)
+#     if monkeys[k]=='Galileo':
+#         fr_epoch[0]=np.mean(fr_ch_vec[0:5],axis=0)
+#         fr_epoch[1]=np.mean(fr_ch_vec[5:10],axis=0)
+#         fr_epoch[2]=np.mean(fr_ch_vec[10:15],axis=0)
 
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.hist(thres_plot2,bins=50,color='green')
-    ax.axvline(np.mean(thres_plot2),color='green',linestyle='--')
-    ax.set_ylabel('Number of occurrences')
-    ax.set_xlabel('Slope')
-    ax.set_xlim([0,6])
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/hist_neu_slopes_epoch_mid_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+#     for i in range(3):
+#         ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+#         fig=plt.figure(figsize=(2.3,2))
+#         ax=fig.add_subplot(111)
+#         miscellaneous.adjust_spines(ax,['left','bottom'])
+#         ax.scatter(xx,fr_epoch[i],color='black',s=5)
+#         ax.plot(xx,ff,color='green')
+#         #ax.plot(xx[(t_back+1):],ff,color='green')
+#         ax.axvline(0,color='black',linestyle='--')
+#         ax.set_ylabel('Mean firing rate (z-score)')
+#         ax.set_xlabel('Sessions')
+#         fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_ctx_change_%s_%s.pdf'%(monkeys[k],epoch[i]),dpi=500,bbox_inches='tight')
 
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.hist(thres_plot3,bins=50,color='green')
-    ax.axvline(np.mean(thres_plot3),color='green',linestyle='--')
-    ax.set_ylabel('Number of occurrences')
-    ax.set_xlabel('Slope')
-    ax.set_xlim([0,6])
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/hist_neu_slopes_epoch_late_%s.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+# # Both
+# # Slope of fit throughout learning (3 points)
+# slope_epoch=np.zeros((3,2))
+# slope_epoch[0,0]=np.nanmean(np.concatenate((thres_all[0,0:4],thres_all[1,0:5])))
+# slope_epoch[1,0]=np.nanmean(np.concatenate((thres_all[0,4:8],thres_all[1,5:10])))
+# slope_epoch[2,0]=np.nanmean(np.concatenate((thres_all[0,8:12],thres_all[1,10:15])))
+# fig=plt.figure(figsize=(2.3,2))
+# ax=fig.add_subplot(111)
+# miscellaneous.adjust_spines(ax,['left','bottom'])
+# ax.plot(np.arange(3),slope_epoch[:,0],color='green')
+# ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
+# ax.set_ylabel('Slope Fit $\Delta$FR after change')
+# ax.set_xlabel('Sessions')
+# fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_fr_change_three_epochs_both.pdf',dpi=500,bbox_inches='tight')
 
-# Both
-thres_plot1=np.concatenate((thres_neu_all[0,0:4][thres_neu_all[0,0:4]<thres_sis],thres_neu_all[1,0:5][thres_neu_all[1,0:5]<thres_sis]))
-thres_plot2=np.concatenate((thres_neu_all[0,4:8][thres_neu_all[0,4:8]<thres_sis],thres_neu_all[1,5:10][thres_neu_all[1,5:10]<thres_sis]))
-thres_plot3=np.concatenate((thres_neu_all[0,8:12][thres_neu_all[0,8:12]<thres_sis],thres_neu_all[1,10:15][thres_neu_all[1,10:15]<thres_sis]))
-
-# Slope of fit throughout learning (3 points)
-slope_epoch=np.zeros((3,2))
-slope_epoch[0,0]=np.mean(thres_plot1)
-slope_epoch[1,0]=np.mean(thres_plot2)
-slope_epoch[2,0]=np.mean(thres_plot3)
-slope_epoch[0,1]=sem(thres_plot1)
-slope_epoch[1,1]=sem(thres_plot2)
-slope_epoch[2,1]=sem(thres_plot3)
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.plot(np.arange(3),slope_epoch[:,0],color='green')
-ax.fill_between(np.arange(3),slope_epoch[:,0]-slope_epoch[:,1],slope_epoch[:,0]+slope_epoch[:,1],color='green',alpha=0.5)
-ax.set_ylabel('Slope Fit $\Delta$FR after change')
-ax.set_xlabel('Sessions')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/slope_fr_neu_change_three_epochs_both.pdf',dpi=500,bbox_inches='tight')
-
-# Histogram slopes for each epoch
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.hist(thres_plot1,bins=50,color='green')
-ax.axvline(np.mean(thres_plot1),color='green',linestyle='--')
-ax.set_ylabel('Number of occurrences')
-ax.set_xlabel('Slope')
-ax.set_xlim([0,6])
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/hist_neu_slopes_epoch_early_both.pdf',dpi=500,bbox_inches='tight')
-
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.hist(thres_plot2,bins=50,color='green')
-ax.axvline(np.mean(thres_plot2),color='green',linestyle='--')
-ax.set_ylabel('Number of occurrences')
-ax.set_xlabel('Slope')
-ax.set_xlim([0,6])
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/hist_neu_slopes_epoch_mid_both.pdf',dpi=500,bbox_inches='tight')
-
-fig=plt.figure(figsize=(2.3,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.hist(thres_plot3,bins=50,color='green')
-ax.axvline(np.mean(thres_plot3),color='green',linestyle='--')
-ax.set_ylabel('Number of occurrences')
-ax.set_xlabel('Slope')
-ax.set_xlim([0,6])
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/hist_neu_slopes_epoch_late_both.pdf',dpi=500,bbox_inches='tight')
+# # Mean FR for each epoch and fit the curve (3 plots)
+# fr_epoch=np.zeros((3,t_back+t_forw))
+# fr_epoch[0]=np.nanmean(np.concatenate((fr_ch_all[0,0:4],fr_ch_all[1,0:5]),axis=0),axis=0)
+# fr_epoch[1]=np.nanmean(np.concatenate((fr_ch_all[0,4:8],fr_ch_all[1,5:10]),axis=0),axis=0)
+# fr_epoch[2]=np.nanmean(np.concatenate((fr_ch_all[0,8:12],fr_ch_all[1,10:15]),axis=0),axis=0)
+# epoch=['early','mid','late']
+# for i in range(3):
+#     ff,popt=fit_plot(xx,fr_epoch[i],t_back,t_forw,maxfev,method,bounds,p0)
+#     fig=plt.figure(figsize=(2.3,2))
+#     ax=fig.add_subplot(111)
+#     miscellaneous.adjust_spines(ax,['left','bottom'])
+#     ax.scatter(xx,fr_epoch[i],color='black',s=5)
+#     ax.plot(xx,ff,color='green')
+#     #ax.plot(xx[(t_back+1):],ff,color='green')
+#     ax.axvline(0,color='black',linestyle='--')
+#     ax.set_ylabel('Mean firing rate (z-score)')
+#     ax.set_xlabel('Sessions')
+#     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/fr_ctx_change_both_%s.pdf'%epoch[i],dpi=500,bbox_inches='tight')
