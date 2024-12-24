@@ -183,6 +183,13 @@ for hh in range(n_files):
 
     # Train RNN
     rec=nn_pytorch.nn_recurrent_sparse(reg=reg,lr=lr,output_size=2,hidden_dim=n_hidden)
+    uti=rec.model(all_test['input_rec'],sigma_noise=sigma_test)[2].detach().numpy()
+    eigeni0=np.linalg.eigh(np.cov(uti[:,0]))[0]
+    eigeni20=np.linalg.eigh(np.cov(uti[:,-1]))[0]
+    
+    rwi=rec.model.hidden_weights.weight.detach().numpy()
+    cov_rwi=np.cov(rwi)
+    eigeni=np.linalg.eigh(cov_rwi)[0]
     rec.fit(input_seq=all_train['input_rec'],target_seq=all_train['target_vec'],context=all_train['context'],batch_size=batch_size,n_epochs=n_epochs,sigma_noise=sigma_train,wei_ctx=wei_ctx,beta=beta,b_exp=b_exp)
 
     # Indices trials
@@ -215,6 +222,23 @@ for hh in range(n_files):
     b2=rec.model.fc.bias.detach().numpy()[1]
     bias=(b1-b2)
 
+    # Recurrent weights
+    rw=rec.model.hidden_weights.weight.detach().numpy()
+    cov_rw=np.cov(rw)
+    eigen=np.linalg.eigh(cov_rw)[0]
+   
+    ut=rec.model(all_test['input_rec'],sigma_noise=sigma_test)[2].detach().numpy()
+    eigen0=np.linalg.eigh(np.cov(ut[:,0]))[0]
+    eigen20=np.linalg.eigh(np.cov(ut[:,-1]))[0]
+    plt.plot(eigeni0[::-1]/np.sum(eigeni0),color='red')
+    plt.plot(eigen0[::-1]/np.sum(eigen0),color='blue')
+    plt.show()
+
+    plt.plot(eigeni20[::-1]/np.sum(eigeni20),color='red')
+    plt.plot(eigen20[::-1]/np.sum(eigen20),color='blue')
+    plt.show()
+
+    
     # # Info Choice and Context
     # for j in range(t_steps):
     #     aa=class_twovars(ut_test[:,j],stimulus,context)

@@ -237,6 +237,7 @@ for hh in range(n_files):
     all_test=miscellaneous_ANN.create_input(n_trials_test,t_steps,coh_uq,input_noise,scale_ctx=scale_ctx)
     context=all_test['input_rec'].detach().numpy()[:,0,1]
     ctx_uq=np.unique(context)
+    print (ctx_uq)
     stimulus=all_test['target_vec'].detach().numpy()
     coherence=all_test['coherence']
 
@@ -261,6 +262,10 @@ for hh in range(n_files):
     b1=rec.model.fc.bias.detach().numpy()[0]
     b2=rec.model.fc.bias.detach().numpy()[1]
     bias=(b1-b2)
+
+    # Recurrent weights
+    rw=rec.model.hidden_weights.weights.detach().numpy()
+    print (rw)
 
     # Info Choice and Context
     for j in range(t_steps):
@@ -476,7 +481,7 @@ ax.axvline(0,color='black',linestyle='--')
 ax.set_ylim([0,1])
 ax.set_ylabel('Probability Right Response')
 ax.set_xlabel('Evidence Right Choice (%)')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_rnn_psychometric.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_rnn_psychometric.pdf',dpi=500,bbox_inches='tight')
 
 # Probability Correct
 perfbias_m=np.mean(perf_bias,axis=0)
@@ -498,7 +503,7 @@ ax.axvline(0,color='black',linestyle='--')
 ax.set_ylim([0,1])
 ax.set_ylabel('Probability Correct')
 ax.set_xlabel('Evidence Right Choice (%)')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_rnn_perf_bias.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/figures/figure_rnn_perf_bias.pdf',dpi=500,bbox_inches='tight')
 
 
         
