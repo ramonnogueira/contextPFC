@@ -186,7 +186,7 @@ alph=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8,0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.
 col2=['green','green','blue','blue']
 alph2=[1,0.3,0.3,1]
 
-wei_ctx=[1,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+wei_ctx=[4,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
 bias_vec=np.linspace(-10,10,31)
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,3))
