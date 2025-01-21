@@ -91,6 +91,40 @@ def func_fit_chrono(xx,rt,params_psy,n_gen,maxfev,p0,method):
     
     return np.mean(yy,axis=0),popt
 
+def calculate_ind_ch_corr(ind_ch,reward):
+    n_forw=7
+    n_ch=len(ind_ch)
+    ind_ch_corr=np.zeros(n_ch)
+    for i in range(n_ch):
+        aa=(np.arange(n_forw)+ind_ch[i])
+        bb_pre=aa*reward[aa]
+        bb=bb_pre[bb_pre>0]
+        ind_ch_corr[i]=bb[0]
+    return np.array(ind_ch_corr,dtype=np.int16)
+
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
+
+def ret_ind_train(coherence,ind_ch,t_back,t_forw):      
+    ind_train=np.arange(len(coherence))
+    for p in range(len(ind_ch)):
+        ind_t=np.arange(t_back+t_forw)-t_back+ind_ch[p]
+        ind_del=[]
+        for pp in range(len(ind_t)):
+            try:
+                ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
+            except:
+                None
+                #print ('error aqui')
+        ind_del=np.array(ind_del)
+        ind_train=np.delete(ind_train,ind_del)
+    return ind_train
+
+
 #################################################
 
 monkeys=['Niels','Galileo']
@@ -120,18 +154,18 @@ for k in range(len(monkeys)):
     if monkeys[k]=='Niels':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2'])
-        indd=8
+        indd=0
         indu=12 # Careful!
         ind_uu=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14]) # missing 4 and 10
     if monkeys[k]=='Galileo':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
-        indd=20
+        indd=0
         indu=30 # Careful!
         ind_uu=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
     xx_fit=np.linspace(xx_coh[0],xx_coh[-1],n_gen)
 
-    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
     order=order_files(files_pre)
     files=np.array(files_pre[order])[indd:indu]
@@ -149,31 +183,28 @@ for k in range(len(monkeys)):
         #Load data
         data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
         beha=miscellaneous.behavior(data,group_coh)
-        change_ctx=beha['change_ctx']
-        ind_ch=np.where(change_ctx!=0)[0]
-        index_nonan=beha['index_nonan']
-        reward=beha['reward']
-        coh_signed=beha['coherence_signed']
+        reward=beha['reward'][1:]
+        coh_signed=beha['coherence_signed'][1:]
         coh_set_signed=np.unique(coh_signed)
         if monkeys[k]=='Niels':
             coh_set_signed=coh_set_signed[1:-1]
-        context=beha['context']
-        stimulus=beha['stimulus']
-        choice=beha['choice']
-        rt=beha['reaction_time']
-
+        stimulus=beha['stimulus'][1:]
+        choice=beha['choice'][1:]
+        rt=beha['reaction_time'][1:]
         context_prepre=beha['context']
         ctx_ch=(context_prepre[1:]-context_prepre[0:-1])
         context_pre=context_prepre[1:] 
         ind_ch_pre=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
-        
         ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
         context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
- 
-        
+
+        t_back=0
+        t_forw=100
+        ind_fit=ret_ind_train(stimulus,ind_ch,t_back,t_forw)
+
         # Psychometric curve
         for i in range(len(coh_set_signed)):
-            ind_coh=np.where(coh_signed==coh_set_signed[i])[0]
+            ind_coh=np.intersect1d(np.where(coh_signed==coh_set_signed[i])[0],ind_fit)
             ind_ct0=np.where(context[ind_coh]==0)[0]
             ind_ct1=np.where(context[ind_coh]==1)[0]
             psycho[kk,i,0]=np.mean(choice[ind_coh])
@@ -196,7 +227,8 @@ for k in range(len(monkeys)):
         #########################################
         # Compute chronometric curves
         for i in range(len(coh_set_signed)):
-            ind_coh=np.where(coh_signed==coh_set_signed[i])[0]
+            ind_coh=np.intersect1d(np.where(coh_signed==coh_set_signed[i])[0],ind_fit)
+            #ind_coh=np.where(coh_signed==coh_set_signed[i])[0]
             ind_ct0=np.where(context[ind_coh]==0)[0]
             ind_ct1=np.where(context[ind_coh]==1)[0]
             chrono[kk,i,0]=np.nanmean(rt[ind_coh])
@@ -217,6 +249,22 @@ for k in range(len(monkeys)):
         ff2=func_fit_chrono(xx[ind_fit2],rt[ind_fit2],params_psy[kk,:,2],n_gen,maxfev,p02_chr,method)
         fit_chrono[kk,:,2]=ff2[0]
         params_rt[kk,:,2]=ff2[1]
+
+    aa=(params_psy[:,1,2]-params_psy[:,1,1])
+    if monkeys[k]=='Niels':
+        print ('PSY ',np.mean(aa[0:4]),np.mean(aa[4:8]),np.mean(aa[8:]))
+    if monkeys[k]=='Galileo':
+        print ('PSY ',np.mean(aa[0:10]),np.mean(aa[10:20]),np.mean(aa[20:]))
+    plt.plot(params_psy[:,1,2]-params_psy[:,1,1])
+    plt.show()
+
+    aa=(params_rt[:,3,2]-params_rt[:,3,1])
+    if monkeys[k]=='Niels':
+        print ('RT ',np.mean(aa[0:4]),np.mean(aa[4:8]),np.mean(aa[8:]))
+    if monkeys[k]=='Galileo':
+        print ('RT ',np.mean(aa[0:10]),np.mean(aa[10:20]),np.mean(aa[20:]))
+    plt.plot(params_rt[:,3,2]-params_rt[:,3,1])
+    plt.show()
 
     #################################################################
     # Plot Psychometric
@@ -244,7 +292,7 @@ for k in range(len(monkeys)):
     bax.set_yticks([0,0.2,0.4,0.6,0.8,1.0])
     #bax.set_xticks([-0.5,-0.2,0,0.2,0.5])
     #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
     #########################################
     # Plot Chronometric
@@ -269,7 +317,7 @@ for k in range(len(monkeys)):
     bax.set_ylabel('Reaction Time (ms)')
     bax.set_xlabel('Motion Strength (% Coh.)')
     #plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
     psycho_all[k,0,ind_uu]=psycho_m
     psycho_all[k,1,ind_uu]=psycho_sem
