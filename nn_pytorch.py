@@ -107,8 +107,8 @@ class nn_recurrent_sparse():
             l1c1=torch.mean(self.loss(output[index00][:,[0,1]],target_seq_torch[index00].view(-1).long()))
             l_total=(l0c0+l1c0+l0c1+l1c1)
             l_sparse=sparsity_loss(net_units,b_exp)
-            if t==0 or t==(n_epochs-1):
-                print (t,l_total.detach().numpy(),l_sparse.detach().numpy())
+            #if t==0 or t==(n_epochs-1):
+            print (t,l_total.detach().numpy(),l_sparse.detach().numpy())
            
             for batch_idx, (data, contxt, targets) in enumerate(train_loader):
                 ind11=(targets==0)*(contxt==ctx_uq[0])
@@ -143,20 +143,24 @@ class recurrent_noisy(torch.nn.Module): # We always send the input with size bat
             hidden = torch.randn(input.size(0),self.hidden_dim).to(input.device)
             #hidden = torch.zeros(input.size(0),self.hidden_dim).to(input.device)
         
-        def recurrence(input, hidden):
-            #h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-            h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-            #h_new = torch.sigmoid(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-            return h_new        
+        # def recurrence(input, hidden):
+        #     #h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+        #     h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+        #     #h_new = torch.sigmoid(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+        #     return h_new        
     
-        net_units = torch.zeros(input.size(0),input.size(1),self.hidden_dim)
-        steps = range(input.size(1))
-        for i in steps:
-            hidden = recurrence(input[:,i], hidden)
-            #hidden = recurrence_lin(input[:,i], hidden)
-            net_units[:,i]=hidden
+        # net_units = torch.zeros(input.size(0),input.size(1),self.hidden_dim)
+        # steps = range(input.size(1))
+        # for i in steps:
+        #     hidden = recurrence(input[:,i], hidden)
+        #     #hidden = recurrence_lin(input[:,i], hidden)
+        #     net_units[:,i]=hidden
+
+        model_gru=torch.nn.GRU(input_size=2,hidden_size=self.hidden_dim,batch_first=True)
+        net_units, hidden  = model_gru(input)
+        print (net_units.shape, hidden.shape)
             
-        hidden = hidden.detach()
+        #hidden = hidden.detach()
         out = net_units[:,-1].contiguous().view(-1, self.hidden_dim)
         out = self.fc(out)
         read_out_units = self.fc(net_units)

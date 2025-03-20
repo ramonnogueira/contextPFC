@@ -190,7 +190,7 @@ for k in range(len(monkeys)):
         dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive)
         files_groups=[[0,2],[2,4],[4,6],[6,8],[8,10],[10,12],[12,14],[14,16],[16,18],[18,20],[20,22],[22,24],[24,26],[26,28],[28,30]]
   
-    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
     order=order_files(files_pre)
     files_all=np.array(files_pre[order])
@@ -359,7 +359,7 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Trials after context change')
     ax.set_ylabel('Prob. (Choice = Context)')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/prob_choice_context_beha_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
     # Plot Neuro
     fig=plt.figure(figsize=(2.3,2))
@@ -374,7 +374,7 @@ for k in range(len(monkeys)):
     ax.set_xlabel('Trials after context change')
     ax.set_ylabel('Decoding Perf. Context ')
     plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/prob_choice_context_neu_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
     
     # Plot decrease Behavior and Neuronal theresholds
     fig=plt.figure(figsize=(2.3,2))
@@ -388,7 +388,13 @@ for k in range(len(monkeys)):
     ax.set_ylabel('Threshold')
     plt.legend(loc='best')
     plt.xticks([0,5,10])
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    if monkeys[k]=='Niels':
+        print ('Last beha thres ',inter_beha[8:],np.nanmean(inter_beha[8:]))
+        print ('Last neu thres ',inter_neu[8:],np.nanmean(inter_neu[8:]))
+    if monkeys[k]=='Galileo':
+        print ('Last beha thres ',inter_beha[10:],np.nanmean(inter_beha[10:]))
+        print ('Last neu thres ',inter_neu[10:],np.nanmean(inter_neu[10:]))
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/thresholds_vs_learning_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
     # Plot correlation
     fig=plt.figure(figsize=(2.3,2))
@@ -400,7 +406,7 @@ for k in range(len(monkeys)):
         ax.scatter(inter_beha[i],inter_neu[i],color='black',alpha=(i+1)/len(inter_beha),s=10)
     ax.set_xlabel('Threshold Behavioral')
     ax.set_ylabel('Threshold Neuronal')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/correlation_prob_choice_context_neu_%s_aft_corr_def_learn.pdf'%(monkeys[k]),dpi=500,bbox_inches='tight')
 
 ##################################
 beha_ch_m=np.nanmean(beha_ctx_ch_all,axis=0)
@@ -426,7 +432,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Prob. (Choice = Context)')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_beha_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/prob_choice_context_beha_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
 
 # Plot Neuro
 fig=plt.figure(figsize=(2.3,2))
@@ -441,7 +447,7 @@ ax.set_ylim([0,1])
 ax.set_xlabel('Trials after context change')
 ax.set_ylabel('Decoding Perf. Context ')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/prob_choice_context_neu_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/prob_choice_context_neu_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
 
 # Normalize thresholds
 maxb1=np.nanmax(inter_beha_all[0:12])
@@ -489,7 +495,7 @@ ax.set_ylabel('Normalized Threshold')
 plt.legend(loc='best')
 ax.set_ylim([0,1])
 #plt.xticks([0,5,10])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/thresholds_vs_learning_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/thresholds_vs_learning_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
 
 # Plot correlation
 fig=plt.figure(figsize=(2.3,2))
@@ -501,7 +507,7 @@ for i in range(len(inter_beha_norm)):
     ax.scatter(inter_beha_norm[i]+np.random.normal(0,0.02),inter_neu_norm[i]+np.random.normal(0,0.02),color='black',alpha=alph_aa[i],s=10)
 ax.set_xlabel('Normalized Behavioral Th.')
 ax.set_ylabel('Normalized Neuronal Th.')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/correlation_prob_choice_context_neu_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/correlation_prob_choice_context_neu_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
 
 
 

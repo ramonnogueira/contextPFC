@@ -279,16 +279,16 @@ for k in range(len(monkeys)):
             thres_neu_vec[hh,oo]=popt[0]
             thres_neu_all[k,hh,oo]=popt[0]
 
-            fig=plt.figure(figsize=(2.3,2))
-            ax=fig.add_subplot(111)
-            miscellaneous.adjust_spines(ax,['left','bottom'])
-            ax.plot(xx,diff_fr_gr_neu_m[oo],color='black',lw=0.5)
-            ax.plot(xx,func_fit,color='green')
-            ax.axvline(0,color='black',linestyle='--')
-            ax.set_xlabel('Trials after context change')
-            ax.set_ylabel('Norm. Firing Rate (sp/s)')
-            fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/neurons_fr_change/fr_change_neu_%i_group_%i_monkey_%s.pdf'%(oo,hh,monkeys[k]),dpi=500,bbox_inches='tight')
-            fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/neurons_fr_change/fr_change_neu_%i_group_%i_monkey_%s.png'%(oo,hh,monkeys[k]),dpi=500,bbox_inches='tight')
+            # fig=plt.figure(figsize=(2.3,2))
+            # ax=fig.add_subplot(111)
+            # miscellaneous.adjust_spines(ax,['left','bottom'])
+            # ax.plot(xx,diff_fr_gr_neu_m[oo],color='black',lw=0.5)
+            # ax.plot(xx,func_fit,color='green')
+            # ax.axvline(0,color='black',linestyle='--')
+            # ax.set_xlabel('Trials after context change')
+            # ax.set_ylabel('Norm. Firing Rate (sp/s)')
+            # fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/neurons_fr_change/fr_change_neu_%i_group_%i_monkey_%s.pdf'%(oo,hh,monkeys[k]),dpi=500,bbox_inches='tight')
+            # fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/neurons_fr_change/fr_change_neu_%i_group_%i_monkey_%s.png'%(oo,hh,monkeys[k]),dpi=500,bbox_inches='tight')
 
     # How many neurons are discarded for too high of a slope?
     print ('Monkey %s'%monkeys[k])

@@ -145,32 +145,32 @@ def evol_eigen(act_orig,act,t_steps,n_neu):
 # Parameters       
 n_trials_train=200
 n_trials_test=200
-t_steps=20
+t_steps=5
 xx=np.arange(t_steps)/10
 
-batch_size=1000
-n_hidden=10
-sigma_train=1
-sigma_test=1
-input_noise=1
+batch_size=200#1000
+n_hidden=3
+sigma_train=0
+sigma_test=0
+input_noise=0
 scale_ctx=1 #smaller than 0.01 there is no effect in psycho curves.
-ctx_noise=1
+ctx_noise=0
 
 reg=1e-5
-lr=0.01
-n_epochs=200#1000
-n_files=10
+lr=0.0001
+n_epochs=1000#1000
+n_files=3
 
-zt_ref=0.7#Cut-off on decision variable for reaction time (threshold or the decision bound). We used 0.7 for [1,1] and [2,1] and 0.9 for [4,1].
+zt_ref=0.9#Cut-off on decision variable for reaction time (threshold or the decision bound). We used 0.7 for [1,1] and [2,1] and 0.9 for [4,1].
 
-save_fig=False
+save_fig=True
 
 coh_uq=np.linspace(-1,1,11)
 #coh_uq=np.linspace(-0.5,0.5,11)
 #coh_uq=np.array([-1,-0.5,-0.25,-0.1,-0.05,0,0.05,0.1,0.25,0.5,1])
 coh_uq_abs=coh_uq[coh_uq>=0]
 print (coh_uq_abs)
-wei_ctx=[4,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+wei_ctx=[1,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 beta=0
 b_exp=1
 
@@ -195,6 +195,7 @@ for hh in range(n_files):
     # Train RNN
     rec=nn_pytorch.nn_recurrent_sparse(reg=reg,lr=lr,output_size=2,hidden_dim=n_hidden)
     act_orig=rec.model(all_test['input_rec'],sigma_noise=sigma_test)[2].detach().numpy()
+    #act_orig=rec.model(all_test['input_rec'])[1].detach().numpy()
     
     rec.fit(input_seq=all_train['input_rec'],target_seq=all_train['target_vec'],context=all_train['context'],batch_size=batch_size,n_epochs=n_epochs,sigma_noise=sigma_train,wei_ctx=wei_ctx,beta=beta,b_exp=b_exp)
 
@@ -303,21 +304,21 @@ for hh in range(n_files):
 
 ######################################################
 # Eigenvalues
-eigen_m=np.nanmean(eigen_all,axis=0)
-eigen_sem=sem(eigen_all,axis=0,nan_policy='omit')
-for i in range(t_steps):
-    fig=plt.figure(figsize=(2.3,2))
-    ax=fig.add_subplot(111)
-    miscellaneous.adjust_spines(ax,['left','bottom'])
-    ax.plot(eigen_m[0,i],color='red',label='Pre-trained')
-    ax.plot(eigen_m[1,i],color='blue',label='Trained')
-    ax.fill_between(np.arange(n_hidden),eigen_m[0,i]-eigen_sem[0,i],eigen_m[0,i]+eigen_sem[0,i],color='red',alpha=0.5)
-    ax.fill_between(np.arange(n_hidden),eigen_m[1,i]-eigen_sem[1,i],eigen_m[1,i]+eigen_sem[1,i],color='blue',alpha=0.5)
-    ax.set_ylim([0,1])
-    ax.set_xlabel('Eigenvalues')
-    ax.set_ylabel('Variance Explained')
-    plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/eigenspectrum_rnn_t_%i.png'%i,dpi=500,bbox_inches='tight')
+# eigen_m=np.nanmean(eigen_all,axis=0)
+# eigen_sem=sem(eigen_all,axis=0,nan_policy='omit')
+# for i in range(t_steps):
+#     fig=plt.figure(figsize=(2.3,2))
+#     ax=fig.add_subplot(111)
+#     miscellaneous.adjust_spines(ax,['left','bottom'])
+#     ax.plot(eigen_m[0,i],color='red',label='Pre-trained')
+#     ax.plot(eigen_m[1,i],color='blue',label='Trained')
+#     ax.fill_between(np.arange(n_hidden),eigen_m[0,i]-eigen_sem[0,i],eigen_m[0,i]+eigen_sem[0,i],color='red',alpha=0.5)
+#     ax.fill_between(np.arange(n_hidden),eigen_m[1,i]-eigen_sem[1,i],eigen_m[1,i]+eigen_sem[1,i],color='blue',alpha=0.5)
+#     ax.set_ylim([0,1])
+#     ax.set_xlabel('Eigenvalues')
+#     ax.set_ylabel('Variance Explained')
+#     plt.legend(loc='best')
+#     fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/eigenspectrum_rnn_t_%i.png'%i,dpi=500,bbox_inches='tight')
 
 # Plot performance vs time for different coherences
 perf_abs_m=np.mean(perf_task_abs,axis=0)
@@ -333,9 +334,9 @@ ax.plot(np.arange(t_steps),0.5*np.ones(t_steps),color='black',linestyle='--')
 ax.set_ylim([0.4,1])
 ax.set_ylabel('Probability Correct')
 ax.set_xlabel('Time')
-if save_fig:
+#if save_fig:
     #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i_prueba2.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i_prueba2.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_rnn_prob_correct_coh_rr%i%i_prueba2.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 ########################################################
 #print (np.mean(perf_dec_ctx,axis=0))
@@ -361,8 +362,8 @@ ax.set_ylabel('Reaction time (steps)')
 ax.set_xlabel('Evidence Right (Coherence)')
 ax.set_ylim([1,20])
 if save_fig:
-    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i_prueba2.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_reaction_time_rr%i%i_prueba2.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_reaction_time_rr%i%i_prueba2.pdf'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_reaction_time_rr%i%i_prueba2.png'%(wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 for t_plot in range(t_steps):
     # Figure psychometric
@@ -382,7 +383,7 @@ for t_plot in range(t_steps):
     ax.set_ylabel('Probability Right Response')
     ax.set_xlabel('Evidence Right (Coherence)')
     if save_fig:
-        fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i_prueba2.png'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+        fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_rnn_psychometric_t%i_rr%i%i_prueba2.pdf'%(t_plot,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
     # # Probability Correct
     # fig=plt.figure(figsize=(2.3,2))

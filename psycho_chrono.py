@@ -120,18 +120,18 @@ for k in range(len(monkeys)):
     if monkeys[k]=='Niels':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-3.2,-1.6,0,1.6,3.2,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2'])
-        indd=8
-        indu=12 # Careful!
+        indd=0 #8
+        indu=4 #12 Careful!
         ind_uu=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14]) # missing 4 and 10
     if monkeys[k]=='Galileo':
         xx_coh=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
-        indd=20
-        indu=30 # Careful!
+        indd=0 #20
+        indu=10 #30 Careful!
         ind_uu=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
     xx_fit=np.linspace(xx_coh[0],xx_coh[-1],n_gen)
 
-    abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
     order=order_files(files_pre)
     files=np.array(files_pre[order])[indd:indu]
@@ -255,7 +255,8 @@ for k in range(len(monkeys)):
     bax.set_yticks([0,0.2,0.4,0.6,0.8,1.0])
     #bax.set_xticks([-0.5,-0.2,0,0.2,0.5])
     #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/psychometric_monkey_%s_early.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
     #########################################
     # Plot Chronometric
@@ -280,7 +281,8 @@ for k in range(len(monkeys)):
     bax.set_ylabel('Reaction Time (ms)')
     bax.set_xlabel('Motion Strength (% Coh.)')
     #plt.legend(loc='best')
-    fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_monkey_%s_def2.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/chronometric_monkey_%s_early.pdf'%monkeys[k],dpi=500,bbox_inches='tight')
 
     psycho_all[k,0,ind_uu]=psycho_m
     psycho_all[k,1,ind_uu]=psycho_sem
@@ -323,7 +325,8 @@ bax.set_ylim([-0.05,1.05])
 bax.set_yticks([0,0.2,0.4,0.6,0.8,1.0])
 #bax.set_xticks([-0.5,-0.2,0,0.2,0.5])
 #plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_both_def2.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/psychometric_both_def2.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/psychometric_both_early.pdf',dpi=500,bbox_inches='tight')
 
 # Chronometric All
 chrono_all_m=np.nanmean(chrono_all[:,0],axis=0)
@@ -347,7 +350,8 @@ bax.scatter(xx_coh_all,chrono_all_m[:,2],color='blue',s=3)#,alpha=0.5)
 bax.set_ylabel('Reaction Time (ms)')
 bax.set_xlabel('Motion Strength (% Coh.)')
 #plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_both_def2.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/chronometric_both_def2.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/chronometric_both_early.pdf',dpi=500,bbox_inches='tight')
 
 # # Plot Psychometric Params through Learning
 # fig=plt.figure(figsize=(3,2))

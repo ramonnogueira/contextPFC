@@ -86,16 +86,16 @@ for hh in range(len(monkeys)):
         xx_plot=np.array(['-75','-51.2','-25.6','-12.8','-6.4','-3.2','-1.6','0','1.6','3.2','6.4','12.8','25.6','51.2','75'])
         ind_ext=np.array([1,2,3,4,5,6,7,8,9,10,11,12,13]) # missing 0 and 14
         ind_put=np.array([0,1,2,3,5,6,7,8,9,11,12,13,14]) # missing 4 and 10
-        ind_l=8
-        ind_u=12
+        ind_l=0 #8
+        ind_u=4 #12
     if monkey=='Galileo':
         dic_time=np.array([0,600,200,200]) # Careful! time pre, time post, bin size, step size
         xx_coh_pre=np.array([-51.2,-25.6,-12.8,-6.4,-4.5,-3.2,-1.6,0,1.6,3.2,4.5,6.4,12.8,25.6,51.2])
         xx_plot=np.array(['-51.2','-25.6','-12.8','-6.4','-4.5','-3.2','-1.6','0','1.6','3.2','4.5','6.4','12.8','25.6','51.2'])
         ind_ext=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
         ind_put=np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
-        ind_l=20
-        ind_u=30
+        ind_l=0 #20
+        ind_u=10 #30
     xx_coh=np.log(abs(xx_coh_pre))
     xx_coh[xx_coh<-100]=0
     xx_coh[xx_coh_pre<0]=-1*xx_coh[xx_coh_pre<0]
@@ -110,8 +110,6 @@ for hh in range(len(monkeys)):
     order=miscellaneous.order_files(files_pre)
     files=np.array(files_pre[order])[ind_l:ind_u]
     print (files)
-    #abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/sorted/late/%s/'%(monkey)
-    #files=os.listdir(abs_path)
 
     chrono_neuro_flat_pre=nan*np.zeros((n_rand,n_coh,3))
     psycho_neuro_flat_pre=nan*np.zeros((n_rand,n_coh,3))
@@ -277,7 +275,8 @@ for hh in range(len(monkeys)):
     plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
     #plt.legend(loc='best')
     plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_%s_early.pdf'%(monkey),dpi=500,bbox_inches='tight')
     
     #####################################
     # # Chrono
@@ -326,7 +325,8 @@ for hh in range(len(monkeys)):
     ax.set_xlabel('Motion Strength (% Coh.)')
     #plt.xticks(xx_coh,coh_plot[0])
     plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s_early.pdf'%(monkey),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_%s.pdf'%(monkey),dpi=500,bbox_inches='tight')
 
     psycho_neuro_all[hh,0,ind_put]=psycho_neuro_flat_m[ind_ext]
     psycho_neuro_all[hh,1,ind_put]=psycho_neuro_flat_std[ind_ext]
@@ -374,7 +374,8 @@ ax.set_ylim([-0.05,1.05])
 plt.yticks([0,0.2,0.4,0.6,0.8,1.0])
 #plt.legend(loc='best')
 plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_both.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_both.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_psychometric_both_early.pdf',dpi=500,bbox_inches='tight')
 
 # Chrono
 fig=plt.figure(figsize=(2.3,2))
@@ -395,4 +396,5 @@ ax.set_ylabel('Distance to Boundary')
 ax.set_xlabel('Motion Strength (% Coh.)')
 #plt.xticks(xx_coh,coh_plot[0])
 plt.xticks([-2.54,0,2.54],['-12.8','0','12.8'])
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_both.pdf',dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_both.pdf',dpi=500,bbox_inches='tight')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_neuro_pseudo_chronochometric_both_early.pdf',dpi=500,bbox_inches='tight')

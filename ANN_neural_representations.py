@@ -154,14 +154,14 @@ t_steps=20
 xx=np.arange(t_steps)/10
 
 batch_size=1000
-n_hidden=10
-n_neu=10
-n_pca=10
+n_hidden=50
+n_neu=50
+n_pca=50
 sigma_train=1
 sigma_test=1
 input_noise=1
 scale_ctx=1
-ctx_noise=0
+ctx_noise=1
 
 reg=1e-5 #1e-10
 lr=0.01
@@ -292,9 +292,9 @@ for hh in range(n_files):
             ax.set_xlabel('PC1')
             ax.set_ylabel('PC2')
             ax.set_zlabel('PC3')
-            ax.set_xlim([-3,3])
-            ax.set_ylim([-3,3])
-            ax.set_zlim([-3,3])
+            ax.set_xlim([-8,8])
+            ax.set_ylim([-8,8])
+            ax.set_zlim([-8,8])
             plt.show()
             plt.close(fig)
 
