@@ -59,65 +59,10 @@ def adjust_spines(ax, spines):
         # no xaxis ticks
         ax.xaxis.set_ticks([])
 
-
-def order_files(x):
-    ord_pre=[]
-    for i in range(len(x)):
-        ord_pre.append(x[i][1:9])
-    ord_pre=np.array(ord_pre)
-    order=np.argsort(ord_pre)
-    return order
-
 # Best for behavior
 def func1(x,a,b,c):
     y=1.0/(1+np.exp(-a*x))
     return b*y+c
-
-def calculate_ind_ch_corr(ind_ch,reward):
-    n_forw=7
-    n_ch=len(ind_ch)
-    ind_ch_corr=np.zeros(n_ch)
-    for i in range(n_ch):
-        aa=(np.arange(n_forw)+ind_ch[i])
-        bb_pre=aa*reward[aa]
-        bb=bb_pre[bb_pre>0]
-        ind_ch_corr[i]=bb[0]
-    return np.array(ind_ch_corr,dtype=np.int16)
-
-# This function returns the indices for trials where:
-# - context change from 0 to 1 correct stimulus 0
-# - context change from 0 to 1 correct stimulus 1
-# - context change from 1 to 0 correct stimulus 0
-# - context change from 1 to 0 correct stimulus 1 
-def calculate_ind_ch_corr2(ind_ch01,ind_ch10,reward,stimulus):
-    n_forw=7
-
-    # Context change from 0 to 1
-    ind_ch01_s0=[]
-    ind_ch01_s1=[]
-    n_ch01=len(ind_ch01)
-    for i in range(n_ch01):
-        aa=(np.arange(n_forw)+ind_ch01[i])
-        bb_pre=aa*reward[aa]
-        bb=bb_pre[bb_pre>0]
-        if stimulus[bb[0]]==0:
-            ind_ch01_s0.append(bb[0])
-        if stimulus[bb[0]]==1:
-            ind_ch01_s1.append(bb[0])
-
-    # Context change from 1 to 0
-    ind_ch10_s0=[]
-    ind_ch10_s1=[]
-    n_ch10=len(ind_ch10)
-    for i in range(n_ch10):
-        aa=(np.arange(n_forw)+ind_ch10[i])
-        bb_pre=aa*reward[aa]
-        bb=bb_pre[bb_pre>0]
-        if stimulus[bb[0]]==0:
-            ind_ch10_s0.append(bb[0])
-        if stimulus[bb[0]]==1:
-            ind_ch10_s1.append(bb[0])
-    return np.array(ind_ch01_s0,dtype=np.int16),np.array(ind_ch01_s1,dtype=np.int16),np.array(ind_ch10_s0,dtype=np.int16),np.array(ind_ch10_s1,dtype=np.int16)
 
 def func_eval(index,t_back,t_forw,stimulus,choice,new_ctx):
     pp=nan*np.zeros((2,t_forw+t_back))
@@ -160,8 +105,8 @@ def ret_ind_train(coherence,ind_ch,t_back,t_forw):
 def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     popt,pcov=curve_fit(func1,xx[(t_back+1):],yy[(t_back+1):],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func1(xx[(t_back+1):],popt[0],popt[1],popt[2])#,popt[3])
-    print ('Fit ',popt)
-    print (pcov)
+    #print ('Fit ',popt)
+    #print (pcov)
     # plt.scatter(xx,yy,color='blue',s=5)
     # plt.plot(xx[(t_back+1):],fit_func,color='black')
     # plt.axvline(0,color='black',linestyle='--')
@@ -169,13 +114,6 @@ def fit_plot(xx,yy,t_back,t_forw,maxfev,method,bounds,p0):
     # plt.ylim([-0.1,1.1])
     # plt.show()
     return fit_func
-
-def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
-    context_subj=context_pre.copy()
-    for i in range(len(ctx_ch)):
-        diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
-    return context_subj
 
 #################################################
 
@@ -192,13 +130,11 @@ delta_type='fit'
 talig='dots_on' #'response_edf' #dots_on
 thres=0
 reg=1e-3
-maxfev=100000
+maxfev=1000000000
 method='dogbox'
-bounds=([0,0,-0.5],[10,1,0.5])
+bounds=([0,0,-0.5],[10,0.8,0.5])
 #bounds=([-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf])
-p0_low=(0.05,0.5,-0.3)
-p0_high=(0.05,0.5,0.3)
-p0=(0.05,0.5,0.01)
+p0=(0.05,0.5,-0.2)
 
 xx=np.arange(t_back+t_forw)-t_back
 
@@ -231,9 +167,9 @@ for k in range(len(monkeys)):
         
         abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
         files_pre=np.array(os.listdir(abs_path))
-        order=order_files(files_pre)
+        order=miscellaneous.order_files(files_pre)
         files_all=np.array(files_pre[order])
-        print (files_all)
+        #print (files_all)
         
         fit_beha=nan*np.zeros((2,2,5,t_back+t_forw))
         y0_beha=nan*np.zeros((2,2,5))
@@ -252,7 +188,7 @@ for k in range(len(monkeys)):
             neuro_untested_rlow=[]
             neuro_untested_rhigh=[]
             files=files_all[files_groups[hh][0]:files_groups[hh][1]]
-            print (files)
+            #print (files)
         
             for kk in range(len(files)):
                 print (files[kk])
@@ -274,14 +210,14 @@ for k in range(len(monkeys)):
                 #ind_ch=np.where(abs(ctx_ch)==1)[0] # ind_ch_pre index where there is a context change
                 indch_ct01_pre=np.where(ctx_ch==1)[0]
                 indch_ct10_pre=np.where(ctx_ch==-1)[0]
-                ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
-                context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
-                ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=calculate_ind_ch_corr2(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
+                ind_ch=miscellaneous.calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change
+                context=miscellaneous.create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
+                ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=miscellaneous.calculate_ind_ch_corr_stim(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
                 
                 firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
                 firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
                 
-                print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
+                #print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
                 
                 ##################################################
                 # Behavior
@@ -348,10 +284,10 @@ for k in range(len(monkeys)):
             beha_te_unte[1,0,hh]=np.nanmean(beha_untested_rlow,axis=0)
             beha_te_unte[1,1,hh]=np.nanmean(beha_untested_rhigh,axis=0)
             try:
-                aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0_low,bounds=bounds)
-                aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0_high,bounds=bounds)
-                aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0_low,bounds=bounds)
-                aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0_high,bounds=bounds)
+                aa00=fit_plot(xx,beha_te_unte[0,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+                aa01=fit_plot(xx,beha_te_unte[0,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+                aa10=fit_plot(xx,beha_te_unte[1,0,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
+                aa11=fit_plot(xx,beha_te_unte[1,1,hh],t_back,t_forw,maxfev,method=method,p0=p0,bounds=bounds)
                 fit_beha[0,0,hh,(t_back+1):]=aa00
                 fit_beha[0,0,hh,0:t_back]=np.nanmean(beha_te_unte[0,0,hh,0:t_back])
                 fit_beha[0,1,hh,(t_back+1):]=aa01
@@ -417,12 +353,18 @@ delta_neurof_sem=sem(delta_neurof,axis=1,nan_policy='omit')
 print ('##### Behavior ######')
 for i in range(len(stage_vec)):
     print ('Stage ',stage_vec[i])
-    print (scipy.stats.wilcoxon(delta_behaf[i],nan_policy='omit'))
+    #print (scipy.stats.wilcoxon(delta_behaf[i],nan_policy='omit'))
+    print (scipy.stats.ttest_rel(delta_behaf[i],np.zeros(len(delta_behaf[i])),nan_policy='omit'))
+
+print ('Early vs Late ',scipy.stats.ttest_rel(delta_behaf[0],delta_behaf[2],nan_policy='omit'))
 
 print ('##### Neurons ######')
 for i in range(len(stage_vec)):
     print ('Stage ',stage_vec[i])
-    print (scipy.stats.wilcoxon(delta_neurof[i],nan_policy='omit'))
+    #print (scipy.stats.wilcoxon(delta_neurof[i],nan_policy='omit'))
+    print (scipy.stats.ttest_rel(delta_neurof[i],np.zeros(len(delta_neurof[i])),nan_policy='omit'))
+
+print ('Early vs Late ',scipy.stats.ttest_rel(delta_neurof[0],delta_neurof[2],nan_policy='omit'))
     
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)

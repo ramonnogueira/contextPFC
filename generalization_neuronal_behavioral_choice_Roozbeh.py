@@ -96,24 +96,6 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     # plt.ylim([-0.1,1.1])
     # plt.show()
     return fit_func,inter
-
-def calculate_ind_ch_corr(ind_ch,reward):
-    n_forw=7
-    n_ch=len(ind_ch)
-    ind_ch_corr=np.zeros(n_ch)
-    for i in range(n_ch):
-        aa=(np.arange(n_forw)+ind_ch[i])
-        bb_pre=aa*reward[aa]
-        bb=bb_pre[bb_pre>0]
-        ind_ch_corr[i]=bb[0]
-    return np.array(ind_ch_corr,dtype=np.int16)
-
-def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
-    context_subj=context_pre.copy()
-    for i in range(len(ctx_ch)):
-        diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
-    return context_subj
   
 #################################################
 
@@ -121,7 +103,7 @@ def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
 # Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
 # Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
-monkeys=['Galileo']#,'Galileo']
+monkeys=['Niels']#,'Galileo']
 
 talig='dots_on' #'response_edf' #dots_on
 thres=0
@@ -202,19 +184,15 @@ for k in range(len(monkeys)):
             context_prepre=beha['context']
             ctx_ch_pre=(context_prepre[1:]-context_prepre[0:-1])
             context_pre=context_prepre[1:]
-            #ind_ch=np.where(abs(ctx_ch)==1)[0]
             ind_ch_pre=np.where(abs(ctx_ch_pre)==1)[0] #Careful!
-            ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
-            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context. 
-            print (len(context),len(reward))
+            ind_ch=miscellaneous.calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
+            context=miscellaneous.create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context. 
             
             ctx_ch=nan*np.zeros(len(reward))
             ctx_ch[1:]=(context[1:]-context[0:-1])
             ctx_ch[0]=0
             indch_ct10=np.where(ctx_ch==-1)[0]
             indch_ct01=np.where(ctx_ch==1)[0]
-            print (ind_ch)
-            print (indch_ct01,indch_ct10)
             
             firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
             firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]

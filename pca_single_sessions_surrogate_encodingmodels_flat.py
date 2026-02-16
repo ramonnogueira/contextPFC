@@ -159,10 +159,10 @@ def classifier(data,var):
 nan=float('nan')
 minf=float('-inf')
 pinf=float('inf')
-def warn(*args, **kwargs):
-    pass
-import warnings
-warnings.warn = warn
+# def warn(*args, **kwargs):
+#     pass
+# import warnings
+# warnings.warn = warn
 
 monkey='Niels'
 aligned='dots_on'
@@ -191,8 +191,8 @@ group_coh=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 col=np.array(['darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','darkgreen','black','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','darkgoldenrod','purple','purple','purple','purple','purple','purple','purple','black','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue','darkblue'])
 alph=np.array([0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.7,0.6,0.5,0.4,0.3,0.2,0.1,1,0.1,0.2,0.3,0.4,0.5,0.6,0.7])
 
-#abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/sorted/late/%s/'%(monkey)
-abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
+abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/sorted/late/%s/'%(monkey)
+#abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkey) 
 files=os.listdir(abs_path)
 
 for kk in range(len(files)):
@@ -212,8 +212,8 @@ for kk in range(len(files)):
     ctx_uq=np.unique(context)
     coh_uq=np.unique(coherence)
     rt=beha['reaction_time'][ind_corr] #Cuidado!!
-    #firing_rate_pre=miscellaneous.getRasters(data,aligned,dic_time,index_nonan,threshold=1) #Careful with threshold!
-    firing_rate_pre=miscellaneous.getRasters_unsorted(data,aligned,dic_time,index_nonan,threshold=1) #Careful with threshold!
+    firing_rate_pre=miscellaneous.getRasters(data,aligned,dic_time,index_nonan,threshold=1) #Careful with threshold!
+    #firing_rate_pre=miscellaneous.getRasters_unsorted(data,aligned,dic_time,index_nonan,threshold=1) #Careful with threshold!
     firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[ind_corr] #Cuidado!!
     print (np.shape(firing_rate))
     fr_norm=miscellaneous.normalize_fr(firing_rate) # Trials x neurons x time_steps
@@ -226,98 +226,66 @@ for kk in range(len(files)):
     features[:,1]=context
     feat_norm=normalize_feat(features)
     
-    n_cv=10
+    n_cv=20
     tr_size=0.75
     activation='relu'
     lr=1e-3
     reg=1e-3
-    models_vec=[(),(100),(100,100),(100,100,100)]
+    models_vec=[(),(100),(100,100)]#,(100,100,100),(100,100,100,100)]
     print ('LR ',lr,'REG ',reg)
 
-    # # Learn the encoding model for all time steps simultaneously
-    # r2_vec=nan*np.zeros((len(models_vec)+1,n_cv,2))
+    #############################################################
+    # Learn the encoding model for all time steps simultaneously
+    r2_vec=nan*np.zeros((len(models_vec)+1,n_cv,2))
 
-    # ntrials=len(fr_norm)
-    # fr_surr_pre=nan*np.zeros((len(models_vec)+1,ntrials*steps,num_neu))
-    # fr_flat=nan*np.zeros((ntrials*steps,num_neu))
-    # feat_flat=nan*np.zeros((ntrials*steps,2))
-    # for gg in range(steps):
-    #     fr_flat[gg*ntrials:(gg+1)*ntrials]=fr_norm[:,:,gg]
-    #     feat_flat[gg*ntrials:(gg+1)*ntrials]=feat_norm.copy()
+    ntrials=len(fr_norm)
+    fr_surr_pre=nan*np.zeros((len(models_vec)+1,ntrials*steps,num_neu))
+    fr_flat=nan*np.zeros((ntrials*steps,num_neu))
+    feat_flat=nan*np.zeros((ntrials*steps,2))
+    for gg in range(steps):
+        fr_flat[gg*ntrials:(gg+1)*ntrials]=fr_norm[:,:,gg]
+        feat_flat[gg*ntrials:(gg+1)*ntrials]=feat_norm.copy()
         
-    # cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size) #Try KFold instead??
-    # g=-1
-    # for train_index, test_index in cv.split(fr_flat):
-    #     g=(g+1)
-    #     cl=LinearRegression()
-    #     cl.fit(feat_flat[train_index],fr_flat[train_index])
-    #     y_pred_tr=cl.predict(feat_flat[train_index])
-    #     sc_tr=score(y_pred_tr,fr_flat[train_index])
-    #     r2_vec[0,g,0]=np.mean(sc_tr[abs(sc_tr)<1000])
-    #     y_pred=cl.predict(feat_flat[test_index])
-    #     fr_surr_pre[0,test_index]=y_pred
-    #     sc=score(y_pred,fr_flat[test_index])
-    #     r2_vec[0,g,1]=np.mean(sc[abs(sc)<1000])
+    cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size) #Try KFold instead??
+    g=-1
+    for train_index, test_index in cv.split(fr_flat):
+        g=(g+1)
+        cl=LinearRegression()
+        cl.fit(feat_flat[train_index],fr_flat[train_index])
+        y_pred_tr=cl.predict(feat_flat[train_index])
+        sc_tr=score(y_pred_tr,fr_flat[train_index])
+        r2_vec[0,g,0]=np.mean(sc_tr[abs(sc_tr)<1000])
+        y_pred=cl.predict(feat_flat[test_index])
+        fr_surr_pre[0,test_index]=y_pred
+        sc=score(y_pred,fr_flat[test_index])
+        r2_vec[0,g,1]=np.mean(sc[abs(sc)<1000])
     
-    # for l in range(len(models_vec)):
-    #     cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size)
-    #     g=-1
-    #     for train_index, test_index in cv.split(fr_flat):
-    #         g=(g+1)
-    #         cl=MLPRegressor(hidden_layer_sizes=models_vec[l],activation=activation,learning_rate_init=lr,alpha=reg)
-    #         cl.fit(feat_flat[train_index],fr_flat[train_index])
-    #         y_pred_tr=cl.predict(feat_flat[train_index])
-    #         sc_tr=score(y_pred_tr,fr_flat[train_index]) 
-    #         r2_vec[l+1,g,0]=np.mean(sc_tr[abs(sc_tr)<1000])
-    #         y_pred=cl.predict(feat_flat[test_index])
-    #         fr_surr_pre[l,test_index]=y_pred # no hace falta CV porque va rellenando solo los huecos del test-set
-    #         sc=score(y_pred,fr_flat[test_index]) 
-    #         r2_vec[l+1,g,1]=np.mean(sc[abs(sc)<1000])
-            
-    # print ('Train ',np.mean(r2_vec,axis=1)[:,0])
-    # print ('Test ',np.mean(r2_vec,axis=1)[:,1])
-
-    r2_vec=nan*np.zeros((len(models_vec)+1,steps,n_cv,2))
-    fr_surr_pre=nan*np.zeros((len(models_vec)+1,len(fr_norm),num_neu,steps))
-    for j in range(steps):
-        print (j)
-        # Linear Regression
-        #cv=KFold(n_splits=n_cv)
-        cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size) #Try KFold instead??
+    for l in range(len(models_vec)):
+        print (models_vec[l])
+        cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size)
         g=-1
-        for train_index, test_index in cv.split(fr_norm[:,:,j]):
+        for train_index, test_index in cv.split(fr_flat):
             g=(g+1)
-            cl=LinearRegression()
-            cl.fit(feat_norm[train_index],fr_norm[:,:,j][train_index])
-            y_pred_tr=cl.predict(feat_norm[train_index])
-            sc_tr=score(y_pred_tr,fr_norm[:,:,j][train_index])
-            r2_vec[0,j,g,0]=np.mean(sc_tr[abs(sc_tr)<1000])
-            y_pred=cl.predict(feat_norm[test_index])
-            fr_surr_pre[0,test_index,:,j]=y_pred
-            sc=score(y_pred,fr_norm[:,:,j][test_index])
-            r2_vec[0,j,g,1]=np.mean(sc[abs(sc)<1000])
-    
-        for l in range(len(models_vec)):
-            #cv=KFold(n_splits=n_cv)
-            cv=ShuffleSplit(n_splits=n_cv,train_size=tr_size)
-            g=-1
-            for train_index, test_index in cv.split(fr_norm[:,:,j]):
-                g=(g+1)
-                cl=MLPRegressor(hidden_layer_sizes=models_vec[l],activation=activation,learning_rate_init=lr,alpha=reg)
-                cl.fit(feat_norm[train_index],fr_norm[:,:,j][train_index])
-                y_pred_tr=cl.predict(feat_norm[train_index])
-                sc_tr=score(y_pred_tr,fr_norm[:,:,j][train_index]) 
-                r2_vec[l+1,j,g,0]=np.mean(sc_tr[abs(sc_tr)<1000])
-                y_pred=cl.predict(feat_norm[test_index])
-                fr_surr_pre[l,test_index,:,j]=y_pred # no hace falta CV porque va rellenando solo los huecos del test-set
-                sc=score(y_pred,fr_norm[:,:,j][test_index]) 
-                r2_vec[l+1,j,g,1]=np.mean(sc[abs(sc)<1000])
-    print ('Train ',np.mean(r2_vec,axis=2)[:,:,0],np.mean(r2_vec,axis=(1,2))[:,0])
-    print ('Test ',np.mean(r2_vec,axis=2)[:,:,1],np.mean(r2_vec,axis=(1,2))[:,1])
-    
+            cl=MLPRegressor(hidden_layer_sizes=models_vec[l],activation=activation,learning_rate_init=lr,alpha=reg)
+            cl.fit(feat_flat[train_index],fr_flat[train_index])
+            y_pred_tr=cl.predict(feat_flat[train_index])
+            sc_tr=score(y_pred_tr,fr_flat[train_index]) 
+            r2_vec[l+1,g,0]=np.mean(sc_tr[abs(sc_tr)<1000])
+            y_pred=cl.predict(feat_flat[test_index])
+            fr_surr_pre[l+1,test_index]=y_pred # no hace falta CV porque va rellenando solo los huecos del test-set
+            sc=score(y_pred,fr_flat[test_index]) 
+            r2_vec[l+1,g,1]=np.mean(sc[abs(sc)<1000])
+            
+    print ('Train ',np.mean(r2_vec,axis=1)[:,0])
+    print ('Test ',np.mean(r2_vec,axis=1)[:,1])
+
     # Create surrogate data
-    fr_surr=fr_surr_pre[3] # Careful!!!
+    fr_surr=fr_surr_pre[3].copy() # Careful!!!
     fr_surr[np.isnan(fr_surr)]=0 #Due to the ShuffleSplit sometimes a particular trial is not filled, but they are few
+    print ('Nan2 ',np.sum(np.isnan(fr_surr_pre[3][:,0])))
+    fr_surr_post=nan*np.zeros((ntrials,num_neu,steps))
+    for gg in range(steps):
+        fr_surr_post[:,:,gg]=fr_surr[gg*ntrials:(gg+1)*ntrials]
 
     ##########################################################
     # USE THIS FOR PCA IN THE FIGURES
@@ -337,12 +305,8 @@ for kk in range(len(files)):
             per_tr[jj*steps+j+len(coh_uq)*steps]=len(ind_ctx1)/len(ind_ctx1_pre)
             len_tr[jj*steps+j]=len(ind_ctx0)
             len_tr[jj*steps+j+len(coh_uq)*steps]=len(ind_ctx1)
-            #mean_coh_pre[jj*steps+j]=np.mean(firing_rate[ind_ctx0][:,:,j],axis=0)
-            #mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(firing_rate[ind_ctx1][:,:,j],axis=0)
-            #mean_coh_pre[jj*steps+j]=np.mean(fr_norm[ind_ctx0][:,:,j],axis=0)
-            #mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_norm[ind_ctx1][:,:,j],axis=0)
-            mean_coh_pre[jj*steps+j]=np.mean(fr_surr[ind_ctx0][:,:,j],axis=0)
-            mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_surr[ind_ctx1][:,:,j],axis=0)
+            mean_coh_pre[jj*steps+j]=np.mean(fr_surr_post[ind_ctx0][:,:,j],axis=0)
+            mean_coh_pre[jj*steps+j+len(coh_uq)*steps]=np.mean(fr_surr_post[ind_ctx1][:,:,j],axis=0)
                 
     ind_tr=(per_tr>=0.25)*(len_tr>=10)
     print (per_tr)
@@ -371,85 +335,3 @@ for kk in range(len(files)):
         plt.show()
         plt.close(fig)
 
-    #########################################################
-    # # Train PCA on only 4 conditions
-    # mean_coh_pre=nan*np.zeros((steps*2*len(stim_uq),num_neu))
-    # len_tr=nan*np.zeros((steps*2*len(stim_uq)))
-    # per_tr=nan*np.zeros((steps*2*len(stim_uq)))
-    
-    # for j in range(steps):
-    #     min_t=(j*dic_time[3]+dic_time[2]-dic_time[0]+tpre_sacc) # for each time step temporal threshold at which the RT needs to be bigger than that
-    #     print (min_t)
-    #     for jj in range(len(stim_uq)):
-    #         ind_ctx0_pre=np.where((choice==jj)&(context==0)&(abs(coherence)!=0.75))[0]
-    #         ind_ctx1_pre=np.where((choice==jj)&(context==1)&(abs(coherence)!=0.75))[0]
-    #         ind_ctx0=np.where((choice==jj)&(context==0)&(rt>min_t)&(abs(coherence)!=0.75))[0]
-    #         ind_ctx1=np.where((choice==jj)&(context==1)&(rt>min_t)&(abs(coherence)!=0.75))[0]
-    #         # ind_ctx0_pre=np.where((stimulus==jj)&(context==0)&(abs(coherence)!=0.75))[0]
-    #         # ind_ctx1_pre=np.where((stimulus==jj)&(context==1)&(abs(coherence)!=0.75))[0]
-    #         # ind_ctx0=np.where((stimulus==jj)&(context==0)&(rt>min_t)&(abs(coherence)!=0.75))[0]
-    #         # ind_ctx1=np.where((stimulus==jj)&(context==1)&(rt>min_t)&(abs(coherence)!=0.75))[0]
-    #         per_tr[jj*steps+j]=len(ind_ctx0)/len(ind_ctx0_pre)
-    #         per_tr[jj*steps+j+len(stim_uq)*steps]=len(ind_ctx1)/len(ind_ctx1_pre)
-    #         len_tr[jj*steps+j]=len(ind_ctx0)
-    #         len_tr[jj*steps+j+len(stim_uq)*steps]=len(ind_ctx1)
-    #         #mean_coh_pre[jj*steps+j]=np.mean(firing_rate[ind_ctx0][:,:,j],axis=0)
-    #         #mean_coh_pre[jj*steps+j+len(stim_uq)*steps]=np.mean(firing_rate[ind_ctx1][:,:,j],axis=0)
-    #         mean_coh_pre[jj*steps+j]=np.mean(fr_norm[ind_ctx0][:,:,j],axis=0) 
-    #         mean_coh_pre[jj*steps+j+2*steps]=np.mean(fr_norm[ind_ctx1][:,:,j],axis=0)
-    #         #mean_coh_pre[jj*steps+j]=np.mean(fr_surr[ind_ctx0][:,:,j],axis=0)
-    #         #mean_coh_pre[jj*steps+j+2*steps]=np.mean(fr_surr[ind_ctx1][:,:,j],axis=0)
-            
-    # ind_tr=(per_tr>=0.25)*(len_tr>=10)
-    # print (per_tr)
-    # mean_coh=mean_coh_pre[ind_tr]
-    
-    # embedding=PCA(n_components=3)
-    # fitPCA=embedding.fit(mean_coh)
-    # print (fitPCA.explained_variance_ratio_)
-    
-    # mean_coh_col=np.array([np.nanmean(mean_coh_pre[l*steps:(l+1)*steps][ind_tr[l*steps:(l+1)*steps]],axis=0) for l in range(2*len(coh_uq))])
-    # if monkeys[k]=='Niels':
-    #     mean_coh_col=np.delete(mean_coh_col,[0,14,15,29],axis=0)
-    
-    # # Plot collapsing time only left coherences
-    # pseudo_mds_ctx=embedding.transform(mean_coh_col)        
-    
-    # plt.rcParams.update({'font.size': 15})
-    # fig = plt.figure()#figsize=(2,2)
-    # ax = fig.add_subplot(111, projection='3d')
-    
-    # for jj in range(len(mean_coh_col)):
-    #     ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col[jj],alpha=alph[jj],s=20)
-    # ax.set_xlabel('PC1')
-    # ax.set_ylabel('PC2')
-    # ax.set_zlabel('PC3')
-    # ax.set_xlim([-3,3])
-    # ax.set_ylim([-3,3])
-    # ax.set_zlim([-3,3])
-    # plt.show()
-    # plt.close(fig)
-    
-    # Plot as a function of time 2 conditions
-    # col2=np.array(['green','green','blue','blue'])
-    # alph2=np.array([1,0.3,0.3,1])
-    # for j in range(steps)[::-1]:
-    #     print (j)
-    #     plt.rcParams.update({'font.size': 15})
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111, projection='3d')
-    #     ind_step=(np.arange(0,steps*2*len(stim_uq),steps)+j)
-    #     pseudo_mds_ctx=embedding.transform(mean_coh_pre[ind_step][ind_tr[ind_step]])
-    #     for jj in range(2*len(stim_uq)):
-    #         ax.scatter(pseudo_mds_ctx[jj,0],pseudo_mds_ctx[jj,1],pseudo_mds_ctx[jj,2],color=col2[jj],alpha=alph2[jj],s=100)
-    #     ax.set_xlabel('PC1')
-    #     ax.set_ylabel('PC2')
-    #     ax.set_zlabel('PC3')
-    #     # ax.set_xlim([-3,3])
-    #     # ax.set_ylim([-3,3])
-    #     # ax.set_zlim([-3,3])
-    #     ax.set_xlim([-2,2])
-    #     ax.set_ylim([-2,2])
-    #     ax.set_zlim([-2,2])
-    #     plt.show()
-    #     plt.close(fig)

@@ -123,6 +123,7 @@ def create_rot(pseudo,ind_cat,ind_rot):
 
 def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff):
     perf_all=nan*np.zeros((steps_all,n_rand,3))
+    perf_half_all=nan*np.zeros((steps_all,n_rand,2,2))
     ccgp_all=nan*np.zeros((steps_all,n_rand,len(bias_vec),2,2))
     ccgp_rot_all=nan*np.zeros((n_rot,steps_all,n_rand,len(bias_vec),2,2))
     
@@ -172,11 +173,25 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
             #cl=LinearSVC(C=1/reg,class_weight='balanced')
             cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
             perf_all[kk,ii,0]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,0][ind_nonan])
+            # Choice Half
+            for yy in range(2):
+                trte_ctx=((feat_binary[:,1]==yy)*(ind_nonan))
+                cl=LogisticRegression(C=1/reg,class_weight='balanced')
+                cl.fit(pseudo_tr[ii][trte_ctx][:,neu_rnd],feat_binary[:,0][trte_ctx])
+                perf_half_all[kk,ii,0,yy]=cl.score(pseudo_te[ii][trte_ctx][:,neu_rnd],feat_binary[:,0][trte_ctx])
+           
             # Context
             cl=LogisticRegression(C=1/reg,class_weight='balanced')
             #cl=LinearSVC(C=1/reg,class_weight='balanced')
             cl.fit(pseudo_tr[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
             perf_all[kk,ii,1]=cl.score(pseudo_te[ii][ind_nonan][:,neu_rnd],feat_binary[:,1][ind_nonan])
+            # Context Half
+            for yy in range(2):
+                trte_ctx=((feat_binary[:,0]==yy)*(ind_nonan))
+                cl=LogisticRegression(C=1/reg,class_weight='balanced')
+                cl.fit(pseudo_tr[ii][trte_ctx][:,neu_rnd],feat_binary[:,1][trte_ctx])
+                perf_half_all[kk,ii,1,yy]=cl.score(pseudo_te[ii][trte_ctx][:,neu_rnd],feat_binary[:,1][trte_ctx])
+
             # XOR
             cl=LogisticRegression(C=1/reg,class_weight='balanced')
             #cl=LinearSVC(C=1/reg,class_weight='balanced')
@@ -197,7 +212,7 @@ def calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_
                     ccgp_rot=abstraction_2D(pseudo_rot[ind_nonan][:,neu_rnd],feat_binary[ind_nonan],bias=bias_vec[f],reg=reg)
                     ccgp_rot_all[n,kk,ii,f]=ccgp_rot[0]
 
-    return perf_all,ccgp_all,ccgp_rot_all
+    return perf_all,ccgp_all,ccgp_rot_all,perf_half_all
 
 def calculate_shccgp(ccgp_all,steps,steps_all,n_rand):
     shccgp_pre=nan*np.zeros((steps_all,n_rand,2,2))
@@ -214,14 +229,14 @@ monkeys=['Niels','Galileo']
 talig='dots_on'
 
 nt=100 #100 for coh signed, 200 for coh unsigned, 50 for coh signed with context
-n_rand=10
-n_shuff=20
+n_rand=7
+n_shuff=0
 perc_tr=0.8
 thres=0
 reg=1e2
 n_coh=15
 tpre_sacc=50
-n_rot=20
+n_rot=0
 
 #steps_all=4
 #tmax=3
@@ -235,6 +250,8 @@ group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ]
 
 perf_both_pre_m=nan*np.zeros((len(monkeys),steps_all,3))
 perf_both_pre_s=nan*np.zeros((len(monkeys),steps_all,3))
+perf_half_both_pre_m=nan*np.zeros((len(monkeys),steps_all,2))
+perf_half_both_pre_s=nan*np.zeros((len(monkeys),steps_all,2))
 ccgp_both_pre_m=nan*np.zeros((len(monkeys),steps_all,2))
 ccgp_both_pre_s=nan*np.zeros((len(monkeys),steps_all,2))
 shccgp_both_pre_m=nan*np.zeros((len(monkeys),steps_all,2))
@@ -276,12 +293,18 @@ for hh in range(len(monkeys)):
 
     # Original
     print ('Original...')
-    perf_all,ccgp_all,ccgp_rot_all=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff=False)
+    perf_all,ccgp_all,ccgp_rot_all,perf_half_all=calculate_everything(monkey,group_coh_vec,bias_vec,abs_path,files,talig,dic_time,steps,thres,nt,n_rand,n_rot,perc_tr,tpre_sacc,group_ref,shuff=False)
     perf_all_m=np.nanmean(perf_all,axis=1)
     perf_all_std=np.std(perf_all,axis=1)
+    perf_half_all_m=np.nanmean(perf_half_all,axis=(1,3))
+    perf_half_all_std=np.std(perf_half_all,axis=(1,3))
+    
     perf_both_pre_m[hh]=perf_all_m
     perf_both_pre_s[hh]=perf_all_std
+    perf_half_both_pre_m[hh]=perf_half_all_m
+    perf_half_both_pre_s[hh]=perf_half_all_std
     print (perf_all_m)
+    print (perf_half_all_m)
 
     ccgp_orig_m=np.mean(ccgp_all[:,:,15],axis=(1,3))
     ccgp_orig_std=np.std(np.mean(ccgp_all[:,:,15],axis=3),axis=1)
@@ -328,9 +351,9 @@ for hh in range(len(monkeys)):
     ax.plot(xx,perf_all_m[0:steps,2],color='black',label='XOR')
     ax.fill_between(xx,perf_all_m[0:steps,2]-perf_all_std[0:steps,2],perf_all_m[0:steps,2]+perf_all_std[0:steps,2],color='black',alpha=0.5)
     ax.plot(xx,0.5*np.ones(steps),color='black',linestyle='--')
-    ax.fill_between(xx,perf_sh_m[0:steps,0]-1.96*perf_sh_s[0:steps,0],perf_sh_m[0:steps,0]+1.96*perf_sh_s[0:steps,0],color='blue',alpha=0.5)
-    ax.fill_between(xx,perf_sh_m[0:steps,1]-1.96*perf_sh_s[0:steps,1],perf_sh_m[0:steps,1]+1.96*perf_sh_s[0:steps,1],color='brown',alpha=0.5)
-    ax.fill_between(xx,perf_sh_m[0:steps,2]-1.96*perf_sh_s[0:steps,2],perf_sh_m[0:steps,2]+1.96*perf_sh_s[0:steps,2],color='black',alpha=0.5)
+    ax.fill_between(xx,perf_sh_m[0:steps,0]-perf_sh_s[0:steps,0],perf_sh_m[0:steps,0]+perf_sh_s[0:steps,0],color='blue',alpha=0.5)
+    ax.fill_between(xx,perf_sh_m[0:steps,1]-perf_sh_s[0:steps,1],perf_sh_m[0:steps,1]+perf_sh_s[0:steps,1],color='brown',alpha=0.5)
+    ax.fill_between(xx,perf_sh_m[0:steps,2]-perf_sh_s[0:steps,2],perf_sh_m[0:steps,2]+perf_sh_s[0:steps,2],color='black',alpha=0.5)
     ax.set_ylim([0.4,1])
     ax.set_xlabel('Time (sec)')
     ax.set_ylabel('Decoding Performance')
@@ -369,9 +392,11 @@ for hh in range(len(monkeys)):
 
 # Both
 perf_both_m=np.nanmean(perf_both_pre_m,axis=0)
+perf_half_both_m=np.nanmean(perf_half_both_pre_m,axis=0)
 ccgp_both_m=np.nanmean(ccgp_both_pre_m,axis=0)
 shccgp_both_m=np.nanmean(shccgp_both_pre_m,axis=0)
 perf_both_s=0.5*np.sqrt(np.nansum([perf_both_pre_s[0]**2,perf_both_pre_s[1]**2],axis=0))
+perf_half_both_s=0.5*np.sqrt(np.nansum([perf_half_both_pre_s[0]**2,perf_half_both_pre_s[1]**2],axis=0))
 ccgp_both_s=0.5*np.sqrt(np.nansum([ccgp_both_pre_s[0]**2,ccgp_both_pre_s[1]**2],axis=0))
 shccgp_both_s=0.5*np.sqrt(np.nansum([shccgp_both_pre_s[0]**2,shccgp_both_pre_s[1]**2],axis=0))
 
@@ -400,7 +425,7 @@ ax.set_ylim([0.4,1])
 ax.set_xlabel('Time (sec)')
 ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both_new.pdf'%(talig),dpi=500,bbox_inches='tight')
+#fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both_new.pdf'%(talig),dpi=500,bbox_inches='tight')
 #fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both_early.pdf'%(talig),dpi=500,bbox_inches='tight')
 
 fig=plt.figure(figsize=(2.3,2))
@@ -426,4 +451,41 @@ ax.set_ylabel('Decoding Performance')
 plt.legend(loc='best')
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_both_new.pdf'%(talig),dpi=500,bbox_inches='tight')
 #fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/ccgp_choice_ctx_xor_pseudo_tl_%s_both_early.pdf'%(talig),dpi=500,bbox_inches='tight')
-       
+
+# Significance Both
+# Direction
+delta_dir=(shccgp_both_m[:,0]-ccgp_both_m[:,0])
+std_dir=np.sqrt(shccgp_both_s[:,0]**2+ccgp_both_s[:,0]**2)
+z_dir=(delta_dir/std_dir)
+pval_dir=(1-scipy.stats.norm.cdf(z_dir))
+
+# Context
+delta_ctx=(shccgp_both_m[:,1]-ccgp_both_m[:,1])
+std_ctx=np.sqrt(shccgp_both_s[:,1]**2+ccgp_both_s[:,1]**2)
+z_ctx=(delta_ctx/std_ctx)
+pval_ctx=(1-scipy.stats.norm.cdf(z_ctx))
+
+#################
+fig=plt.figure(figsize=(2.3,2))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+
+ax.plot(xx_all[0:tmax],perf_half_both_m[0:tmax][:,0],color='blue',label='Direction Half')
+ax.fill_between(xx_all[0:tmax],perf_half_both_m[0:tmax][:,0]-perf_half_both_s[0:tmax][:,0],perf_half_both_m[0:tmax][:,0]+perf_half_both_s[0:tmax][:,0],color='blue',alpha=0.5)
+ax.plot(xx_all[0:tmax],perf_half_both_m[0:tmax][:,1],color='brown',label='Context Half')
+ax.fill_between(xx_all[0:tmax],perf_half_both_m[0:tmax][:,1]-perf_half_both_s[0:tmax][:,1],perf_half_both_m[0:tmax][:,1]+perf_half_both_s[0:tmax][:,1],color='brown',alpha=0.5)
+# CCGP and SHCCGP
+ax.fill_between(xx_all[0:tmax],ccgp_both_m[0:tmax][:,0]-ccgp_both_s[0:tmax][:,0],ccgp_both_m[0:tmax][:,0]+ccgp_both_s[0:tmax][:,0],color='royalblue',alpha=0.5)
+ax.plot(xx_all[0:tmax],ccgp_both_m[0:tmax][:,1],color='orange',label='CCGP Context')
+ax.fill_between(xx_all[0:tmax],ccgp_both_m[0:tmax][:,1]-ccgp_both_s[0:tmax][:,1],ccgp_both_m[0:tmax][:,1]+ccgp_both_s[0:tmax][:,1],color='orange',alpha=0.5)
+ax.plot(xx_all[0:tmax],shccgp_both_m[0:tmax][:,0],color='blue',label='Sh-CCGP Direction')
+ax.fill_between(xx_all[0:tmax],shccgp_both_m[0:tmax][:,0]-shccgp_both_s[0:tmax][:,0],shccgp_both_m[0:tmax][:,0]+shccgp_both_s[0:tmax][:,0],color='blue',alpha=0.5)
+ax.plot(xx_all[0:tmax],shccgp_both_m[0:tmax][:,1],color='brown',label='Sh-CCGP Context')
+ax.fill_between(xx_all[0:tmax],shccgp_both_m[0:tmax][:,1]-shccgp_both_s[0:tmax][:,1],shccgp_both_m[0:tmax][:,1]+shccgp_both_s[0:tmax][:,1],color='brown',alpha=0.5)
+
+ax.plot(xx_all[0:tmax],0.5*np.ones(steps_all)[0:tmax],color='black',linestyle='--')
+ax.set_ylim([0.4,1])
+ax.set_xlabel('Time (sec)')
+ax.set_ylabel('Decoding Performance')
+plt.legend(loc='best')
+fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/choice_ctx_xor_pseudo_tl_%s_both_half.pdf'%(talig),dpi=500,bbox_inches='tight')

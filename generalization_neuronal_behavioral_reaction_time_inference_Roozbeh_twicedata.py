@@ -97,13 +97,35 @@ def func_fit_chrono(ind_fit,xx,rt,coh_signed,coh_uq,maxfev,p0,method):
         fit_chrono[ii]=np.mean(yy[np.where(coh_signed[ind_fit]==coh_uq[ii])[0]])
     return fit_chrono,popt,pcov
 
+def get_indices_chrono(ind0,n_back,stimulus,rt):
+    ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
+    ind_pre=(np.arange(nback)-nback+ind0+1)
+    ind_used[ind_pre]=True
+    ind_used[np.isnan(rt)]=False
+    return ind_used
+
+
+def find_ind(ind0,stimulus,reward):
+    nn=np.arange(10)
+    stim_forw=stimulus[ind0+nn]
+    stim_t0=stimulus[ind0]
+    stim_t1=stimulus[ind0+1]
+    #print (stim_forw)
+    if stim_t1==0:
+        ind_pre=np.where((stim_forw==1)[2:])[0][0]
+    if stim_t1==1:
+        ind_pre=np.where((stim_forw==0)[2:])[0][0]
+    #print (ind_pre)
+    ind_def=(ind0+ind_pre+2)
+    #print (ind_def)
+    return ind_def
 
 #################################################
 
 monkeys=['Niels','Galileo']#
-stage='late'
+stage='mid'
 
-nback=30
+nback=20
 
 maxfev=100000000
 p0l=(-20,20,-0.005,-3,500,700)
@@ -112,12 +134,12 @@ method='dogbox'
 
 group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
 
-beha_te_unte_all=nan*np.zeros((2,2,9))
 uu=-1
-beha_tested_rlow=[]
 beha_tested_rhigh=[]
-beha_untested_rlow=[]
+beha_tested_rlow=[]
 beha_untested_rhigh=[]
+beha_untested_rlow=[]
+
 for k in range(len(monkeys)):
 
     if monkeys[k]=='Niels':
@@ -141,6 +163,8 @@ for k in range(len(monkeys)):
     files_all=np.array(files_pre[order])
     print (files_all)
 
+    beha_te_unte=nan*np.zeros((2,2,len(files_groups)))
+        
     for hh in range(len(files_groups)):
         uu+=1
         files=files_all[files_groups[hh][0]:files_groups[hh][1]]
@@ -169,121 +193,132 @@ for k in range(len(monkeys)):
             indch_ct10_pre=np.where(ctx_ch==-1)[0]
             ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1=miscellaneous.calculate_ind_ch_corr_stim(indch_ct01_pre,indch_ct10_pre,reward,stimulus)
             print (ind_ch01_s0,ind_ch01_s1,ind_ch10_s0,ind_ch10_s1)
+            xx=np.array([100*coh_signed,choice]).T    
 
             ##################################################
             # Behavior
             # Probability of Choice = Context for all possibilities: 01 0, 01 1, 10 0, 10 1
-            
-            xx=np.array([100*coh_signed,choice]).T
-            threscov=1e20
 
-            # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Left.
-            # rlow tested is left, rhigh untested is right
-            #ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-            #for h in range(len(ind_ch01_s0)):
+            # Ch 01 S0
             for h in range(len(ind_ch01_s0)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-                ind_pre=(np.arange(nback)-nback+ind_ch01_s0[h]+1)
-                ind_used[ind_pre]=True
-                ind_used[np.isnan(rt)]=False
-                
+                ind_used=get_indices_chrono(ind_ch01_s0[h],nback,stimulus,rt)                
                 popt,pcov=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1:]
-                covm01s0=np.mean(np.diagonal(pcov))
-                print (covm01s0)
-                rt_mean=chrono_curve(xx[(ind_ch01_s0[h]+1):(ind_ch01_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch01_s0[h]+1]-rt_mean)
-                if covm01s0<threscov:
-                    if stimulus[ind_ch01_s0[h]+1]==0: 
-                        beha_tested_rlow.append(dev)
-                        print ('tested rlow ',dev)
-                    if stimulus[ind_ch01_s0[h]+1]==1:
-                        beha_untested_rhigh.append(dev)
-                        print ('untested rhigh ',dev)
-                else:
-                    print ('Bad fit 01 s0')
-          
-            # Current high is Right and current low is Left. Previous low is Right and previous high is Left. First reward trial after context change is Right.
-            # rlow untested is left, rhigh tested is right
-            #ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-            #for h in range(len(ind_ch01_s1)):
+                ind_p1=(ind_ch01_s0[h]+1)
+                try:
+                    ind_other=find_ind(ind_ch01_s0[h],stimulus,reward)
+                    #print ('Aqui ',stimulus[ind_p1],stimulus[ind_other])
+                except:
+                    ind_other=-10
+                    print ('Aqui error')
+                if stimulus[ind_p1]==0:
+                    rt_mean_te=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_te=(rt[ind_p1]-rt_mean_te)
+                    beha_tested_rlow.append(dev_te)
+                    if ind_other>0:
+                        rt_mean_ut=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_ut=(rt[ind_other]-rt_mean_ut)
+                        beha_untested_rhigh.append(dev_ut)
+                if stimulus[ind_p1]==1:
+                    rt_mean_ut=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_ut=(rt[ind_p1]-rt_mean_ut)
+                    beha_untested_rhigh.append(dev_ut)
+                    if ind_other>0:
+                        rt_mean_te=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_te=(rt[ind_other]-rt_mean_te)
+                        beha_tested_rlow.append(dev_te)
+
+            # Ch 01 S1
             for h in range(len(ind_ch01_s1)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-                ind_pre=(np.arange(nback)-nback+ind_ch01_s1[h]+1)
-                ind_used[ind_pre]=True
-                ind_used[np.isnan(rt)]=False
-                
+                ind_used=get_indices_chrono(ind_ch01_s1[h],nback,stimulus,rt)                
                 popt,pcov=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0l,method)[1:]
-                covm01s1=np.mean(np.diagonal(pcov))
-                print (covm01s1)
-                rt_mean=chrono_curve(xx[(ind_ch01_s1[h]+1):(ind_ch01_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch01_s1[h]+1]-rt_mean)
-                if covm01s1<threscov:
-                    if stimulus[ind_ch01_s1[h]+1]==0:
-                        beha_untested_rlow.append(dev)
-                        print ('untested rlow ',dev)
-                    if stimulus[ind_ch01_s1[h]+1]==1:
-                        beha_tested_rhigh.append(dev)
-                        print ('tested rhigh ',dev)
-                else:
-                    print ('Bad fit 01 s1')    
-      
-            # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Left.
-            # rhigh tested is left, rlow untested is right
-            #ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-            #for h in range(len(ind_ch10_s0)):
+                ind_p1=(ind_ch01_s1[h]+1)
+                try:
+                    ind_other=find_ind(ind_ch01_s1[h],stimulus,reward)
+                    #print ('Aqui ',stimulus[ind_p1],stimulus[ind_other])
+                except:
+                    print ('Aqui error')
+                    ind_other=-10
+                if stimulus[ind_p1]==1:
+                    rt_mean_te=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_te=(rt[ind_p1]-rt_mean_te)
+                    beha_tested_rhigh.append(dev_te)
+                    if ind_other>0:
+                        rt_mean_ut=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_ut=(rt[ind_other]-rt_mean_ut)
+                        beha_untested_rlow.append(dev_ut)
+                if stimulus[ind_p1]==0:
+                    rt_mean_ut=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_ut=(rt[ind_p1]-rt_mean_ut)
+                    beha_untested_rlow.append(dev_ut)
+                    if ind_other>0:
+                        rt_mean_te=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_te=(rt[ind_other]-rt_mean_te)
+                        beha_tested_rhigh.append(dev_te)
+
+            # Ch 10 S0
             for h in range(len(ind_ch10_s0)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-                ind_pre=(np.arange(nback)-nback+ind_ch10_s0[h]+1)
-                ind_used[ind_pre]=True
-                ind_used[np.isnan(rt)]=False
-                
+                ind_used=get_indices_chrono(ind_ch10_s0[h],nback,stimulus,rt)                
                 popt,pcov=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1:]
-                covm10s0=np.mean(np.diagonal(pcov))
-                print (covm10s0)
-                rt_mean=chrono_curve(xx[(ind_ch10_s0[h]+1):(ind_ch10_s0[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch10_s0[h]+1]-rt_mean)
-                if covm10s0<threscov:
-                    if stimulus[ind_ch10_s0[h]+1]==0: 
-                        beha_tested_rhigh.append(dev)
-                        print ('tested rhigh ',dev)
-                    if stimulus[ind_ch10_s0[h]+1]==1:
-                        beha_untested_rlow.append(dev)
-                        print ('untested rlow ',dev)
-                else:
-                    print ('Bad fit 10 s0')    
-       
-            # Current high is Left and current low is Right. Previous low is Left and previous high is Right. First reward trial after context change is Right.
-            # rhigh untested is left, rlow tested is right
-            #ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-            #for h in range(len(ind_ch10_s1)):
+                ind_p1=(ind_ch10_s0[h]+1)
+                try:
+                    ind_other=find_ind(ind_ch10_s0[h],stimulus,reward)
+                    #print ('Aqui ',stimulus[ind_p1],stimulus[ind_other])
+                except:
+                    print ('Aqui error')
+                    ind_other=-10
+                if stimulus[ind_p1]==0:
+                    rt_mean_te=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_te=(rt[ind_p1]-rt_mean_te)
+                    beha_tested_rhigh.append(dev_te)
+                    if ind_other>0:
+                        rt_mean_ut=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_ut=(rt[ind_other]-rt_mean_ut)
+                        beha_untested_rlow.append(dev_ut)
+                if stimulus[ind_p1]==1:
+                    rt_mean_ut=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_ut=(rt[ind_p1]-rt_mean_ut)
+                    beha_untested_rlow.append(dev_ut)
+                    if ind_other>0:
+                        rt_mean_te=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_te=(rt[ind_other]-rt_mean_te)
+                        beha_tested_rhigh.append(dev_te)
+
+            # Ch 10 S1
             for h in range(len(ind_ch10_s1)):
-                ind_used=np.array(np.zeros(len(stimulus)),dtype=bool)
-                ind_pre=(np.arange(nback)-nback+ind_ch10_s1[h]+1)
-                ind_used[ind_pre]=True
-                ind_used[np.isnan(rt)]=False
-                
+                ind_used=get_indices_chrono(ind_ch10_s1[h],nback,stimulus,rt)                
                 popt,pcov=func_fit_chrono(ind_used,xx,rt,coh_signed,coh_set_signed,maxfev,p0r,method)[1:]
-                covm10s1=np.mean(np.diagonal(pcov))
-                print (covm10s1)
-                rt_mean=chrono_curve(xx[(ind_ch10_s1[h]+1):(ind_ch10_s1[h]+2)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
-                dev=(rt[ind_ch10_s1[h]+1]-rt_mean)
-                if covm10s1<threscov:
-                    if stimulus[ind_ch10_s1[h]+1]==0: 
-                        beha_untested_rhigh.append(dev)
-                        print ('untested rhigh ',dev)
-                    if stimulus[ind_ch10_s1[h]+1]==1:
-                        beha_tested_rlow.append(dev)
-                        print ('tested rlow ',dev)
-                else:
-                    print ('Bad fit 10 s1')
+                ind_p1=(ind_ch10_s1[h]+1)
+                try:
+                    ind_other=find_ind(ind_ch10_s1[h],stimulus,reward)
+                    #print ('Aqui ',stimulus[ind_p1],stimulus[ind_other])
+                except:
+                    print('Aqui error')
+                    ind_other=-10
+                if stimulus[ind_p1]==1:
+                    rt_mean_te=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_te=(rt[ind_p1]-rt_mean_te)
+                    beha_tested_rlow.append(dev_te)
+                    if ind_other>0:
+                        rt_mean_ut=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_ut=(rt[ind_other]-rt_mean_ut)
+                        beha_untested_rhigh.append(dev_ut)
+                if stimulus[ind_p1]==0:
+                    rt_mean_ut=chrono_curve(xx[ind_p1:(ind_p1+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                    dev_ut=(rt[ind_p1]-rt_mean_ut)
+                    beha_untested_rhigh.append(dev_ut)
+                    if ind_other>0:
+                        rt_mean_te=chrono_curve(xx[ind_other:(ind_other+1)],popt[0],popt[1],popt[2],popt[3],popt[4],popt[5])[0]
+                        dev_te=(rt[ind_other]-rt_mean_te)
+                        beha_tested_rlow.append(dev_te)
+
 
     # Low Reward is different than High Reward
     #print ('Tested: Low R diff High R',len(beha_tested_rlow),np.mean(beha_tested_rlow),len(beha_tested_rhigh),np.mean(beha_tested_rhigh),scipy.stats.mannwhitneyu(beha_tested_rlo#w,beha_tested_rhigh,alternative='greater'))
-    print ('Untested: Low R diff High R',len(beha_untested_rlow),np.mean(beha_untested_rlow),len(beha_untested_rhigh),np.mean(beha_untested_rhigh),scipy.stats.mannwhitneyu(beha_untested_rlow,beha_untested_rhigh,alternative='greater'))
-    print ('Total ',len(beha_tested_rlow)+len(beha_tested_rhigh)+len(beha_untested_rlow)+len(beha_untested_rhigh))
+    #print ('Untested: Low R diff High R',len(beha_untested_rlow),np.mean(beha_untested_rlow),len(beha_untested_rhigh),np.mean(beha_untested_rhigh),scipy.stats.mannwhitneyu(beha_untested_rlow,beha_untested_rhigh,alternative='greater'))
+    #print ('Total ',len(beha_tested_rlow)+len(beha_tested_rhigh)+len(beha_untested_rlow)+len(beha_untested_rhigh))
 
 #################
-thresp=800 #700 and 800 work well
+thresp=1e4 #700 and 800 work well
 beha_tested_rlow=np.array(beha_tested_rlow)
 beha_tested_rlow=beha_tested_rlow[abs(beha_tested_rlow)<thresp]
 beha_tested_rhigh=np.array(beha_tested_rhigh)
@@ -319,22 +354,5 @@ print ('Low R: ',np.mean(beha_untested_rlow),sem(beha_untested_rlow),len(beha_un
 print ('High R: ',np.mean(beha_untested_rhigh),sem(beha_untested_rhigh),len(beha_untested_rhigh))
 print ('Mannwhitneyu difference ',scipy.stats.mannwhitneyu(beha_untested_rlow,beha_untested_rhigh,alternative='greater'))
 print ('T test difference ',scipy.stats.ttest_ind(beha_untested_rlow,beha_untested_rhigh,alternative='greater'))
-
-
-width=0.3
-fig=plt.figure(figsize=(1.75,2))
-ax=fig.add_subplot(111)
-miscellaneous.adjust_spines(ax,['left','bottom'])
-ax.bar(-width/2.0,np.mean(beha_tested_rhigh),yerr=sem(beha_tested_rhigh),color='green',width=width)
-ax.bar(width/2.0,np.mean(beha_untested_rhigh),yerr=sem(beha_untested_rhigh),color='blue',width=width)
-ax.bar(1-width/2.0,np.mean(beha_tested_rlow),yerr=sem(beha_tested_rlow),color='green',width=width,label='Tested')
-ax.bar(1+width/2.0,np.mean(beha_untested_rlow),yerr=sem(beha_untested_rlow),color='blue',width=width,label='Untested')
-ax.set_ylabel('Adaptive $\Delta$R.T.')
-#ax.set_ylim([-200,400])
-plt.xticks([0,1],['High Rew.','Low Rew.'])
-plt.legend(loc='best')
-fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/rt_inference_Roozbeh_nback_%i_both_rt_fit_%s_new.pdf'%(nback,stage),dpi=500,bbox_inches='tight')
-
-
 
 

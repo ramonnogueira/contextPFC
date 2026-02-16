@@ -57,63 +57,16 @@ def adjust_spines(ax, spines):
     else:
         # no xaxis ticks
         ax.xaxis.set_ticks([])
-
-
-def order_files(x):
-    ord_pre=[]
-    for i in range(len(x)):
-        ord_pre.append(x[i][1:9])
-    ord_pre=np.array(ord_pre)
-    order=np.argsort(ord_pre)
-    return order
-
-def gauss(x,mu,sig):
-    return 1/(sig*np.sqrt(2*np.pi))*np.exp(-0.5*((x-mu)**2)/(sig**2))
-
-# def func(x,a,b):
-#     return 1.0/(1+np.exp(-a*x+b))
-
-# def func0(x,a,b):
-#     y=1.0/(1+np.exp(-a*x))
-#     return b*y
-
-# def func1(x,a,b,c):
-#     y=1.0/(1+np.exp(-a*x))
-#     return b*y+c
+#######################################################
 
 def func2(x,a,b,c):
     y=1.0/(1+np.exp(-a*x+c))
     return b*y
 
-# def func3(x,a,b,c,d):
-#     y=1.0/(1+np.exp(-a*x+d))
-#     return b*y+c
-
-# def func4(x,a,b):
-#     return a*x+b
-
-# def intercept(a,b):
-#     return b/a
-
-# def intercept0(a,b):
-#     return np.log(b/0.5-1)/(-a)
-
-# def intercept1(a,b,c):
-#     return np.log(b/(0.5-c)-1)/(-a)
-
 def intercept2(a,b,c):
     return (np.log(b/0.5-1)-c)/(-a)
 
-# def intercept3(a,b,c,d):
-#     return (np.log(b/(0.5-c)-1)-d)/(-a)
-
-# def intercept4(a,b):
-#     return (0.5-b)/a
-
 def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
-    kernel=gauss(xx,int((t_back+t_forw)/2.0)-t_back,sig_kernel)
-    convo=np.convolve(yy,kernel,mode='same')
-    
     popt,pcov=curve_fit(func2,xx[t_back:],yy[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     #popt,pcov=curve_fit(func2,xx[t_back:],convo[t_back:],nan_policy='omit',maxfev=maxfev,bounds=bounds,p0=p0,method=method)
     fit_func=func2(xx[t_back:],popt[0],popt[1],popt[2])#,popt[3])
@@ -121,38 +74,9 @@ def fit_plot(xx,yy,t_back,t_forw,sig_kernel,maxfev,method,bounds,p0):
     print ('Fit ',popt)
     print (pcov)
     print (inter)
-    # plt.scatter(xx,yy,color='blue',s=1)
-    # plt.scatter(xx,convo,color='green',s=1)
-    # plt.plot(xx[t_back:],fit_func,color='black')
-    # plt.axvline(0,color='black',linestyle='--')
-    # plt.plot(xx,0.5*np.ones(len(xx)),color='black',linestyle='--')
-    # plt.ylim([-0.1,1.1])
-    # plt.show()
     return fit_func,inter
-
-def calculate_ind_ch_corr(ind_ch,reward):
-    n_forw=7
-    n_ch=len(ind_ch)
-    ind_ch_corr=np.zeros(n_ch)
-    for i in range(n_ch):
-        aa=(np.arange(n_forw)+ind_ch[i])
-        bb_pre=aa*reward[aa]
-        bb=bb_pre[bb_pre>0]
-        ind_ch_corr[i]=bb[0]
-    return np.array(ind_ch_corr,dtype=np.int16)
-
-def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
-    context_subj=context_pre.copy()
-    for i in range(len(ctx_ch)):
-        diff=(ctx_ch[i]-ctx_ch_pre[i])
-        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff+1)]=context_pre[ctx_ch_pre[i]-1]
-    return context_subj
   
 #################################################
-
-# Function 2 for both. Bounds and p0 are important. 
-# Niels: t_back 20, t_forw 80, time window 200ms. No kernel. Groups of 1 session
-# Galileo: t_back 20, t_forw 80, time window 300ms. No kernel. Groups of 3 sessions
 
 monkeys=['Niels','Galileo']
 
@@ -192,7 +116,7 @@ for k in range(len(monkeys)):
   
     abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
     files_pre=np.array(os.listdir(abs_path))
-    order=order_files(files_pre)
+    order=miscellaneous.order_files(files_pre)
     files_all=np.array(files_pre[order])
     # abs_path='/home/ramon/Dropbox/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k]) 
     # files_all=os.listdir(abs_path)
@@ -231,8 +155,8 @@ for k in range(len(monkeys)):
             context_pre=context_prepre[1:]
             #ind_ch=np.where(abs(ctx_ch)==1)[0]
             ind_ch_pre=np.where(abs(ctx_ch)==1)[0] #Careful!
-            ind_ch=calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change (otherwise animal doesn't know there was a change)
-            context=create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
+            ind_ch=miscellaneous.calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change 
+            context=miscellaneous.create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context
             #indch_ct10=np.where(ctx_ch==-1)[0]
             #indch_ct01=np.where(ctx_ch==1)[0]
             print (ind_ch,len(choice))
@@ -472,6 +396,11 @@ for i in range(3):
     th_m[1,i]=np.nanmean(inter_neu_norm[ind_aa[i]])
     th_sem[0,i]=sem(inter_beha_norm[ind_aa[i]],nan_policy='omit')
     th_sem[1,i]=sem(inter_neu_norm[ind_aa[i]],nan_policy='omit')
+
+print ('Decrease Beha ',scipy.stats.ttest_ind(inter_beha_norm[ind_aa[0]],inter_beha_norm[ind_aa[2]],alternative='greater'))
+neu_early=inter_neu_norm[ind_aa[0]]
+neu_late=inter_neu_norm[ind_aa[2]]
+print ('Decrease Neu ',scipy.stats.ttest_ind(neu_early[~np.isnan(neu_early)],neu_late[~np.isnan(neu_early)],alternative='greater'))
     
 # fig=plt.figure(figsize=(2.3,2))
 # ax=fig.add_subplot(111)
@@ -498,6 +427,8 @@ ax.set_ylim([0,1])
 fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/thresholds_vs_learning_both_aft_corr_def_learn.pdf',dpi=500,bbox_inches='tight')
 
 # Plot correlation
+print ('Pearson Correlation')
+print (pearsonr(inter_beha_norm[~np.isnan(inter_neu_norm)],inter_neu_norm[~np.isnan(inter_neu_norm)]))
 fig=plt.figure(figsize=(2.3,2))
 ax=fig.add_subplot(111)
 miscellaneous.adjust_spines(ax,['left','bottom'])

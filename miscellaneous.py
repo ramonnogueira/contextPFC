@@ -495,3 +495,57 @@ def order_files(x):
     ord_pre=np.array(ord_pre)
     order=np.argsort(ord_pre)
     return order
+
+def create_context_subj(context_pre,ctx_ch_pre,ctx_ch):
+    context_subj=context_pre.copy()
+    for i in range(len(ctx_ch)):
+        diff=(ctx_ch[i]-ctx_ch_pre[i])
+        context_subj[ctx_ch_pre[i]:(ctx_ch_pre[i]+diff)]=context_pre[ctx_ch_pre[i]-1]
+    return context_subj
+
+def calculate_ind_ch_corr(ind_ch,reward):
+    n_forw=7
+    n_ch=len(ind_ch)
+    ind_ch_corr=np.zeros(n_ch)
+    for i in range(n_ch):
+        aa=(np.arange(n_forw)+ind_ch[i])
+        bb_pre=aa*reward[aa]
+        bb=bb_pre[bb_pre>0]
+        ind_ch_corr[i]=bb[0]
+    return np.array(ind_ch_corr,dtype=np.int16)
+
+# This function returns the indices for trials where:
+# - context change from 0 to 1 correct stimulus 0
+# - context change from 0 to 1 correct stimulus 1
+# - context change from 1 to 0 correct stimulus 0
+# - context change from 1 to 0 correct stimulus 1 
+def calculate_ind_ch_corr_stim(ind_ch01,ind_ch10,reward,stimulus):
+    n_forw=7
+
+    # Context change from 0 to 1
+    ind_ch01_s0=[]
+    ind_ch01_s1=[]
+    n_ch01=len(ind_ch01)
+    for i in range(n_ch01):
+        aa=(np.arange(n_forw)+ind_ch01[i])
+        bb_pre=aa*reward[aa]
+        bb=bb_pre[bb_pre>0]
+        if stimulus[bb[0]]==0:
+            ind_ch01_s0.append(bb[0])
+        if stimulus[bb[0]]==1:
+            ind_ch01_s1.append(bb[0])
+
+    # Context change from 1 to 0
+    ind_ch10_s0=[]
+    ind_ch10_s1=[]
+    n_ch10=len(ind_ch10)
+    for i in range(n_ch10):
+        aa=(np.arange(n_forw)+ind_ch10[i])
+        bb_pre=aa*reward[aa]
+        bb=bb_pre[bb_pre>0]
+        if stimulus[bb[0]]==0:
+            ind_ch10_s0.append(bb[0])
+        if stimulus[bb[0]]==1:
+            ind_ch10_s1.append(bb[0])
+    return np.array(ind_ch01_s0,dtype=np.int16),np.array(ind_ch01_s1,dtype=np.int16),np.array(ind_ch10_s0,dtype=np.int16),np.array(ind_ch10_s1,dtype=np.int16)
+

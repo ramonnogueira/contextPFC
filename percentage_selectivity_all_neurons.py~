@@ -1,0 +1,122 @@
+import os
+import matplotlib.pylab as plt
+import numpy as np
+import scipy.io
+import math
+import sys
+import tables
+import pandas
+import pickle as pkl
+from scipy.stats import sem
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
+from numpy.random import permutation
+import miscellaneous
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.svm import LinearSVC
+from scipy.stats import ortho_group 
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import KFold,StratifiedKFold,StratifiedShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from scipy import stats
+from scipy.optimize import curve_fit
+from sklearn.metrics import log_loss
+
+
+# In this script we evaluate generalization through learning.
+# Behavior: proabability that choice = context after context switch
+# Neural: decoding of context right after context switch. Classifier is trained on all the rest of trials (no context switch)
+
+nan=float('nan')
+minf=float('-inf')
+pinf=float('inf')
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
+def adjust_spines(ax, spines):
+    for loc, spine in ax.spines.items():
+        if loc in spines: 
+            if loc=='left':
+                spine.set_position(('outward', 10))  # outward by 10 points
+            if loc=='bottom':
+                spine.set_position(('outward', 0))  # outward by 10 points
+         #   spine.set_smart_bounds(True)
+        else:
+            spine.set_color('none')  # don't draw spine
+    # turn off ticks where there is no spine
+    if 'left' in spines:
+        ax.yaxis.set_ticks_position('left')
+    else:
+        # no yaxis ticks
+        ax.yaxis.set_ticks([])
+    if 'bottom' in spines:
+        ax.xaxis.set_ticks_position('bottom')
+    else:
+        # no xaxis ticks
+        ax.xaxis.set_ticks([])
+
+#################################################
+
+monkeys=['Galileo']
+
+talig='dots_on' #'response_edf' #dots_on
+thres=0
+
+group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7])
+
+pval_ch=[]
+pval_ctx=[]
+for k in range(len(monkeys)):
+    #abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/sorted/late/%s/'%(monkeys[k]) # Careful!
+    #files=np.array(os.listdir(abs_path))
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    files_pre=np.array(os.listdir(abs_path))
+    order=miscellaneous.order_files(files_pre)
+    if monkeys[k]=='Niels':
+        files=np.array(files_pre[order])[8:]
+    if monkeys[k]=='Galileo':
+        files=np.array(files_pre[order])[20:]
+
+    for j in range(2): # Choice and context
+        if j==0:
+            dic_time=np.array([-100,400,300,300])# time pre, time post, bin size, step size (time pre always positive)
+        if j==1:
+            dic_time=np.array([300,0,300,300])# time pre, time post, bin size, step size (time pre always positive)
+
+        for kk in range(len(files)):
+            print (files[kk])
+            #Load data
+            data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
+            beha=miscellaneous.behavior(data,group_ref)
+            index_nonan=beha['index_nonan']
+
+            reward=beha['reward']
+            choice=beha['choice'][reward==1]
+            context=beha['context'][reward==1]
+        
+            #firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+            firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+            fr=miscellaneous.normalize_fr(firing_rate_pre)[:,:,0][reward==1]
+            nneu=len(fr[0])
+
+            for n in range(nneu):
+                if j==0:
+                    ttest=scipy.stats.ttest_ind(fr[choice==0][:,n],fr[choice==1][:,n],equal_var=False)
+                    pval_ch.append(ttest[1])
+                if j==1:
+                    ttest=scipy.stats.ttest_ind(fr[context==0][:,n],fr[context==1][:,n],equal_var=False)
+                    pval_ctx.append(ttest[1])
+
+pval_ch=np.array(pval_ch)
+pval_ctx=np.array(pval_ctx)
+print ('Choice ',np.sum(pval_ch<0.05)/len(pval_ch))
+print ('Context ',np.sum(pval_ctx<0.05)/len(pval_ctx))
+print ('Both ',np.sum((pval_ch<0.05)*(pval_ctx<0.05))/len(pval_ctx))
+
+                    
+

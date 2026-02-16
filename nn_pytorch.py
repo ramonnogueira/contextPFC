@@ -70,21 +70,30 @@ dtype = torch.FloatTensor
 #         return self.model.state_dict()
 
 ############################################
-def sparsity_loss(data,p):
+def sparsity_loss(data,p):    
     loss=torch.mean(torch.pow(abs(data),p),axis=(0,1,2))
     return loss
+
+def exc_inh_loss(wei,p): # wei is NxN matrix
+    a=10
+    p=Variable(torch.from_numpy(np.array(p,dtype=np.float32)),requires_grad=False)
+    sig=a/(1+torch.exp(-a*p*wei))
+    #print (wei)
+    #print (sig.detach().numpy())
+    return torch.mean(sig)
     
 class nn_recurrent_sparse():
     def __init__(self,reg,lr,output_size,hidden_dim):
         self.regularization=reg
         self.learning_rate=lr
         self.loss=torch.nn.CrossEntropyLoss(reduction='none')
-        self.model=recurrent_noisy(output_size,hidden_dim)
+        #self.model=recurrent_noisy(output_size,hidden_dim)
+        self.model=recurrent_nonlinear(output_size,hidden_dim) #Careful!
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=self.regularization)
 
     def fit(self,input_seq,target_seq,context,batch_size,n_epochs,sigma_noise,wei_ctx,beta,b_exp): 
         thres_fit=1e-3
-        self.model.train()
+        #self.model.train()
         input_seq_np=np.array(input_seq,dtype=np.float32)
         context_np=np.array(context,dtype=np.float32)
         ctx_uq=np.unique(context_np)
@@ -101,14 +110,17 @@ class nn_recurrent_sparse():
     
         for t in range(n_epochs):
             output, hidden, net_units, read_out_units = self.model(input_seq_torch,sigma_noise)
+            wei=self.model.hidden_weights.weight # extract weights model
             l0c0=torch.mean(self.loss(output[index11][:,[0,1]],target_seq_torch[index11].view(-1).long()))
             l0c1=torch.mean(self.loss(output[index10][:,[0,1]],target_seq_torch[index10].view(-1).long()))
             l1c0=torch.mean(self.loss(output[index01][:,[0,1]],target_seq_torch[index01].view(-1).long()))
             l1c1=torch.mean(self.loss(output[index00][:,[0,1]],target_seq_torch[index00].view(-1).long()))
             l_total=(l0c0+l1c0+l0c1+l1c1)
             l_sparse=sparsity_loss(net_units,b_exp)
-            #if t==0 or t==(n_epochs-1):
-            print (t,l_total.detach().numpy(),l_sparse.detach().numpy())
+            #l_sparse=exc_inh_loss(wei,b_exp)#.item()
+            if t==0 or t==(n_epochs-1):
+                print (t,l_total.detach().numpy(),l_sparse.detach().numpy())
+                #print (wei.detach().numpy())
            
             for batch_idx, (data, contxt, targets) in enumerate(train_loader):
                 ind11=(targets==0)*(contxt==ctx_uq[0])
@@ -118,13 +130,16 @@ class nn_recurrent_sparse():
                 
                 self.optimizer.zero_grad()
                 output, hidden, net_units, read_out_units = self.model(data,sigma_noise)
+                weig=self.model.hidden_weights.weight # extract weights model
                 loss0_ct0=torch.mean(self.loss(output[ind11][:,[0,1]],targets[ind11].view(-1).long()))
                 loss0_ct1=torch.mean(self.loss(output[ind10][:,[0,1]],targets[ind10].view(-1).long()))
                 loss1_ct0=torch.mean(self.loss(output[ind01][:,[0,1]],targets[ind01].view(-1).long()))
                 loss1_ct1=torch.mean(self.loss(output[ind00][:,[0,1]],targets[ind00].view(-1).long()))
                 loss=(wei_ctx[0]*(loss0_ct0+loss1_ct1)+wei_ctx[1]*(loss1_ct0+loss0_ct1))
                 l_sp=sparsity_loss(net_units,b_exp)
+                #l_sp=exc_inh_loss(weig,b_exp)#.item()
                 loss_t=(loss+beta*l_sp)
+                #print (loss_t)
                 loss_t.backward()
                 self.optimizer.step()
         return self.model.state_dict()
@@ -135,6 +150,8 @@ class recurrent_noisy(torch.nn.Module): # We always send the input with size bat
         self.hidden_dim=hidden_dim
         self.output_size=output_size
         self.input_weights = torch.nn.Linear(2, hidden_dim)
+        #self.rnn = torch.nn.GRU(input_size=2, hidden_size=self.hidden_dim, batch_first=True)
+        #self.rnn = torch.nn.LSTM(input_size=2, hidden_size=self.hidden_dim, batch_first=True)
         self.hidden_weights = torch.nn.Linear(hidden_dim, hidden_dim)
         self.fc = torch.nn.Linear(self.hidden_dim, self.output_size)
 
@@ -143,29 +160,57 @@ class recurrent_noisy(torch.nn.Module): # We always send the input with size bat
             hidden = torch.randn(input.size(0),self.hidden_dim).to(input.device)
             #hidden = torch.zeros(input.size(0),self.hidden_dim).to(input.device)
         
-        # def recurrence(input, hidden):
-        #     #h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-        #     h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-        #     #h_new = torch.sigmoid(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
-        #     return h_new        
+        def recurrence(input, hidden):
+            #h_new = torch.relu(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            #h_new = torch.sigmoid(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            return h_new        
     
-        # net_units = torch.zeros(input.size(0),input.size(1),self.hidden_dim)
-        # steps = range(input.size(1))
-        # for i in steps:
-        #     hidden = recurrence(input[:,i], hidden)
-        #     #hidden = recurrence_lin(input[:,i], hidden)
-        #     net_units[:,i]=hidden
+        net_units = torch.zeros(input.size(0),input.size(1),self.hidden_dim)
+        steps = range(input.size(1))
+        for i in steps:
+            hidden = recurrence(input[:,i], hidden)
+            #hidden = recurrence_lin(input[:,i], hidden)
+            net_units[:,i]=hidden
 
-        model_gru=torch.nn.GRU(input_size=2,hidden_size=self.hidden_dim,batch_first=True)
-        net_units, hidden  = model_gru(input)
-        print (net_units.shape, hidden.shape)
+#        net_units, hidden = self.rnn(input)
             
         #hidden = hidden.detach()
         out = net_units[:,-1].contiguous().view(-1, self.hidden_dim)
         out = self.fc(out)
         read_out_units = self.fc(net_units)
         return out, hidden, net_units, read_out_units # out: choice of readout unit last time step, hidden: state network last time step, 
-            
+
+# Stefano's idea of passing the context signal as well to the last readout unit
+class recurrent_nonlinear(torch.nn.Module): # We always send the input with size batch x time steps x input dim
+    def __init__(self, output_size, hidden_dim):
+        super(recurrent_nonlinear, self).__init__()
+        self.hidden_dim=hidden_dim
+        self.output_size=output_size
+        self.input_weights = torch.nn.Linear(2, hidden_dim)
+        self.hidden_weights = torch.nn.Linear(hidden_dim, hidden_dim)
+        self.fc = torch.nn.Linear(self.hidden_dim+1, self.output_size) #Careful!
+
+    def forward(self, input, sigma_noise, hidden=None):
+        if hidden is None:
+            hidden = torch.randn(input.size(0),self.hidden_dim).to(input.device)
+        
+        def recurrence(input, hidden):
+            h_new = torch.tanh(self.input_weights(input) + self.hidden_weights(hidden) + sigma_noise*torch.randn(input.size(0),self.hidden_dim))
+            return h_new        
+    
+        net_units = torch.zeros(input.size(0),input.size(1),self.hidden_dim)
+        steps = range(input.size(1))
+        for i in steps:
+            hidden = recurrence(input[:,i], hidden)
+            net_units[:,i]=hidden
+
+        multi=1
+        out = net_units[:,-1].contiguous().view(-1, self.hidden_dim)
+        out = self.fc(torch.cat((out,multi*input[:,0,1:2]),1))
+        read_out_units = self.fc(torch.cat((net_units,multi*input[:,:,1:2]),2))
+        return out, hidden, net_units, read_out_units # out: choice of readout unit last step, hidden: state net last step 
+
 
 
 

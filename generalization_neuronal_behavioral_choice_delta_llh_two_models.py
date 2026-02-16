@@ -1,0 +1,298 @@
+import os
+import matplotlib.pylab as plt
+import numpy as np
+import scipy.io
+import math
+import sys
+import tables
+import pandas
+import pickle as pkl
+from scipy.stats import sem
+from scipy.stats import pearsonr
+from scipy.stats import spearmanr
+from numpy.random import permutation
+import miscellaneous
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.svm import LinearSVC
+from scipy.stats import ortho_group 
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import ShuffleSplit
+from sklearn.model_selection import KFold,StratifiedKFold,StratifiedShuffleSplit
+from sklearn.neural_network import MLPClassifier
+from scipy import stats
+from scipy.optimize import curve_fit
+from sklearn.metrics import log_loss
+
+
+# In this script we evaluate generalization through learning.
+# Behavior: proabability that choice = context after context switch
+# Neural: decoding of context right after context switch. Classifier is trained on all the rest of trials (no context switch)
+
+nan=float('nan')
+minf=float('-inf')
+pinf=float('inf')
+def warn(*args, **kwargs):
+    pass
+import warnings
+warnings.warn = warn
+
+def adjust_spines(ax, spines):
+    for loc, spine in ax.spines.items():
+        if loc in spines: 
+            if loc=='left':
+                spine.set_position(('outward', 10))  # outward by 10 points
+            if loc=='bottom':
+                spine.set_position(('outward', 0))  # outward by 10 points
+         #   spine.set_smart_bounds(True)
+        else:
+            spine.set_color('none')  # don't draw spine
+    # turn off ticks where there is no spine
+    if 'left' in spines:
+        ax.yaxis.set_ticks_position('left')
+    else:
+        # no yaxis ticks
+        ax.yaxis.set_ticks([])
+    if 'bottom' in spines:
+        ax.xaxis.set_ticks_position('bottom')
+    else:
+        # no xaxis ticks
+        ax.xaxis.set_ticks([])
+
+def gauss(x,mu,sig):
+    return 1/(sig*np.sqrt(2*np.pi))*np.exp(-0.5*((x-mu)**2)/(sig**2))
+
+def func2(x,a,b,c):
+    y=1.0/(1+np.exp(-a*x+c))
+    return b*y
+
+def intercept2(a,b,c):
+    return (np.log(b/0.5-1)-c)/(-a)
+
+def index_neu_lr(coherence,ind_ch,ind_ch01,ind_ch10,t_forw,t_back):
+    ind_train=np.arange(len(coherence))
+    #ind_ch_all=[]
+    for p in range(len(ind_ch)):
+        ind_t=np.arange(t_back+t_forw)-t_back+ind_ch[p]
+        ind_del=[]
+        for pp in range(len(ind_t)):
+            try:
+                ind_del.append(np.where(ind_train==ind_t[pp])[0][0])
+            except:
+                None
+                #print ('error aqui')
+        ind_del=np.array(ind_del)
+        ind_train=np.delete(ind_train,ind_del)
+        #ind_ch_all.append(ind_del)
+
+    #ind_ch_all=np.reshape(np.array(ind_ch_all),-1)
+    #print (len(context),len(ind_train),np.mean(context[ind_train]))
+    return ind_train#,ind_ch_all
+
+
+def calculate_weights_lr(files,reg,talig,dic_time,t_back,t_forw,thres):
+    dic={}
+    y_matrix01_neu_pre=[]
+    y_matrix01_pre=[]
+    x_matrix01_pre1=[]
+    x_matrix01_pre2=[]
+    y_matrix10_neu_pre=[]
+    y_matrix10_pre=[]
+    x_matrix10_pre1=[]
+    x_matrix10_pre2=[]
+
+    uu01=0#-1
+    uu10=0#-1
+    for kk in range(len(files)):
+        #print (files[kk])
+        #Load data
+        data=scipy.io.loadmat(abs_path+'%s'%(files[kk]),struct_as_record=False,simplify_cells=True)
+        beha=miscellaneous.behavior(data,group_ref)
+        index_nonan=beha['index_nonan']
+        # We discard first trial of session because we are interested in context changes
+        stimulus=beha['stimulus'][1:]
+        choice=beha['choice'][1:]
+        coherence=beha['coherence_signed'][1:]
+        coh_uq=np.unique(coherence)
+        reward=beha['reward'][1:]
+        rt=beha['reaction_time'][1:]
+        context_prepre=beha['context']
+        ctx_ch_pre=(context_prepre[1:]-context_prepre[0:-1])
+        context_pre=context_prepre[1:]
+        #ind_ch=np.where(abs(ctx_ch)==1)[0]
+        ind_ch_pre=np.where(abs(ctx_ch_pre)==1)[0] #Careful!
+        ind_ch=miscellaneous.calculate_ind_ch_corr(ind_ch_pre,reward) # ind_ch first correct trial after context change 
+        context=miscellaneous.create_context_subj(context_pre,ind_ch_pre,ind_ch) # Careful! this is subjective context. 
+        
+        ctx_ch=nan*np.zeros(len(reward))
+        ctx_ch[1:]=(context[1:]-context[0:-1])
+        ctx_ch[0]=0
+        indch_ct10=np.where(ctx_ch==-1)[0]
+        indch_ct01=np.where(ctx_ch==1)[0]
+
+        firing_rate_pre=miscellaneous.getRasters_unsorted(data,talig,dic_time,index_nonan,threshold=thres)
+        firing_rate=miscellaneous.normalize_fr(firing_rate_pre)[1:,:,0]
+
+        ind_train=index_neu_lr(coherence,ind_ch,indch_ct01,indch_ct10,t_back,t_forw)
+        cl=LogisticRegression(C=1/reg,class_weight='balanced')
+        cl.fit(firing_rate[ind_train],choice[ind_train])
+        choice_neu=cl.predict(firing_rate)
+            
+        # j+1 because the index 0 is also "before knowing there was a change"
+        for h in range(len(indch_ct01)): #from left to right            
+            uu01+=1
+            for j in range(t_back):
+                try:
+                    y_matrix01_neu_pre.append(choice_neu[indch_ct01[h]-t_back+j+1])
+                    y_matrix01_pre.append(choice[indch_ct01[h]-t_back+j+1])
+                    x_matrix01_pre1.append([coherence[indch_ct01[h]-t_back+j+1],0])
+                    x_matrix01_pre2.append([coherence[indch_ct01[h]-t_back+j+1],0,0*uu01])
+                except:
+                    None
+            for j in range(t_forw):
+                try:
+                    y_matrix01_neu_pre.append(choice_neu[indch_ct01[h]+j+1])
+                    y_matrix01_pre.append(choice[indch_ct01[h]+j+1])
+                    x_matrix01_pre1.append([coherence[indch_ct01[h]+j+1],j+1])
+                    x_matrix01_pre2.append([coherence[indch_ct01[h]+j+1],j+1,(j+1)*uu01])
+                except:
+                    None
+
+        for h in range(len(indch_ct10)): #from left to right
+            uu10+=1
+            for j in range(t_back):
+                try:
+                    y_matrix10_neu_pre.append(choice_neu[indch_ct10[h]-t_back+j+1])
+                    y_matrix10_pre.append(choice[indch_ct10[h]-t_back+j+1])
+                    x_matrix10_pre1.append([coherence[indch_ct10[h]-t_back+j+1],0])
+                    x_matrix10_pre2.append([coherence[indch_ct10[h]-t_back+j+1],0,0*uu10])
+                except:
+                    None
+            for j in range(t_forw):
+                try:
+                    y_matrix10_neu_pre.append(choice_neu[indch_ct10[h]+j+1])
+                    y_matrix10_pre.append(choice[indch_ct10[h]+j+1])
+                    x_matrix10_pre1.append([coherence[indch_ct10[h]+j+1],j+1])
+                    x_matrix10_pre2.append([coherence[indch_ct10[h]+j+1],j+1,(j+1)*uu10])
+                except:
+                    None
+
+    #print (uu01,uu10)
+
+    y_matrix01_neu=np.array(y_matrix01_neu_pre,dtype=np.int16)
+    y_matrix01=np.array(y_matrix01_pre,dtype=np.int16)
+    x_matrix01_1=np.array(x_matrix01_pre1)
+    x_matrix01_2=np.array(x_matrix01_pre2)
+    # Behavioral
+    b01_1=LogisticRegression(C=reg,class_weight='balanced')
+    b01_1.fit(x_matrix01_1,y_matrix01)
+    b01_2=LogisticRegression(C=reg,class_weight='balanced')
+    b01_2.fit(x_matrix01_2,y_matrix01)
+    dic['LLH01_1']=log_loss(y_matrix01,b01_1.predict(x_matrix01_1),normalize=False) # negative log-likelihood (cross-entropy)
+    dic['LLH01_2']=log_loss(y_matrix01,b01_2.predict(x_matrix01_2),normalize=False) # negative log-likelihood (cross-entropy)
+    # Neuronal
+    b01_1_neu=LogisticRegression(C=reg,class_weight='balanced')
+    b01_1_neu.fit(x_matrix01_1,y_matrix01_neu)
+    b01_2_neu=LogisticRegression(C=reg,class_weight='balanced')
+    b01_2_neu.fit(x_matrix01_2,y_matrix01_neu)
+    dic['LLH01_neu_1']=log_loss(y_matrix01_neu,b01_1_neu.predict(x_matrix01_1),normalize=False) 
+    dic['LLH01_neu_2']=log_loss(y_matrix01_neu,b01_2_neu.predict(x_matrix01_2),normalize=False) 
+    
+    y_matrix10_neu=np.array(y_matrix10_neu_pre,dtype=np.int16)
+    y_matrix10=np.array(y_matrix10_pre,dtype=np.int16)
+    x_matrix10_1=np.array(x_matrix10_pre1)
+    x_matrix10_2=np.array(x_matrix10_pre2)
+    # Behavioral
+    b10_1=LogisticRegression(C=reg,class_weight='balanced')
+    b10_1.fit(x_matrix10_1,y_matrix10)
+    b10_2=LogisticRegression(C=reg,class_weight='balanced')
+    b10_2.fit(x_matrix10_2,y_matrix10)
+    dic['LLH10_1']=log_loss(y_matrix10,b10_1.predict(x_matrix10_1),normalize=False)
+    dic['LLH10_2']=log_loss(y_matrix10,b10_2.predict(x_matrix10_2),normalize=False)
+    # Neuronal
+    b10_1_neu=LogisticRegression(C=reg,class_weight='balanced')
+    b10_1_neu.fit(x_matrix10_1,y_matrix10_neu)
+    b10_2_neu=LogisticRegression(C=reg,class_weight='balanced')
+    b10_2_neu.fit(x_matrix10_2,y_matrix10_neu)
+    dic['LLH10_neu_1']=log_loss(y_matrix10_neu,b10_1.predict(x_matrix10_1),normalize=False)
+    dic['LLH10_neu_2']=log_loss(y_matrix10_neu,b10_2.predict(x_matrix10_2),normalize=False)
+
+    # print (b01_1_neu.intercept_[0],b01_1_neu.coef_[0])
+    # print (b01_2_neu.intercept_[0],b01_2_neu.coef_[0])
+    # print (b10_1_neu.intercept_[0],b10_1_neu.coef_[0])
+    # print (b10_2_neu.intercept_[0],b10_2_neu.coef_[0])
+    
+    return dic
+
+
+#################################################
+
+monkeys=['Niels']#,'Galileo']
+
+talig='dots_on' #'response_edf' #dots_on
+thres=0
+reg=1e0
+n_sh=100
+
+t_back=20
+t_forw=30
+xx=np.arange(t_back+t_forw)-t_back
+
+group_ref=np.array([-7 ,-6 ,-5 ,-4 ,-3 ,-2 ,-1 ,0  ,1  ,2  ,3  ,4  ,5  ,6  ,7  ])
+
+
+#########################################
+# Delta LLH between the two models
+for k in range(len(monkeys)):
+    abs_path='/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/data/unsorted/%s/'%(monkeys[k]) 
+    files_pre=np.array(os.listdir(abs_path))
+    order=miscellaneous.order_files(files_pre)
+    files_all=np.array(files_pre[order])
+    print (files_all)
+
+    if monkeys[k]=='Niels':
+        #dic_time=np.array([0,200,200,200])# time pre, time post, bin size, step size (time pre always positive)
+        dic_time=np.array([0,400,400,400])# time pre, time post, bin size, step size (time pre always positive)
+    if monkeys[k]=='Galileo':
+        #dic_time=np.array([0,300,300,300])# time pre, time post, bin size, step size (time pre always positive)
+        dic_time=np.array([0,600,600,600])# time pre, time post, bin size, step size (time pre always positive)
+
+    # Behavior
+    beha_lr=calculate_weights_lr(files_all,reg,talig,dic_time,t_back,t_forw,thres)
+    logloss_t1=(beha_lr['LLH01_1']+beha_lr['LLH10_1'])
+    logloss_t2=(beha_lr['LLH01_2']+beha_lr['LLH10_2'])
+    two_delta_llh=-2*(logloss_t2-logloss_t1) # the model with the smaller logloss is the best model
+    print ('Model 1',logloss_t1)
+    print ('Model 2',logloss_t2)
+    print (two_delta_llh)
+
+    # Neuronal
+    logloss_t1_neu=(beha_lr['LLH01_neu_1']+beha_lr['LLH10_neu_1'])
+    logloss_t2_neu=(beha_lr['LLH01_neu_2']+beha_lr['LLH10_neu_2'])
+    two_delta_llh_neu=-2*(logloss_t2_neu-logloss_t1_neu) # the model with the smaller logloss is the best model
+    print ('Model 1 neu',logloss_t1_neu)
+    print ('Model 2 neu',logloss_t2_neu)
+    print (two_delta_llh_neu)
+
+    llh_sh=nan*np.zeros(n_sh)
+    llh_sh_neu=nan*np.zeros(n_sh)
+    for i in range(n_sh):
+        print (i)
+        files_all=np.random.permutation(np.array(files_pre[order]))
+        #print (files_all)
+        
+        beha_lr=calculate_weights_lr(files_all,reg,talig,dic_time,t_back,t_forw,thres)
+        # Behavioral
+        logloss_t1_sh=(beha_lr['LLH01_1']+beha_lr['LLH10_1'])
+        logloss_t2_sh=(beha_lr['LLH01_2']+beha_lr['LLH10_2'])
+        llh_sh[i]=logloss_t2_sh
+        #print ('Model 2 Beha',logloss_t2_sh)
+
+        # Neuronal
+        logloss_t1_neu_sh=(beha_lr['LLH01_neu_1']+beha_lr['LLH10_neu_1'])
+        logloss_t2_neu_sh=(beha_lr['LLH01_neu_2']+beha_lr['LLH10_neu_2'])
+        llh_sh_neu[i]=logloss_t2_neu_sh
+        #print ('Model 2 Neu',logloss_t2_neu_sh)
+
+

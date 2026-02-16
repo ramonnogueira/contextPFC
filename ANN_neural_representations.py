@@ -153,26 +153,34 @@ n_trials_test=200
 t_steps=20
 xx=np.arange(t_steps)/10
 
-batch_size=1000
-n_hidden=50
-n_neu=50
-n_pca=50
+batch_size=1000#100#1000
+n_hidden=10
+n_neu=10
+n_pca=10
 sigma_train=1
 sigma_test=1
 input_noise=1
 scale_ctx=1
-ctx_noise=1
+ctx_noise=0 #Important variable! It affects the representational and behavioral bias quite a lot (decreases)
 
 reg=1e-5 #1e-10
-lr=0.01
+lr=0.001
 n_epochs=200
-n_files=3
+n_files=10
 
-save_fig=False
-pca=True
+save_fig=True
+pca=False
 n_rand=1
+
 beta=0
 b_exp=1
+
+wei_ctx=[4,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
+
+#beta=1e1
+#b_exp=np.ones((n_hidden,n_hidden))
+#b_exp[:,0:8]=-1
+#print (b_exp)
 
 coh_uq=np.linspace(-1,1,11)
 coh_uq_test=np.linspace(-1,1,11)
@@ -185,8 +193,6 @@ alph=[0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.5,0.6,0.8,0.8,0.6,0.4,0.3,0.1,1,0.1,0.3,0.
 
 col2=['green','green','blue','blue']
 alph2=[1,0.3,0.3,1]
-
-wei_ctx=[4,1] # first: respond same choice from your context, second: respond opposite choice from your context. For unbalanced contexts increase first number. You don't want to make mistakes on choices on congruent contexts.
 
 bias_vec=np.linspace(-10,10,31)
 perf_dec_ctx=nan*np.zeros((n_files,t_steps,3))
@@ -229,7 +235,8 @@ for hh in range(n_files):
     bias=(b1-b2)
 
     feat_binary=nan*np.zeros((len(stimulus),2))
-    feat_binary[:,0]=stimulus
+    #feat_binary[:,0]=stimulus
+    feat_binary[:,0]=choice #Careful!
     feat_binary[:,1]=context
     feat_binary[feat_binary==-1]=0
 
@@ -260,14 +267,15 @@ for hh in range(n_files):
         # embedding=PCA(n_components=3)
         # pseudo_mds=embedding.fit(mean_coh)
 
-    # # PCA Test
+    # PCA Test
     for j in range(t_steps)[::-1]:
         print (j)
 
-        #aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_rand,n_neu)
+        #
         # IMPORTANT!!!. Using both correct and incorrect
         if pca==False:
-            aa=class_twovars(ut_test[:,j],feat_binary,bias_vec,n_rand,n_neu)
+            aa=class_twovars(ut_test[:,j][correct],feat_binary[correct],bias_vec,n_rand,n_neu)
+            #aa=class_twovars(ut_test[:,j],feat_binary,bias_vec,n_rand,n_neu)
             perf_dec_ctx[hh,j]=aa[0]
             perf_abs[hh,j]=aa[1]
 
@@ -292,9 +300,18 @@ for hh in range(n_files):
             ax.set_xlabel('PC1')
             ax.set_ylabel('PC2')
             ax.set_zlabel('PC3')
-            ax.set_xlim([-8,8])
-            ax.set_ylim([-8,8])
-            ax.set_zlim([-8,8])
+            #ax.set_xlim([-8,8])
+            #ax.set_ylim([-8,8])
+            #ax.set_zlim([-8,8])
+            #ax.set_xlim([-4,4])
+            #ax.set_ylim([-4,4])
+            #ax.set_zlim([-4,4])
+            ax.set_xlim([-3,3])
+            ax.set_ylim([-3,3])
+            ax.set_zlim([-3,3])
+            #ax.set_xlim([-2,2])
+            #ax.set_ylim([-2,2])
+            #ax.set_zlim([-2,2])
             plt.show()
             plt.close(fig)
 
@@ -327,63 +344,63 @@ for hh in range(n_files):
 ######################################################
 
 # Plot decoding performance for stimulus (only correct!) and context
-# perf_dec_m=np.mean(perf_dec_ctx,axis=0)
-# perf_dec_sem=sem(perf_dec_ctx,axis=0)
-# perf_abs_m=np.mean(perf_abs,axis=0)
+perf_dec_m=np.mean(perf_dec_ctx,axis=0)
+perf_dec_sem=sem(perf_dec_ctx,axis=0)
+perf_abs_m=np.mean(perf_abs,axis=0)
 
-# fig=plt.figure(figsize=(3,2.5))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
-# ax.plot(np.arange(t_steps),perf_dec_m[:,0],color='blue')
-# ax.fill_between(np.arange(t_steps),perf_dec_m[:,0]-perf_dec_sem[:,0],perf_dec_m[:,0]+perf_dec_sem[:,0],color='blue',alpha=0.5)
-# ax.plot(np.arange(t_steps),perf_dec_m[:,1],color='brown')
-# ax.fill_between(np.arange(t_steps),perf_dec_m[:,1]-perf_dec_sem[:,1],perf_dec_m[:,1]+perf_dec_sem[:,1],color='brown',alpha=0.5)
-# ax.plot(np.arange(t_steps),perf_dec_m[:,2],color='black')
-# ax.fill_between(np.arange(t_steps),perf_dec_m[:,2]-perf_dec_sem[:,2],perf_dec_m[:,2]+perf_dec_sem[:,2],color='black',alpha=0.5)
-# ax.plot(np.arange(t_steps),0.5*np.ones(t_steps),color='black',linestyle='--')
-# ax.set_ylim([0.4,1])
-# ax.set_ylabel('Decoding Performance')
-# ax.set_xlabel('Time')
-# if save_fig:
-#     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_2.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-#     #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+fig=plt.figure(figsize=(3,2.5))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
+ax.plot(np.arange(t_steps),perf_dec_m[:,0],color='blue')
+ax.fill_between(np.arange(t_steps),perf_dec_m[:,0]-perf_dec_sem[:,0],perf_dec_m[:,0]+perf_dec_sem[:,0],color='blue',alpha=0.5)
+ax.plot(np.arange(t_steps),perf_dec_m[:,1],color='brown')
+ax.fill_between(np.arange(t_steps),perf_dec_m[:,1]-perf_dec_sem[:,1],perf_dec_m[:,1]+perf_dec_sem[:,1],color='brown',alpha=0.5)
+ax.plot(np.arange(t_steps),perf_dec_m[:,2],color='black')
+ax.fill_between(np.arange(t_steps),perf_dec_m[:,2]-perf_dec_sem[:,2],perf_dec_m[:,2]+perf_dec_sem[:,2],color='black',alpha=0.5)
+ax.plot(np.arange(t_steps),0.5*np.ones(t_steps),color='black',linestyle='--')
+ax.set_ylim([0.4,1])
+ax.set_ylabel('Decoding Performance')
+ax.set_xlabel('Time')
+if save_fig:
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_decoding_dec_ctx_neu_%i_rr%i%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
-# ###################################################
-# # Shifted-CCGP
-# perf_abs_m=np.mean(perf_abs,axis=0)
-# perf_abs_sem=sem(perf_abs,axis=0)
-# ccgp_orig_m=np.mean(perf_abs[:,:,15],axis=(0,3))
-# ccgp_orig_sem=sem(np.mean(perf_abs[:,:,15],axis=3),axis=0)
+###################################################
+# Shifted-CCGP
+perf_abs_m=np.mean(perf_abs,axis=0)
+perf_abs_sem=sem(perf_abs,axis=0)
+ccgp_orig_m=np.mean(perf_abs[:,:,15],axis=(0,3))
+ccgp_orig_sem=sem(np.mean(perf_abs[:,:,15],axis=3),axis=0)
 
-# shccgp_pre=nan*np.zeros((n_files,t_steps,2,2))
-# for p in range(n_files):
-#     for pp in range(t_steps):
-#         for ppp in range(2):
-#             shccgp_pre[p,pp,ppp,0]=np.max(perf_abs[p,pp,:,ppp,0])
-#             shccgp_pre[p,pp,ppp,1]=np.max(perf_abs[p,pp,:,ppp,1])
-# shccgp_m=np.mean(shccgp_pre,axis=(0,3))
-# shccgp_sem=sem(np.mean(shccgp_pre,axis=3),axis=0)
+shccgp_pre=nan*np.zeros((n_files,t_steps,2,2))
+for p in range(n_files):
+    for pp in range(t_steps):
+        for ppp in range(2):
+            shccgp_pre[p,pp,ppp,0]=np.max(perf_abs[p,pp,:,ppp,0])
+            shccgp_pre[p,pp,ppp,1]=np.max(perf_abs[p,pp,:,ppp,1])
+shccgp_m=np.mean(shccgp_pre,axis=(0,3))
+shccgp_sem=sem(np.mean(shccgp_pre,axis=3),axis=0)
     
-# fig=plt.figure(figsize=(3,2.5))
-# ax=fig.add_subplot(111)
-# miscellaneous.adjust_spines(ax,['left','bottom'])
+fig=plt.figure(figsize=(3,2.5))
+ax=fig.add_subplot(111)
+miscellaneous.adjust_spines(ax,['left','bottom'])
 
-# ax.plot(np.arange(t_steps),ccgp_orig_m[:,0],color='royalblue',label='CCGP Direction')
-# ax.fill_between(np.arange(t_steps),ccgp_orig_m[:,0]-ccgp_orig_sem[:,0],ccgp_orig_m[:,0]+ccgp_orig_sem[:,0],color='royalblue',alpha=0.5)
-# ax.plot(np.arange(t_steps),ccgp_orig_m[:,1],color='orange',label='CCGP Context')
-# ax.fill_between(np.arange(t_steps),ccgp_orig_m[:,1]-ccgp_orig_sem[:,1],ccgp_orig_m[:,1]+ccgp_orig_sem[:,1],color='orange',alpha=0.5)
-# ax.plot(np.arange(t_steps),shccgp_m[:,0],color='blue',label='Sh-CCGP Direction')
-# ax.fill_between(np.arange(t_steps),shccgp_m[:,0]-shccgp_sem[:,0],shccgp_m[:,0]+shccgp_sem[:,0],color='blue',alpha=0.5)
-# ax.plot(np.arange(t_steps),shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
-# ax.fill_between(np.arange(t_steps),shccgp_m[:,1]-shccgp_sem[:,1],shccgp_m[:,1]+shccgp_sem[:,1],color='brown',alpha=0.5)
-# ax.plot(np.arange(t_steps),0.5*np.ones(len(xx)),color='black',linestyle='--')
-# ax.set_ylim([0.4,1])
-# ax.set_xlabel('Time (sec)')
-# ax.set_ylabel('Decoding Performance')
-# plt.legend(loc='best')
-# if save_fig:
-#     fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_2.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
-#     #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+ax.plot(np.arange(t_steps),ccgp_orig_m[:,0],color='royalblue',label='CCGP Direction')
+ax.fill_between(np.arange(t_steps),ccgp_orig_m[:,0]-ccgp_orig_sem[:,0],ccgp_orig_m[:,0]+ccgp_orig_sem[:,0],color='royalblue',alpha=0.5)
+ax.plot(np.arange(t_steps),ccgp_orig_m[:,1],color='orange',label='CCGP Context')
+ax.fill_between(np.arange(t_steps),ccgp_orig_m[:,1]-ccgp_orig_sem[:,1],ccgp_orig_m[:,1]+ccgp_orig_sem[:,1],color='orange',alpha=0.5)
+ax.plot(np.arange(t_steps),shccgp_m[:,0],color='blue',label='Sh-CCGP Direction')
+ax.fill_between(np.arange(t_steps),shccgp_m[:,0]-shccgp_sem[:,0],shccgp_m[:,0]+shccgp_sem[:,0],color='blue',alpha=0.5)
+ax.plot(np.arange(t_steps),shccgp_m[:,1],color='brown',label='Sh-CCGP Context')
+ax.fill_between(np.arange(t_steps),shccgp_m[:,1]-shccgp_sem[:,1],shccgp_m[:,1]+shccgp_sem[:,1],color='brown',alpha=0.5)
+ax.plot(np.arange(t_steps),0.5*np.ones(len(xx)),color='black',linestyle='--')
+ax.set_ylim([0.4,1])
+ax.set_xlabel('Time (sec)')
+ax.set_ylabel('Decoding Performance')
+plt.legend(loc='best')
+if save_fig:
+    fig.savefig('/home/ramon/Dropbox/Proyectos_Postdoc/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i.pdf'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
+    #fig.savefig('/home/ramon/Dropbox/Esteki_Kiani/plots/figure_abs_dec_ctx_neu_%i_rr%i%i_2.png'%(n_neu,wei_ctx[0],wei_ctx[1]),dpi=500,bbox_inches='tight')
 
 # # Shifted CCGP
 # for j in range(t_steps):
