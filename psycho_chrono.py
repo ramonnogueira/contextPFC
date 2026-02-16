@@ -226,6 +226,7 @@ for k in range(len(monkeys)):
         fit_psycho[kk,:,2]=log_curve(xx_fit,popt2[0],popt2[1])
         params_psy[kk,:,2]=popt2
 
+        print ('hello')
         print (params_psy[kk])
 
         #########################################
